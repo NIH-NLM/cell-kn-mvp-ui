@@ -3,7 +3,7 @@
 
 
 :root {
-  --color-main: #f68657;
+  --color-main: #00bfff;
   --color-text: #383a3f;
   --color-dark: #1f2124;
   --color-gray: #677;
@@ -15,12 +15,12 @@
 }
 
 .dark {
-  --color-main: #f68657;
+  --color-main: #00bfff;
   --color-text: #d6d1d1;
   --color-dark: #f5f6f7;
   --color-gray: #999;
   --color-bg: #1f2124;
-  --color-lighter: #292a2c;
+  --color-lighter: #191970;
   --color-white: #2e3235;
   --color-border:#252629;
 }
