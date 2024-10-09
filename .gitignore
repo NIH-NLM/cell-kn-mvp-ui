@@ -1,2 +1,3 @@
 react/build/*
 db.sqlite3
+env
