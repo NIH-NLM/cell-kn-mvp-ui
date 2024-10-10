@@ -8,6 +8,7 @@ let getContent = (note) => {
         content = note.content
     }
     catch {
+        //TODO: log these correctly
         console.log("No content for note with id: " + note._id)
     }
     return content
@@ -19,6 +20,7 @@ let getDate = (note) => {
         date = note.date
     }
     catch {
+        //TODO: log these correctly
         console.log("No date for note with id: " + note._id)
     }
     return date
