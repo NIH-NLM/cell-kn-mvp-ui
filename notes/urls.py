@@ -22,5 +22,4 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('arango_api/', include('arango_api.urls')),
     path('', TemplateView.as_view(template_name='index.html')),  # Tell Django to let React handle urls
-    # path('', include('index.html')),
 ]
