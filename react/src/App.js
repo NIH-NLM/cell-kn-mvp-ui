@@ -15,11 +15,11 @@ import CellPage from "./pages/CellPage";
 function App() {
   return (
     <Router>
-      <div className="container dark">
+      <Header />
+      <div className="container">
         <div className="app">
-          <Header />
-          <Route path="/cl" component={CLList} />
-          <Route path="/cell/:id" component={CellPage} />
+          <Route path="/ontology" component={CLList} />
+          <Route path="/cl/:id" component={CellPage} />
           {/*<Route path="/notes" exact component={NotesListPage} />*/}
           {/*<Route path="/note/:id" component={NotePage} />*/}
           {/*<Route path="/arango" component={ArangoDBPage} />*/}

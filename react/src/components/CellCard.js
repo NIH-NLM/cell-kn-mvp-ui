@@ -34,13 +34,18 @@ let getId = (cell) => {
 
 const CellCard = ({ cell: cell }) => {
     return (
-            <div className="cells-list-item" >
-                <h3>{getLabel(cell)}</h3>
-                <div>
-                    {Object.entries(cell).map(([key, value]) =>
-                        <p>{key} : {value}</p>
-                    )}
-                </div>
+            <div className="cell-item-list" >
+                <fieldset>
+                    <legend>{getLabel(cell)}</legend>
+                    <table>
+                        {Object.entries(cell).map(([key, value]) =>
+                            <tr>
+                                <td className="nowrap">{key}</td>
+                                <td>{value}</td>
+                            </tr>
+                        )}
+                    </table>
+                </fieldset>
             </div>
     )
 }

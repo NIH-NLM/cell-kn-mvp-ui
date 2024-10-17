@@ -1,25 +1,34 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-const EdgeLink = ({ edge: edge }) => {
-    return (
-        <Link to={`/${edge._id}`}>
-            <div className="edges-list-item" >
-                <h3>{edge.label}</h3>
-            </div>
-        </Link>
-    )
+const EdgeLink = ({ edge: edge, from}) => {
+    if(from) {
+        return (
+                <tr className="edges-list-item" >
+                    <td>This</td>
+                    <td>{edge.label}</td>
+                    <td><Link to={`/${edge._to}`}>{edge._to}</Link>}</td>
+                </tr>
+        )
+    } else {
+        return (
+
+                <tr className="edges-list-item" >
+                    <td><Link to={`/${edge._from}`}>{edge._from}</Link></td>
+                    <td>{edge.label}</td>
+                    <td>This</td>
+                </tr>
+        )
+    }
 }
 
-const EdgeCard = ({ edges: edges }) => {
+const EdgeCard = ({ edges: edges, from=true }) => {
     return (
-            <div className="cells-list-item" >
-                <div className="edge-list">
+                <tbody className="edge-list-table">
                     {edges.map((edge, index) => (
-                        <EdgeLink key={index} edge={edge} />
+                        <EdgeLink key={index} edge={edge} from={from} />
                     ))}
-                </div>
-            </div>
+                </tbody>
     )
 }
 

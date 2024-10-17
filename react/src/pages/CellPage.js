@@ -24,29 +24,39 @@ const CellPage = ({ match, history }) => {
     let getEdgesFromThisToCL = async () => {
         let response = await fetch(`/arango_api/edges/CL-CL/_from/CL/${cellId}/`)
         let data = await response.json()
-        console.log(data)
         setEdgesFromThisToCL(data)
     }
 
     let getEdgesFromCLToThis = async () => {
         let response = await fetch(`/arango_api/edges/CL-CL/_to/CL/${cellId}/`)
         let data = await response.json()
-        console.log(data)
         setEdgesFromCLToThis(data)
     }
 
     return (
-        <div className="cell" >
+        <div className="cell-card" >
             {cell?
                 <CellCard cell={cell} /> : <div>Cell not found</div>
             }
-            <div className="edges-from-this-to-other">
-                {edgesFromThisToCL ?
-                    <EdgeCard edges={edgesFromThisToCL} /> : <span></span> }
-            </div>
-            <div className="edges-to-this-from-other">
-                {edgesFromCLToThis ?
-                    <EdgeCard edges={edgesFromCLToThis} /> : <span></span> }
+            <div className="link-tables">
+                <fieldset>
+                    <legend>From This to CL Details</legend>
+                    <table className="edges-from-this-to-other edges-table">
+                        <tbody>
+                        {edgesFromThisToCL ?
+                            <EdgeCard edges={edgesFromThisToCL} from={true} /> : <span></span> }
+                        </tbody>
+                    </table>
+                </fieldset>
+                <fieldset>
+                    <legend>From CL to This Details</legend>
+                    <table className="edges-to-this-from-other edges-table">
+                        <tbody>
+                        {edgesFromCLToThis ?
+                            <EdgeCard edges={edgesFromCLToThis} from={false} /> : <span></span> }
+                        </tbody>
+                    </table>
+                </fieldset>
             </div>
         </div>
     )

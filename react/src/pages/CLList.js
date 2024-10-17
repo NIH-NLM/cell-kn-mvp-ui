@@ -31,8 +31,7 @@ const CLList = () => {
     return (
         <div className="cl">
             <div className="cl-header">
-                <h2 className="cl-title">&#9782; clList</h2>
-                <p className="cl-count">{clList.length}</p>
+                <p className="cl-count">{clList.length} results</p>
             </div>
             <div className="cl-list">
                 {clList.map((cell, index) => (
