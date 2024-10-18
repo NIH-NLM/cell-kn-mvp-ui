@@ -6,31 +6,43 @@ const CellPage = ({ match, history }) => {
 
     let cellId = match.params.id
     let [cell, setCell] = useState(null)
-    let [edgesFromThisToCL, setEdgesFromThisToCL] = useState(null)
-    let [edgesFromCLToThis, setEdgesFromCLToThis] = useState(null)
+
+    // Set state for outbound edges
+    let [outboundEdges, setOutboundEdges] = useState([])
+
+    // Set state for inbound edges
+    let [inboundEdges, setInboundEdges] = useState([])
 
     useEffect(() => {
-        getCell()
-        getEdgesFromThisToCL()
-        getEdgesFromCLToThis()
+        getCell().then(r => setCell(r))
+
+        // Get outbound edges
+        Promise.all([getEdges("CL-CL", "CL", true),
+        getEdges("CL-GO", "CL", true),
+        getEdges("CL-NCBITaxon", "CL", true),
+        getEdges("CL-PATO", "CL", true),
+        getEdges("CL-PR", "CL", true),
+        getEdges("CL-UBERON", "CL", true)
+            ]).then(promises => setOutboundEdges(promises.flat(1)))
+
+        // Get inbound edges
+        Promise.all([getEdges("CL-CL", "CL", false),
+            getEdges("CL-GO", "CL", false),
+            getEdges("CL-NCBITaxon", "CL", false),
+            getEdges("CL-PATO", "CL", false),
+            getEdges("CL-PR", "CL", false),
+            getEdges("CL-UBERON", "CL", false)
+        ]).then(promises => setInboundEdges(promises.flat(1)))
     }, [cellId])
 
     let getCell = async () => {
         let response = await fetch(`/arango_api/CL/${cellId}/`)
-        let data = await response.json()
-        setCell(data)
+        return response.json()
     }
 
-    let getEdgesFromThisToCL = async () => {
-        let response = await fetch(`/arango_api/edges/CL-CL/_from/CL/${cellId}/`)
-        let data = await response.json()
-        setEdgesFromThisToCL(data)
-    }
-
-    let getEdgesFromCLToThis = async () => {
-        let response = await fetch(`/arango_api/edges/CL-CL/_to/CL/${cellId}/`)
-        let data = await response.json()
-        setEdgesFromCLToThis(data)
+    let getEdges = async (edge_coll, node_coll, isFrom) => {
+        let response = await fetch(`/arango_api/edges/${edge_coll}/${isFrom? "_from" : "_to"}/${node_coll}/${cellId}/`)
+        return response.json()
     }
 
     return (
@@ -40,20 +52,18 @@ const CellPage = ({ match, history }) => {
             }
             <div className="link-tables">
                 <fieldset>
-                    <legend>From This to CL Details</legend>
-                    <table className="edges-from-this-to-other edges-table">
+                    <legend>Outbound edges</legend>
+                    <table className="edges-table">
                         <tbody>
-                        {edgesFromThisToCL ?
-                            <EdgeCard edges={edgesFromThisToCL} from={true} /> : <span></span> }
+                            <EdgeCard edges={outboundEdges} from={true} />
                         </tbody>
                     </table>
                 </fieldset>
                 <fieldset>
-                    <legend>From CL to This Details</legend>
-                    <table className="edges-to-this-from-other edges-table">
+                    <legend>Inbound edges</legend>
+                    <table className="edges-table">
                         <tbody>
-                        {edgesFromCLToThis ?
-                            <EdgeCard edges={edgesFromCLToThis} from={false} /> : <span></span> }
+                            <EdgeCard edges={inboundEdges} from={false} />
                         </tbody>
                     </table>
                 </fieldset>

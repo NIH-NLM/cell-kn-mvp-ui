@@ -60,6 +60,7 @@ a {
 
 .app {
   width: 100%;
+  height: 100vh;
   margin: 0 auto;
   background-color: var(--color-bg);
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.05);
@@ -246,7 +247,6 @@ a {
 /*table formatting*/
 table {
     width: 100%;
-    margin-bottom: 24px;
     border-collapse: collapse;
     text-indent: initial;
     border-spacing: 2px;
@@ -259,9 +259,14 @@ tbody {
     border-color: inherit;
 }
 
+fieldset {
+  border: 1px solid #c0c0c0;
+  margin: 0 2px;
+  padding: 0.35em 0.625em 0.75em;
+}
+
 tr {
     display: table-row;
-    vertical-align: inherit;
     unicode-bidi: isolate;
     border-color: inherit;
 }
@@ -275,8 +280,12 @@ tr {
 /*CellPage*/
 .cell-card{
   display:flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
   word-break: break-word;
+}
+
+.cl-count{
+  font-style: italic;
 }
 
 .cell-item-list{
@@ -287,7 +296,7 @@ tr {
   max-width: 40%;
 }
 
-.edges-list-item td{
+td{
   padding: 0.5rem;
 }
 
@@ -295,10 +304,10 @@ tr {
   text-wrap: nowrap;
 }
 
-tr:nth-child(even) {
-  background-color: var(--color-light);
+tr:nth-of-type(even) {
+  background-color: var(--color-bg);
 }
 
-tr:nth-child(odd) {
-  background-color: var(--color-bg);
+tr:nth-of-type(odd) {
+  background-color: var(--color-light);
 }
