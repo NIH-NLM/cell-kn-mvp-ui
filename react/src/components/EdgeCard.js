@@ -21,7 +21,7 @@ const EdgeLink = ({edge: edge, node: node, isFrom : isFrom}) => {
     }
 }
 
-const EdgeCard = ({ edges: edges, from: isFrom = true }) => {
+const EdgeCard = ({ edges: edges, isFrom: isFrom}) => {
 
     let [edgeNodes, setEdgeNodes] = useState([])
     let [edgeLinks, setEdgeLinks] = useState([])
@@ -35,7 +35,7 @@ const EdgeCard = ({ edges: edges, from: isFrom = true }) => {
 
     useEffect(() =>{
         setEdgeLinks(edgeNodes.map((node, index) => (
-            <EdgeLink edge={edges[index]} node={node} from={isFrom} />
+            <EdgeLink edge={edges[index]} node={node} isFrom={isFrom} />
         )))
     }, [edgeNodes])
 

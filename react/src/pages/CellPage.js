@@ -5,6 +5,7 @@ import EdgeCard from "../components/EdgeCard";
 const CellPage = ({ match, history }) => {
 
     let cellId = match.params.id
+    let collection = match.params.coll
     let [cell, setCell] = useState(null)
 
     // Set state for outbound edges
@@ -17,26 +18,26 @@ const CellPage = ({ match, history }) => {
         getCell().then(r => setCell(r))
 
         // Get outbound edges
-        Promise.all([getEdges("CL-CL", "CL", true),
-        getEdges("CL-GO", "CL", true),
-        getEdges("CL-NCBITaxon", "CL", true),
-        getEdges("CL-PATO", "CL", true),
-        getEdges("CL-PR", "CL", true),
-        getEdges("CL-UBERON", "CL", true)
+        Promise.all([getEdges(`${collection}-CL`, collection, true),
+        getEdges(`${collection}-GO`, collection, true),
+        getEdges(`${collection}-NCBITaxon`, collection, true),
+        getEdges(`${collection}-PATO`, collection, true),
+        getEdges(`${collection}-PR`, collection, true),
+        getEdges(`${collection}-UBERON`, collection, true)
             ]).then(promises => setOutboundEdges(promises.flat(1)))
 
         // Get inbound edges
-        Promise.all([getEdges("CL-CL", "CL", false),
-            getEdges("CL-GO", "CL", false),
-            getEdges("CL-NCBITaxon", "CL", false),
-            getEdges("CL-PATO", "CL", false),
-            getEdges("CL-PR", "CL", false),
-            getEdges("CL-UBERON", "CL", false)
+        Promise.all([getEdges(`${collection}-CL`, collection, false),
+            getEdges(`${collection}-GO`, collection, false),
+            getEdges(`${collection}-NCBITaxon`, collection, false),
+            getEdges(`${collection}-PATO`, collection, false),
+            getEdges(`${collection}-PR`, collection, false),
+            getEdges(`${collection}-UBERON`, collection, false)
         ]).then(promises => setInboundEdges(promises.flat(1)))
-    }, [cellId])
+    }, [cellId, collection])
 
     let getCell = async () => {
-        let response = await fetch(`/arango_api/CL/${cellId}/`)
+        let response = await fetch(`/arango_api/${collection}/${cellId}/`)
         return response.json()
     }
 
@@ -55,7 +56,7 @@ const CellPage = ({ match, history }) => {
                     <legend>Outbound edges</legend>
                     <table className="edges-table">
                         <tbody>
-                            <EdgeCard edges={outboundEdges} from={true} />
+                            <EdgeCard edges={outboundEdges} isFrom={true} />
                         </tbody>
                     </table>
                 </fieldset>
@@ -63,7 +64,7 @@ const CellPage = ({ match, history }) => {
                     <legend>Inbound edges</legend>
                     <table className="edges-table">
                         <tbody>
-                            <EdgeCard edges={inboundEdges} from={false} />
+                            <EdgeCard edges={inboundEdges} isFrom={false} />
                         </tbody>
                     </table>
                 </fieldset>

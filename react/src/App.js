@@ -1,6 +1,6 @@
 import {
-  HashRouter as Router,
-  Route
+    HashRouter as Router,
+    Route, Switch
 } from "react-router-dom";
 
 
@@ -18,11 +18,10 @@ function App() {
       <Header />
       <div className="container">
         <div className="app">
-          <Route path="/ontology" component={CLList} />
-          <Route path="/cl/:id" component={CellPage} />
-          {/*<Route path="/notes" exact component={NotesListPage} />*/}
-          {/*<Route path="/note/:id" component={NotePage} />*/}
-          {/*<Route path="/arango" component={ArangoDBPage} />*/}
+            <Switch>
+                <Route path="/:coll/:id" component={CellPage} />
+                <Route path="/:coll" component={CLList} />
+            </Switch>
         </div>
       </div>
     </Router>

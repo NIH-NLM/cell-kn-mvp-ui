@@ -16,7 +16,7 @@ let getLabel = (cell) => {
 
 const ListCells = ({ cell: cell }) => {
     return (
-        <Link to={`${cell._id}`}>
+        <Link to={cell._id}>
             <div className="cells-list-item" >
                 <h3>{getLabel(cell)}</h3>
             </div>

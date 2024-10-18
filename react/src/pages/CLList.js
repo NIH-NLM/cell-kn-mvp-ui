@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import AddButton from '../components/AddButton'
 import ListCells from "../components/ListCells";
 
 
-const CLList = () => {
+const CLList = ({ match, history }) => {
 
+    let collection = match.params.coll
     let [clList, setClList] = useState([])
 
     useEffect(() => {
         getClList()
-    }, [])
+    }, [collection])
 
 
     let getClList = async () => {
 
-        //TODO: generalize DB?
-        let response = await fetch('/arango_api/CL/')
+        let response = await fetch(`/arango_api/${collection}/`)
         let data = await response.json()
         sortClList(data)
     }
