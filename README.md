@@ -31,6 +31,16 @@ pip install -r requirements.txt
 
 ### Running the App
 
+Start the ArangoDB docker server:
+
+```bash
+docker run -d \
+  --name arangodb \
+  -e ARANGO_NO_AUTH=1 \
+  -p 8529:8529 \
+  arangodb
+```
+
 To run the Notes App:
 ```bash
 python manage.py runserver
