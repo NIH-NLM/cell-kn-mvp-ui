@@ -17,7 +17,8 @@
   "watch": {
     "build": {
       "patterns": [
-        "src"
+        "src",
+        "App.css"
       ],
       "extensions": "js,jsx"
     }

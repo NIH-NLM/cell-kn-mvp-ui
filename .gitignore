@@ -1,3 +1,5 @@
-react/build/*
+react/build
 db.sqlite3
 env
+__pycache__
+notes/__pycache__/*

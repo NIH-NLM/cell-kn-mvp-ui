@@ -16,7 +16,6 @@ const ArangoDBNotesListPage = () => {
 
         let response = await fetch('/arango_api/notes/')
         let data = await response.json()
-        console.log(data)
         setNotes(data)
     }
 
