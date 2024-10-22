@@ -1,4 +1,4 @@
-# Django & React Notes App
+# Django & React App
 
 ### Cloning the repository
 
@@ -41,7 +41,7 @@ docker run -d \
   arangodb
 ```
 
-To run the Notes App:
+To run the App:
 ```bash
 python manage.py runserver
 ```

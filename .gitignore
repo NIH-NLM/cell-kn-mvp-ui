@@ -2,4 +2,4 @@ react/build
 db.sqlite3
 env
 __pycache__
-notes/__pycache__/*
+core/__pycache__/*
