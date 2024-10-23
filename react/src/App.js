@@ -9,20 +9,22 @@ import Header from './components/Header'
 import CLList from "./pages/CLList";
 import CellPage from "./pages/CellPage";
 import SearchPage from "./pages/SearchPage";
+import BrowsePage from "./pages/BrowsePage";
 
 function App() {
   return (
     <Router>
-      <Header />
-      <div className="container">
-        <div className="app">
-            <Switch>
-                <Route path="/:coll/:id" component={CellPage} />
-                <Route path="/:coll" component={CLList} />
-                <Route path="/" component={SearchPage} />
-            </Switch>
+        <div className="site-container">
+            <Header />
+            <div className="app">
+                <Switch>
+                    <Route path="/browse" component={BrowsePage} />
+                    <Route path="/:coll/:id" component={CellPage} />
+                    <Route path="/:coll" component={CLList} />
+                    <Route path="/" component={SearchPage} />
+                </Switch>
+            </div>
         </div>
-      </div>
     </Router>
   );
 }

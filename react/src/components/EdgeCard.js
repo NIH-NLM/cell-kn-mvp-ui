@@ -7,13 +7,13 @@ const EdgeLink = ({edge: edge, node: node, isFrom : isFrom}) => {
             <tr className="edges-list-item">
                 <td>This</td>
                 <td>{edge.label}</td>
-                <td><Link to={`/${node._id}`}>{node.label? node.label : node._id}</Link></td>
+                <td className="td-link"><Link to={`/${node._id}`}>{node.label? node.label : node._id}</Link></td>
             </tr>
         )
     } else {
         return (
             <tr className="edges-list-item">
-                <td><Link to={`/${node._id}`}>{node.label? node.label : node._id}</Link></td>
+                <td className="td-link"><Link to={`/${node._id}`}>{node.label? node.label : node._id}</Link></td>
                 <td>{edge.label}</td>
                 <td>This</td>
             </tr>
@@ -28,7 +28,7 @@ const EdgeCard = ({ edges: edges, isFrom: isFrom}) => {
 
     useEffect( () =>{
         Promise.all(edges.map((async edge => {
-            let response = await fetch(`/arango_api/${isFrom? edge._to : edge._from}/`)
+            let response = await fetch(`/arango_api/collection/${isFrom? edge._to : edge._from}/`)
             return response.json()
         }))).then(promises => setEdgeNodes(promises))
     }, [edges])
@@ -40,9 +40,14 @@ const EdgeCard = ({ edges: edges, isFrom: isFrom}) => {
     }, [edgeNodes])
 
     return (
-                <div className="edge-list-item">
+        <fieldset>
+            <legend>{isFrom? "Outbound edges":"Inbound Edges" }</legend>
+            <table className="edges-table">
+                <tbody className="edge-list-item">
                     {edgeLinks}
-                </div>
+                </tbody>
+            </table>
+        </fieldset>
     )
 }
 

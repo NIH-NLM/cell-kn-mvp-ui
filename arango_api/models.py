@@ -67,7 +67,10 @@ class DBEntry:
         for collection in collections:
             union_queries.append(f"""
                 FOR doc IN {collection["name"]}
-                    FILTER CONTAINS(doc.label, @search_term) OR CONTAINS(doc.term, @search_term)
+                    FILTER CONTAINS(doc.label, @search_term) 
+                        OR CONTAINS(doc.term, @search_term) 
+                        OR CONTAINS(doc.comment, @search_term) 
+                        OR CONTAINS(doc.definition, @search_term)
                     RETURN doc
             """)
 
