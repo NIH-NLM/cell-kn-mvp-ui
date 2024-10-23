@@ -8,6 +8,7 @@ import './App.css';
 import Header from './components/Header'
 import CLList from "./pages/CLList";
 import CellPage from "./pages/CellPage";
+import SearchPage from "./pages/SearchPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Switch>
                 <Route path="/:coll/:id" component={CellPage} />
                 <Route path="/:coll" component={CLList} />
+                <Route path="/" component={SearchPage} />
             </Switch>
         </div>
       </div>

@@ -5,7 +5,7 @@ from arango_api.models import DBEntry
 
 @api_view(['GET', 'POST'])
 def list_collection(request, coll):
-    objects = DBEntry.get_all(coll)
+    objects = DBEntry.get_all_by_collection(coll)
     return JsonResponse(list(objects), safe=False)
 
 
@@ -20,7 +20,20 @@ def get_object(request, coll, pk):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 @api_view(['GET'])
 def get_related_edges(request, edge_coll, dr, item_coll, pk):
     edges = DBEntry.get_edges_by_id(edge_coll, dr, item_coll, pk)
     return JsonResponse(list(edges), safe=False)
+
+
+@api_view(['GET'])
+def get_search_items(request, st):
+    search_results = DBEntry.search_by_term(st)
+    return JsonResponse(search_results, safe=False)
+
+
+@api_view(['GET'])
+def get_all(request):
+    search_results = DBEntry.get_all()
+    return JsonResponse(search_results, safe=False)

@@ -14,7 +14,7 @@ const CLList = ({ match, history }) => {
 
     let getClList = async () => {
 
-        let response = await fetch(`/arango_api/${collection}/`)
+        let response = await fetch(`/arango_api/collection/${collection}/`)
         let data = await response.json()
         sortClList(data)
     }

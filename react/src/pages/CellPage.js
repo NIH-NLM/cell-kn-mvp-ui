@@ -37,7 +37,7 @@ const CellPage = ({ match, history }) => {
     }, [cellId, collection])
 
     let getCell = async () => {
-        let response = await fetch(`/arango_api/${collection}/${cellId}/`)
+        let response = await fetch(`/arango_api/collection/${collection}/${cellId}/`)
         return response.json()
     }
 
