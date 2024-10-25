@@ -3,7 +3,7 @@ import {Link} from "react-router-dom";
 
 const SearchPage = ({ match, history }) => {
 
-    // TODO: set initial search?
+    // TODO: seed initial search?
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([])
     const [showResults, setShowResults] = useState(false);

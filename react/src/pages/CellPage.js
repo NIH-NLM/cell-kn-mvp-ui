@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import CellCard from "../components/CellCard";
 import EdgeCard from "../components/EdgeCard";
+import ForceGraph from "../components/ForceGraph";
 
 const CellPage = ({ match, history }) => {
 
@@ -55,15 +56,12 @@ const CellPage = ({ match, history }) => {
         return (
             <div className="cell-card" >
                 <div className="cell-item-header">
-                    <h1>{capitalCase(cell.label)}</h1>
+                    <h1>{capitalCase(cell.label? cell.label : cell._id)}</h1>
                     <span>{cell.term}</span>
                 </div>
                 <div className="cell-item-container">
                     <CellCard cell={cell} />
-                    <div className="cell-edges-container">
-                        <EdgeCard edges={outboundEdges} isFrom={true} />
-                        <EdgeCard edges={inboundEdges} isFrom={false} />
-                    </div>
+                    <ForceGraph nodeId={cell._id}/>
                 </div>
             </div>
         )

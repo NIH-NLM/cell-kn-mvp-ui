@@ -32,6 +32,10 @@ def get_search_items(request, st):
     search_results = DBEntry.search_by_term(st)
     return JsonResponse(search_results, safe=False)
 
+@api_view(['GET'])
+def get_graph(request, coll, pk, d):
+    search_results = DBEntry.get_graph(coll, pk, d, graph_name="CL")
+    return JsonResponse(search_results, safe=False)
 
 @api_view(['GET'])
 def get_all(request):
