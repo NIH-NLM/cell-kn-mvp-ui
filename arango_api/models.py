@@ -32,12 +32,17 @@ class DBEntry:
 
         query = """
             LET temp = 
-                  (
+                (
                     FOR v, e, p IN 0..@depth ANY @node_id GRAPH @graph_name
-                        RETURN {nodes: v, links: e}
-                  )
+                    RETURN {node: v, link: e}
+                )
 
-            RETURN {nodes: temp[*].nodes, links: temp[*].links}
+            LET uniqueNodes = UNIQUE(temp[*].node)
+
+            RETURN {
+                nodes: uniqueNodes,
+                links: temp[*].link
+            }
         """
 
         node_id = f"{coll}/{node_key}"
