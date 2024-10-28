@@ -16,11 +16,12 @@ const ForceGraph = ({ nodeId: nodeId }) => {
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
             console.log(graphData)
+            //TODO: Review width/height
             const svg = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
                 nodeTitle: d => d.label? d.label : d._id,
-                width: "100%",
-                height: "640px",
+                width: "1280",
+                height: "640",
             });
             const chartContainer = d3.select('#chart-container');
             chartContainer.selectAll("*").remove();

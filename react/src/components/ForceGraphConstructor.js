@@ -1,8 +1,8 @@
+import * as d3 from "d3";
+
 // Copyright 2021-2024 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/force-directed-graph
-import * as d3 from "d3";
-
 function ForceGraphConstructor({
                         nodes, // an iterable of node objects (typically [{id}, …])
                         links // an iterable of link objects (typically [{source, target}, …])
