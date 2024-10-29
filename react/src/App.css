@@ -311,3 +311,60 @@ tr:nth-of-type(odd) {
 .search-results-list a:hover{
   background: var(--color-light)
 }
+
+/*Query Box*/
+.aql-query-input {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: var(--color-lighter);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.aql-query-input select, .aql-query-input input[type="text"], .aql-query-input button {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+select:focus, input[type="text"]:focus {
+    border-color: var(--color-main);
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    outline: none;
+}
+
+button {
+    background-color: var(--color-main);
+    color: var(--color-text);
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    color: var(--color-gray);
+}
+
+option {
+    padding: 10px;
+}
+
+/*Graph*/
+#chart-container {
+    border: 2px solid var(--color-dark);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    padding: 20px;
+    background-color: #ffffff;
+    margin: 20px;
+}

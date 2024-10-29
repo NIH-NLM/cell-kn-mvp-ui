@@ -32,12 +32,35 @@ def get_search_items(request, st):
     search_results = DBEntry.search_by_term(st)
     return JsonResponse(search_results, safe=False)
 
-@api_view(['GET'])
-def get_graph(request, coll, pk, d):
-    search_results = DBEntry.get_graph(coll, pk, d, graph_name="CL")
+
+@api_view(['POST'])
+def get_graph(request):
+    node_ids = request.data.get('node_ids')
+    depth = request.data.get('depth')
+    graph_name = request.data.get('graph_name')
+    search_results = DBEntry.get_graph(node_ids, depth, graph_name)
     return JsonResponse(search_results, safe=False)
+
 
 @api_view(['GET'])
 def get_all(request):
     search_results = DBEntry.get_all()
     return JsonResponse(search_results, safe=False)
+
+
+##TODO: Need to ensure raw AQL is never accepted from front end
+@api_view(['POST'])
+def run_aql_query(request):
+    # Extract the AQL query from the request body
+    query = request.data.get('query')
+    print(query)
+    if not query:
+        return JsonResponse({'error': 'No query provided'}, status=400)
+
+    # Run the AQL query
+    try:
+        search_results = DBEntry.run_aql_query(query)
+        return JsonResponse(search_results, safe=False)
+    except Exception as e:
+        ##TODO: Handle errors
+        return JsonResponse({'error': str(e)}, status=500)

@@ -6,7 +6,7 @@ client = ArangoClient()
 # Replace these with your ArangoDB connection details
 DB_HOST = 'http://127.0.0.1:8528'
 ##TODO: Generalize DB name?
-DB_NAME = 'BioPortal-Slim'
+DB_NAME = 'BioPortal'
 # No auth currently
 # USERNAME = ''
 # PASSWORD = ''

@@ -2,20 +2,20 @@ import {useEffect, useState} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 
-const ForceGraph = ({ nodeId: nodeId }) => {
+const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
 
-    const [depth, setDepth] = useState(2);
+    const [depth, setDepth] = useState(defaultDepth);
     const [graphData, setGraphData] = useState({});
+    const [graphName, setGraphName] = useState("CL");
 
     useEffect(() => {
-        getGraph(nodeId, depth).then(data => {
+        getGraph(nodeIds, depth, graphName).then(data => {
             setGraphData(data);
         })
-    }, [nodeId, depth])
+    }, [nodeIds, depth])
 
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
-            console.log(graphData)
             //TODO: Review width/height
             const svg = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
@@ -29,23 +29,37 @@ const ForceGraph = ({ nodeId: nodeId }) => {
         }
     }, [graphData]);
 
-    let getGraph = async (nodeId, depth) => {
-        // Escape slash in ID
-        const encodedNodeId = encodeURIComponent(nodeId);
-        let response = await fetch(`/arango_api/graph/${encodedNodeId}/${depth}`)
-        return response.json()
-    }
+    let getGraph = async (nodeIds, depth, graphName) => {
+        console.log(depth)
+        let response = await fetch('/arango_api/graph/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                node_ids: nodeIds,
+                depth: depth,
+                graph_name: graphName,
+            }),
+        });
 
-      const handleDepthChange = (event) => {
-        setDepth(event.target.value);
-      };
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        return response.json();
+    };
+
+    const handleDepthChange = (event) => {
+        setDepth(Number(event.target.value));
+    };
 
   return (
       <div>
           <div className="depth-picker">
             <label htmlFor="depth-select">Select Depth:</label>
             <select id="depth-select" value={depth} onChange={handleDepthChange}>
-              {[1, 2, 3, 4, 5].map((value) => (
+              {[0, 1, 2, 3, 4].map((value) => (
                 <option key={value} value={value}>
                   {value}
                 </option>

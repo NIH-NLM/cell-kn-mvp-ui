@@ -28,12 +28,12 @@ class DBEntry:
         return db.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
     @staticmethod
-    def get_graph(coll, node_key, depth, graph_name):
+    def get_graph(node_ids, depth, graph_name):
 
         query = """
-            LET temp = 
-                (
-                    FOR v, e, p IN 0..@depth ANY @node_id GRAPH @graph_name
+            LET temp = (
+                FOR node_id IN @node_ids
+                    FOR v, e, p IN 0..@depth ANY node_id GRAPH @graph_name
                     RETURN {node: v, link: e}
                 )
 
@@ -45,8 +45,7 @@ class DBEntry:
             }
         """
 
-        node_id = f"{coll}/{node_key}"
-        bind_vars = {'node_id': node_id, 'graph_name': graph_name, 'depth': depth}
+        bind_vars = {'node_ids': node_ids, 'graph_name': graph_name, 'depth': depth}
 
         # Execute the query
         try:
@@ -120,3 +119,16 @@ class DBEntry:
         flat_results = list(chain.from_iterable(results))
 
         return flat_results
+
+    @staticmethod
+    def run_aql_query(query):
+
+        # Execute the query
+        try:
+            cursor = db.aql.execute(query)
+            results = list(cursor)[0]  # Collect the results - one element should be guaranteed
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            results = []
+
+        return results

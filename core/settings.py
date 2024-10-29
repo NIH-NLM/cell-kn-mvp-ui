@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'arango_api.apps.ArangoAPIConfig',
+    'api',
 
     'rest_framework',
     "corsheaders",

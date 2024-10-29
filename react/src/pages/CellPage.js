@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import CellCard from "../components/CellCard";
-import EdgeCard from "../components/EdgeCard";
 import ForceGraph from "../components/ForceGraph";
 
 const CellPage = ({ match, history }) => {
@@ -61,7 +60,7 @@ const CellPage = ({ match, history }) => {
                 </div>
                 <div className="cell-item-container">
                     <CellCard cell={cell} />
-                    <ForceGraph nodeId={cell._id}/>
+                    <ForceGraph nodeIds={[cell._id]}/>
                 </div>
             </div>
         )
