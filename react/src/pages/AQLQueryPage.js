@@ -59,6 +59,7 @@ const AQLQueryPage = () => {
             //TODO: avoid hard-coding expected results?
             setNodeIds(data["nodes"].map(obj => obj._id));
         } catch (err) {
+            // TODO: Fix error logic. Currently error will almost always be about mapping over null, given a blank return
             setError(err.message);
             setNodeIds([]); // Clear previous results on error
         }

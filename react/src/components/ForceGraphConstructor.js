@@ -108,12 +108,14 @@ function ForceGraphConstructor({
         .enter().append("g")
         .call(drag(simulation));
 
-    // returns a selection of circles, newly append to each g in node
+    // Returns a selection of circles, newly append to each g in node
     node.append("circle")
         .attr("r", 5);
 
+    // Enable movement of node containers
     node.attr("transform",function(d) { return "translate("+[d.x,d.y]+")"; });
 
+    // Append text
     node.append("text")
         .text(({ index: i }) => LB[i])
             .style("font-size", fontSize)
@@ -124,6 +126,31 @@ function ForceGraphConstructor({
 
 
     node.append("title").text(({index: i}) => T[i])
+
+    // Create legend
+    const legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", `translate(${-((width/2)-20)}, ${-((height/2)-20)})`);
+
+    const legendItem = legend.selectAll(".legend-item")
+    .data([...new Set(nodeGroups)])
+    .enter()
+    .append("g")
+    .attr("class", "legend-item")
+    .attr("transform", (d, i) => `translate(0, ${i * 20})`); // Space items vertically
+
+    legendItem.append("rect")
+        .attr("x", 0)
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", color); // Use the color scale for fill
+
+    legendItem.append("text")
+        .attr("x", 25)
+        .attr("y", 9)
+        .attr("dy", ".35em")
+        .text(d => d); // Text corresponds to the group names
+
 
     if (W) link.attr("stroke-width", ({index: i}) => W[i]);
     if (L) link.attr("stroke", ({index: i}) => L[i]);

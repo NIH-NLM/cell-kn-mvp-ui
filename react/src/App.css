@@ -364,7 +364,6 @@ option {
     border: 2px solid var(--color-dark);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
-    padding: 20px;
     background-color: #ffffff;
     margin: 20px;
 }
