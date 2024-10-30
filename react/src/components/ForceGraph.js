@@ -28,7 +28,9 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
             //TODO: Review width/height
             const svg = ForceGraphConstructor(graphData, {
                 nodeGroup: d => nodeIds.includes(d._id)? "Selected" : d._id.split('/')[0],
-                nodeTitle: d => d.label? d.label : d._id,
+                nodeTitle: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
+                nodeLabel: d => d.label? d.label : d._id,
+                nodeStrength: -100,
                 width: "1280",
                 height: "640",
             });
@@ -65,7 +67,7 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
   return (
       <div>
           <div className="depth-picker">
-            <label htmlFor="depth-select">Select Depth:</label>
+            <label htmlFor="depth-select">Select depth of edges from CL vertices:</label>
             <select id="depth-select" value={depth} onChange={handleDepthChange}>
               {[0, 1, 2, 3, 4].map((value) => (
                 <option key={value} value={value}>

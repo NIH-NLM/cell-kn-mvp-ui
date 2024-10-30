@@ -10,7 +10,9 @@ function ForceGraphConstructor({
                         nodeId = d => d._id, // given d in nodes, returns a unique identifier (string)
                         nodeGroup, // given d in nodes, returns an (ordinal) value for color
                         nodeGroups, // an array of ordinal values representing the node groups
+                        nodeLabel, // given d in nodes, a label string
                         nodeTitle, // given d in nodes, a title string
+                        fontSize = "2px",
                         nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
                         nodeStroke = "#fff", // node stroke color
                         nodeStrokeWidth = 1.5, // node stroke width, in pixels
@@ -24,6 +26,7 @@ function ForceGraphConstructor({
                         linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
                         linkStrokeLinecap = "round", // link stroke linecap
                         linkStrength,
+                        initialScale = 3, // initial zoom level
                         colors = d3.schemeTableau10, // an array of color strings, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
@@ -36,6 +39,7 @@ function ForceGraphConstructor({
     const LT = d3.map(links, linkTarget).map(intern);
     if (nodeTitle === undefined) nodeTitle = (_, i) => N[i];
     const T = nodeTitle == null ? null : d3.map(nodes, nodeTitle);
+    const LB = nodeLabel == null ? null : d3.map(nodes, nodeLabel);
     const G = nodeGroup == null ? null : d3.map(nodes, nodeGroup).map(intern);
     const W = typeof linkStrokeWidth !== "function" ? null : d3.map(links, linkStrokeWidth);
     const L = typeof linkStroke !== "function" ? null : d3.map(links, linkStroke);
@@ -44,7 +48,6 @@ function ForceGraphConstructor({
     // Replace the input nodes and links with mutable objects for the simulation.
     nodes = d3.map(nodes, (_, i) => ({id: N[i]}));
     links = d3.map(links, (_, i) => ({source: LS[i], target: LT[i]}));
-
 
     // Compute default domains.
     if (G && nodeGroups === undefined) nodeGroups = d3.sort(G);
@@ -79,6 +82,11 @@ function ForceGraphConstructor({
     });
 
     svg.call(zoomHandler);
+    const initialTranslateX = 100;
+    const initialTranslateY = 100;
+
+    // Update starting zoom state
+    svg.call(zoomHandler.transform, d3.zoomIdentity.translate(initialTranslateX, initialTranslateY).scale(initialScale));
 
     const link = g.append("g")
         .attr("stroke", typeof linkStroke !== "function" ? linkStroke : null)
@@ -94,21 +102,32 @@ function ForceGraphConstructor({
         .attr("y2", d => d.target.y)
 
     const node = g.append("g")
-        .attr("fill", nodeFill)
-        .attr("stroke", nodeStroke)
-        .attr("stroke-opacity", nodeStrokeOpacity)
-        .attr("stroke-width", nodeStrokeWidth)
+        .attr("class", "nodes")
         .selectAll("circle")
         .data(nodes)
-        .join("circle")
-        .attr("r", nodeRadius)
+        .enter().append("g")
         .call(drag(simulation));
 
+    // returns a selection of circles, newly append to each g in node
+    node.append("circle")
+        .attr("r", 5);
+
+    node.attr("transform",function(d) { return "translate("+[d.x,d.y]+")"; });
+
+    node.append("text")
+        .text(({ index: i }) => LB[i])
+            .style("font-size", fontSize)
+            .style("fill", "black")
+            .attr("text-anchor", "middle")
+            .attr("y", 7.5)
+        .call(wrap, 25);
+
+
+    node.append("title").text(({index: i}) => T[i])
 
     if (W) link.attr("stroke-width", ({index: i}) => W[i]);
     if (L) link.attr("stroke", ({index: i}) => L[i]);
     if (G) node.attr("fill", ({index: i}) => color(G[i]));
-    if (T) node.append("title").text(({index: i}) => T[i])
     if (R) node.attr("r", ({index: i}) => R[i]);
     if (invalidation != null) invalidation.then(() => simulation.stop());
 
@@ -124,8 +143,7 @@ function ForceGraphConstructor({
             .attr("y2", d => d.target.y);
 
         node
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y);
+            .attr("transform",function(d) { return "translate("+[d.x,d.y]+")"; });
     }
 
     function drag(simulation) {
@@ -151,6 +169,34 @@ function ForceGraphConstructor({
             .on("drag", dragged)
             .on("end", dragended);
     }
+
+    function wrap(text, maxChars) {
+          text.each(function() {
+              let text = d3.select(this),
+                  words = text.text().split(/\s+/).reverse(),
+                  word,
+                  line = [],
+                  lineNumber = 0,
+                  lineHeight = 1.1, // ems
+                  y = text.attr("y"),
+                  dy = parseFloat(text.attr("dy")),
+                  tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+
+              let i = 0
+              while (word = words.pop()) {
+              line.push(word);
+              tspan.text(line.join(" "));
+              if (tspan.text().length > maxChars && i > 0) {
+                  lineNumber++
+                  line.pop();
+                  tspan.text(line.join(" "));
+                  line = [word];
+                  tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", lineHeight * lineNumber + "em").text(word);
+              }
+              i++
+            }
+          });
+        }
 
     return Object.assign(svg.node(), {scales: {color}});
 }

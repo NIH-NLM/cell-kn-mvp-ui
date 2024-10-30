@@ -5,7 +5,7 @@ def create_predefined_queries(apps, schema_editor):
 
     queries = [
         {
-            'name': 'Search CL IN NCBITaxon AND UBERON',
+            'name': 'Search for CL vertices by finding text in NCBITaxon and UBERON vertices',
             'query': """
                 LET searchResults = (
                   FOR doc IN UBERON

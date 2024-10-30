@@ -77,13 +77,13 @@ const AQLQueryPage = () => {
                 </select>
                 <input
                     type="text"
-                    placeholder="Enter text in NCBITaxon label..."
+                    placeholder="Enter text to find in NCBITaxon vertices..."
                     value={ncbiTerm}
                     onChange={(e) => setNcbiTerm(e.target.value)}
                 />
                 <input
                     type="text"
-                    placeholder="Enter text in UBERON label..."
+                    placeholder="Enter text to find in UBERON vertices..."
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                 />
