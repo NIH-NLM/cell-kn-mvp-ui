@@ -13,7 +13,7 @@ const AQLQueryPage = () => {
     useEffect(() => {
         // Fetch predefined queries on component mount
         const fetchPredefinedQueries = async () => {
-            //TODO: Don't fetch full queries
+            // TODO: Don't fetch full queries?
             try {
                 const response = await fetch('/api/predefined-queries/');
                 if (!response.ok) {

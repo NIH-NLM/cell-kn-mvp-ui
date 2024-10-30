@@ -19,12 +19,8 @@ def create_predefined_queries(apps, schema_editor):
                       RETURN cl
                 )
 
-                LET ncbiTaxonId = (
-                  FOR taxon IN NCBITaxon
-                    FILTER CONTAINS(LOWER(taxon.label), LOWER(@ncbiTerm))
-                    LIMIT 1
-                    RETURN taxon._id
-                )
+                LET ncbiTaxonId = ( FOR taxon IN NCBITaxon FILTER CONTAINS(LOWER(taxon.label), LOWER(@ncbiTerm)) OR 
+                CONTAINS(LOWER(taxon.term), LOWER(@ncbiTerm)) LIMIT 1 RETURN taxon._id ) 
 
                 LET filteredCLs = (
                   FOR cl IN clList
