@@ -5,11 +5,11 @@ def create_predefined_queries(apps, schema_editor):
 
     queries = [
         {
-            'name': 'Filter NCBITaxon with UBERON',
+            'name': 'Search CL IN NCBITaxon AND UBERON',
             'query': """
                 LET searchResults = (
                   FOR doc IN UBERON
-                    FILTER CONTAINS(doc.label, @term)
+                    FILTER CONTAINS(LOWER(doc.label), LOWER(@term)) OR CONTAINS(LOWER(doc.definition), LOWER(@term))
                     RETURN doc
                 )
 
@@ -21,7 +21,7 @@ def create_predefined_queries(apps, schema_editor):
 
                 LET ncbiTaxonId = (
                   FOR taxon IN NCBITaxon
-                    FILTER CONTAINS(taxon.label, @ncbiTerm)
+                    FILTER CONTAINS(LOWER(taxon.label), LOWER(@ncbiTerm))
                     LIMIT 1
                     RETURN taxon._id
                 )

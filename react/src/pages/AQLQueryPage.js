@@ -46,8 +46,8 @@ const AQLQueryPage = () => {
                 },
                 body: JSON.stringify({
                     query: queryTemplate
-                        .replace('@term', `"${term}"`)
-                        .replace('@ncbiTerm', `"${ncbiTerm}"`)
+                        .replace(/@term/g, `"${term}"`)
+                        .replace(/@ncbiTerm/g, `"${ncbiTerm}"`)
                 }),
             });
 
@@ -77,17 +77,17 @@ const AQLQueryPage = () => {
                 </select>
                 <input
                     type="text"
-                    placeholder="Enter term for NCBITaxon..."
+                    placeholder="Enter text in NCBITaxon label..."
                     value={ncbiTerm}
                     onChange={(e) => setNcbiTerm(e.target.value)}
                 />
                 <input
                     type="text"
-                    placeholder="Enter term for UBERON..."
+                    placeholder="Enter text in UBERON label..."
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                 />
-                <button onClick={executeQuery}>Execute Query</button>
+                <button onClick={executeQuery}>Search for Cells</button>
             </div>
             {error && <div className="error-message">{error}</div>}
             <div className="graph-container">

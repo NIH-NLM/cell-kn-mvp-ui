@@ -9,16 +9,25 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
     const [graphName, setGraphName] = useState("CL");
 
     useEffect(() => {
+        // Ensure graph only renders once at a time
+        let isMounted = true;
         getGraph(nodeIds, depth, graphName).then(data => {
-            setGraphData(data);
-        })
-    }, [nodeIds, depth])
+            if (isMounted) {
+                setGraphData(data);
+            }
+        });
+
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, [nodeIds, depth, graphName]);
 
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
             //TODO: Review width/height
             const svg = ForceGraphConstructor(graphData, {
-                nodeGroup: d => d._id.split('/')[0],
+                nodeGroup: d => nodeIds.includes(d._id)? "Selected" : d._id.split('/')[0],
                 nodeTitle: d => d.label? d.label : d._id,
                 width: "1280",
                 height: "640",
@@ -30,7 +39,6 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
     }, [graphData]);
 
     let getGraph = async (nodeIds, depth, graphName) => {
-        console.log(depth)
         let response = await fetch('/arango_api/graph/', {
             method: 'POST',
             headers: {

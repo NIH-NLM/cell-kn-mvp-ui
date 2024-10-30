@@ -12,7 +12,6 @@ function ForceGraphConstructor({
                         nodeGroups, // an array of ordinal values representing the node groups
                         nodeTitle, // given d in nodes, a title string
                         nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
-                        labelFill = "#fff",
                         nodeStroke = "#fff", // node stroke color
                         nodeStrokeWidth = 1.5, // node stroke width, in pixels
                         nodeStrokeOpacity = 1, // node stroke opacity
