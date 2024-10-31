@@ -32,8 +32,8 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
                 nodeTitle: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
                 label: d => d.label? d.label : d._id,
                 nodeStrength: -100,
-                width: "1280",
-                height: "640",
+                width: "2560",
+                height: "1280",
             });
             const chartContainer = d3.select('#chart-container');
             chartContainer.selectAll("*").remove();

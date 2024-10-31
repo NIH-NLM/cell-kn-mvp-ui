@@ -26,7 +26,7 @@ function ForceGraphConstructor({
                         linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
                         linkStrokeLinecap = "round", // link stroke linecap
                         linkStrength,
-                        initialScale = 3, // initial zoom level
+                        initialScale = 6, // initial zoom level
                         colors = d3.schemeTableau10, // an array of color strings, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
@@ -252,8 +252,8 @@ function ForceGraphConstructor({
                   lineNumber = 0,
                   lineHeight = 1.1, // ems
                   y = text.attr("y"),
-                  dy = parseFloat(text.attr("dy")),
-                  tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+                  // dy = parseFloat(text.attr("dy")),
+                  tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", ".35em");
 
               let i = 0
               while (word = words.pop()) {
