@@ -30,7 +30,7 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
             const svg = ForceGraphConstructor(graphData, {
                 nodeGroup: d => nodeIds.includes(d._id)? focusedGroupName : d._id.split('/')[0],
                 nodeTitle: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
-                nodeLabel: d => d.label? d.label : d._id,
+                label: d => d.label? d.label : d._id,
                 nodeStrength: -100,
                 width: "1280",
                 height: "640",

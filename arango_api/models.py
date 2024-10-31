@@ -30,6 +30,7 @@ class DBEntry:
     @staticmethod
     def get_graph(node_ids, depth, graph_name):
 
+        # TODO: Make ANY/INBOUND/OUTBOUND param that is adjustable
         query = """
             LET temp = (
                 FOR node_id IN @node_ids
