@@ -2,9 +2,14 @@ from django.http import JsonResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
 from arango_api.models import DBEntry
 
+@api_view(['GET'])
+def list_collection_names(request):
+    objects = DBEntry.get_document_collections()
+    collection_names = [collection['name'] for collection in objects]
+    return JsonResponse(collection_names, safe=False)
 
-@api_view(['GET', 'POST'])
-def list_collection(request, coll):
+@api_view(['GET'])
+def list_by_collection(request, coll):
     objects = DBEntry.get_all_by_collection(coll)
     return JsonResponse(list(objects), safe=False)
 
@@ -38,7 +43,9 @@ def get_graph(request):
     node_ids = request.data.get('node_ids')
     depth = request.data.get('depth')
     graph_name = request.data.get('graph_name')
-    search_results = DBEntry.get_graph(node_ids, depth, graph_name)
+    edge_direction = request.data.get('edge_direction')
+    collections_to_prune = request.data.get('collections_to_prune')
+    search_results = DBEntry.get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune)
     return JsonResponse(search_results, safe=False)
 
 

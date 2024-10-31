@@ -368,6 +368,70 @@ option {
     margin: 20px;
 }
 
-.depth-picker{
+/*Graph Options*/
+
+.graph-options {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
     margin: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.depth-picker, .edge-direction-picker, .collection-picker {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.graph-options label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.graph-options select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 300px; /* Adjust width as needed */
+}
+
+.collection-picker label {
+    margin-right: 10px; /* Space between checkboxes */
+}
+
+.checkboxes-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-container input {
+    margin-right: 10px;
+}
+
+.checkbox-container label {
+    font-weight: normal;
+}
+
+@media (max-width: 600px) {
+    .graph-options {
+        padding: 15px;
+    }
+
+    select {
+        max-width: 100%; /* Full width on smaller screens */
+    }
 }

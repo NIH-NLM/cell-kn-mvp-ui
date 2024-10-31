@@ -9,7 +9,7 @@ class DBEntry:
     def get_document_collections():
         # Filter for document collections
         all_collections = db.collections()
-        collections = [collection for collection in all_collections if collection['type'] == "document"]
+        collections = [collection for collection in all_collections if collection['type'] == "document" and not collection['name'].startswith("_")]
         return collections
 
     @staticmethod
@@ -28,25 +28,29 @@ class DBEntry:
         return db.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
     @staticmethod
-    def get_graph(node_ids, depth, graph_name):
+    def get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune):
 
-        # TODO: Make ANY/INBOUND/OUTBOUND param that is adjustable
-        query = """
+        query = f"""
             LET temp = (
                 FOR node_id IN @node_ids
-                    FOR v, e, p IN 0..@depth ANY node_id GRAPH @graph_name
-                    RETURN {node: v, link: e}
+                    FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+                        PRUNE CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                        FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                        RETURN {{node: v, link: e}}
                 )
 
             LET uniqueNodes = UNIQUE(temp[*].node)
 
-            RETURN {
+            RETURN {{
                 nodes: uniqueNodes,
                 links: temp[*].link
-            }
+            }}
         """
 
-        bind_vars = {'node_ids': node_ids, 'graph_name': graph_name, 'depth': depth}
+        bind_vars = {'node_ids': node_ids,
+                     'graph_name': graph_name,
+                     'depth': depth,
+                     'collections_to_prune': collections_to_prune}
 
         # Execute the query
         try:
