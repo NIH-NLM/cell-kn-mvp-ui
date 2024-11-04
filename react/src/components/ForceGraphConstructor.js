@@ -12,7 +12,7 @@ function ForceGraphConstructor({
                         nodeGroups, // an array of ordinal values representing the node groups
                         label, // given d in nodes, a label string
                         nodeTitle, // given d in nodes, a title string
-                        fontSize = "2px",
+                        fontSize = "4px",
                         nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
                         nodeStroke = "#fff", // node stroke color
                         nodeStrokeWidth = 1.5, // node stroke width, in pixels
@@ -178,7 +178,7 @@ function ForceGraphConstructor({
     legendItem.append("text")
         .attr("x", 25)
         .attr("y", 9)
-        .attr("dy", ".35em")
+        .attr("dy", ".5em")
         .text(d => d); // Text corresponds to the group names
 
 
