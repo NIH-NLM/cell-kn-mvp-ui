@@ -19,6 +19,8 @@ function ForceGraphConstructor({
                         nodeStrokeOpacity = 1, // node stroke opacity
                         nodeRadius = 5, // node radius, in pixels
                         nodeStrength,
+                        onNodeClick,
+                        interactionCallback,
                         linkSource = ({_from}) => _from, // given d in links, returns a node identifier string
                         linkTarget = ({_to}) => _to, // given d in links, returns a node identifier string
                         linkStroke = "#999", // link stroke color
@@ -80,7 +82,7 @@ function ForceGraphConstructor({
 
     const zoomHandler = d3.zoom().on("zoom", function (event) {
         g.attr("transform", event.transform);
-    });
+    }).on('start', interactionCallback);
 
     svg.call(zoomHandler);
     const initialTranslateX = 100;
@@ -143,7 +145,11 @@ function ForceGraphConstructor({
 
     // Returns a selection of circles, newly append to each g in node
     node.append("circle")
-        .attr("r", 5);
+        .attr("r", 5)
+        .on("contextmenu", function(event, d) {
+        event.preventDefault();
+        onNodeClick(event, d);
+      });
 
     // Append text
     node.append("text")
@@ -224,6 +230,7 @@ function ForceGraphConstructor({
             if (!event.active) simulation.alphaTarget(0.3).restart();
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
+            interactionCallback();
         }
 
         function dragged(event) {
