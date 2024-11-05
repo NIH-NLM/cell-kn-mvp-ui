@@ -6,9 +6,6 @@ import {
 
 import './App.css';
 import Header from './components/Header'
-import NotesListPage from './pages/NotesListPage'
-import NotePage from './pages/NotePage'
-import ArangoDBPage from './pages/ArangoDBPage'
 import CLList from "./pages/CLList";
 import CellPage from "./pages/CellPage";
 
