@@ -5,12 +5,9 @@ const Header = () => {
 
     return (
         <div className="app-header">
-            <Link to="/CL"><h1>CL</h1></Link>
-            <Link to="/GO"><h1>GO</h1></Link>
-            <Link to="/NCBITaxon"><h1>NCBITaxon</h1></Link>
-            <Link to="/PATO"><h1>PATO</h1></Link>
-            <Link to="/PR"><h1>PR</h1></Link>
-            <Link to="/UBERON"><h1>UBERON</h1></Link>
+            <Link to="/"><h3>Search</h3></Link>
+            <Link to="/aql"><h3>Query</h3></Link>
+            <Link to="/browse"><h3>Browse</h3></Link>
         </div>
     )
 }

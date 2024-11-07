@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import ListCells from "../components/ListCells";
+import BrowseBox from "../components/BrowseBox";
 
 
 const CLList = ({ match, history }) => {
@@ -14,7 +15,7 @@ const CLList = ({ match, history }) => {
 
     let getClList = async () => {
 
-        let response = await fetch(`/arango_api/${collection}/`)
+        let response = await fetch(`/arango_api/collection/${collection}/`)
         let data = await response.json()
         sortClList(data)
     }
@@ -28,14 +29,17 @@ const CLList = ({ match, history }) => {
     }
 
     return (
-        <div className="cl">
-            <div className="cl-header">
-                <p className="cl-count">{clList.length} results</p>
-            </div>
-            <div className="cl-list">
-                {clList.map((cell, index) => (
-                    <ListCells key={index} cell={cell} />
-                ))}
+        <div>
+            <BrowseBox />
+            <div className="cl">
+                <div className="cl-header">
+                    <p className="cl-count">{clList.length} results</p>
+                </div>
+                <div className="cl-list">
+                    {clList.map((cell, index) => (
+                        <ListCells key={index} cell={cell} />
+                    ))}
+                </div>
             </div>
         </div>
     )

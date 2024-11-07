@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import CellCard from "../components/CellCard";
-import EdgeCard from "../components/EdgeCard";
+import ForceGraph from "../components/ForceGraph";
 
 const CellPage = ({ match, history }) => {
 
@@ -37,7 +37,7 @@ const CellPage = ({ match, history }) => {
     }, [cellId, collection])
 
     let getCell = async () => {
-        let response = await fetch(`/arango_api/${collection}/${cellId}/`)
+        let response = await fetch(`/arango_api/collection/${collection}/${cellId}/`)
         return response.json()
     }
 
@@ -46,31 +46,28 @@ const CellPage = ({ match, history }) => {
         return response.json()
     }
 
-    return (
-        <div className="cell-card" >
-            {cell?
-                <CellCard cell={cell} /> : <div>Cell not found</div>
-            }
-            <div className="link-tables">
-                <fieldset>
-                    <legend>Outbound edges</legend>
-                    <table className="edges-table">
-                        <tbody>
-                            <EdgeCard edges={outboundEdges} isFrom={true} />
-                        </tbody>
-                    </table>
-                </fieldset>
-                <fieldset>
-                    <legend>Inbound edges</legend>
-                    <table className="edges-table">
-                        <tbody>
-                            <EdgeCard edges={inboundEdges} isFrom={false} />
-                        </tbody>
-                    </table>
-                </fieldset>
+    //TODO: Move to isolated helper functions?
+    function capitalCase(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    if (cell){
+        return (
+            <div className="cell-card" >
+                <div className="cell-item-header">
+                    <h1>{capitalCase(cell.label? cell.label : cell._id)}</h1>
+                    <span>{cell.term}</span>
+                </div>
+                <div className="cell-item-container">
+                    <CellCard cell={cell} />
+                    <ForceGraph nodeIds={[cell._id]}/>
+                </div>
             </div>
-        </div>
-    )
+        )
+    } else {
+        // TODO: Handle error
+        return <div>Error</div>
+    }
 }
 
 export default CellPage

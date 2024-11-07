@@ -31,7 +31,6 @@
   box-sizing: border-box;
   font-family: 'Lexend', sans-serif;
   color: inherit;
-  font-size: inherit;
   scroll-behavior: smooth;
 }
 
@@ -47,7 +46,18 @@ a {
 }
 
 /* APP STYLES */
+.site-container {
+  height: 100vh;
+  width: 100vw;
+}
 
+.site-container, .app {
+  background-color: var(--color-bg);
+}
+
+.app {
+  padding: 5rem;
+}
 
 .container {
   width: 100%;
@@ -57,23 +67,11 @@ a {
   align-items: center;
 }
 
-
-.app {
-  width: 100%;
-  height: 100%;
-  margin: 0 auto;
-  background-color: var(--color-bg);
-  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.05);
-  position: relative;
-  padding: 3rem;
-}
-
-
 .app-header {
   display: flex;
   align-items: center;
   padding: 16px;
-  justify-content: space-between;
+  justify-content: space-around;
   background-color: var(--color-main);
   box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -155,22 +153,23 @@ a {
 
 /*table formatting*/
 table {
-    width: 100%;
-    border-collapse: collapse;
-    text-indent: initial;
-    border-spacing: 2px;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-indent: initial;
+  border-spacing: 2px;
 }
 
 tbody {
-    display: table-row-group;
-    vertical-align: middle;
-    unicode-bidi: isolate;
-    border-color: inherit;
+  display: table-row-group;
+  vertical-align: middle;
+  unicode-bidi: isolate;
+  border-color: inherit;
 }
 
 fieldset {
   border: 1px solid #c0c0c0;
-  margin: 0 2px;
+  margin: 1rem 2px;
   padding: 0.35em 0.625em 0.75em;
 }
 
@@ -187,18 +186,36 @@ tr {
 }
 
 /*CellPage*/
-.cell-card{
-  display:flex;
+.cell-card {
+  display: flex;
   justify-content: space-evenly;
-  word-break: break-word;
+  flex-direction: column;
 }
 
-.cl-count{
+.cell-item-header {
+  display: flex;
+  flex-direction: row;
+}
+
+.cell-item-header * {
+  padding: 0 2rem 1rem 0;
+}
+
+.cl {
+  margin-top: 2rem;
+}
+
+.cl-count {
   font-style: italic;
 }
 
-.cell-item-list{
-  max-width: 40%;
+.cell-item-container{
+  text-wrap: balance;
+  word-wrap: break-word;
+}
+
+.cell-edges-container{
+  display: flex;
 }
 
 .link-tables{
@@ -219,4 +236,207 @@ tr:nth-of-type(even) {
 
 tr:nth-of-type(odd) {
   background-color: var(--color-light);
+}
+
+/*Browse Box*/
+.browse-box{
+  background-color: var(--color-gray);
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  text-align: center;
+  border-radius: 5px;
+}
+
+.browse-box a{
+  padding: 2rem;
+}
+
+/*Search Bar*/
+.search-container{
+  margin-top: 14rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-bar-container, .search-results-container{
+  display: flex;
+  justify-content: center;
+}
+
+.search-bar input{
+  line-height: 1.8rem;
+  font-size: 1.1rem;
+}
+
+.search-bar input, .search-results-list{
+  width: 20rem;
+}
+
+.search-results-container{
+    max-height: 50vh;
+    overflow: visible;
+}
+
+.search-results-container div{
+  box-shadow: 2px 10px 20px 0px;
+  background: var(--color-white);
+  border-radius: 5px;
+  margin-top: .5rem;
+  margin-bottom: 4rem;
+  overflow: auto;
+}
+
+.search-results-list{
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    box-shadow: 5px 10px var(--color-dark);
+}
+
+/*Hover color changes*/
+
+.app-header a:hover, .cl-list a:hover {
+  color: var(--color-gray)
+}
+
+.browse-box a:hover {
+  background: var(--color-light)
+}
+
+.td-link:hover {
+  background: var(--color-gray)
+}
+
+.search-results-list a:hover{
+  background: var(--color-light)
+}
+
+/*Query Box*/
+.aql-query-input {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: var(--color-lighter);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.aql-query-input select, .aql-query-input input[type="text"], .aql-query-input button {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+select:focus, input[type="text"]:focus {
+    border-color: var(--color-main);
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    outline: none;
+}
+
+button {
+    background-color: var(--color-main);
+    color: var(--color-text);
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    color: var(--color-gray);
+}
+
+option {
+    padding: 10px;
+}
+
+/*Graph*/
+#chart-container {
+    border: 2px solid var(--color-dark);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    background-color: #ffffff;
+    margin: 20px;
+}
+
+/*Graph Options*/
+
+.graph-options {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+    background-color: var(--color-lighter);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.toggle-button {
+    margin: 20px;
+    background-color: var(--color-bg);
+}
+
+.depth-picker, .edge-direction-picker, .collection-picker {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.graph-options label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.graph-options select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 300px; /* Adjust width as needed */
+}
+
+.collection-picker label {
+    margin-right: 10px; /* Space between checkboxes */
+}
+
+.checkboxes-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-container input {
+    margin-right: 10px;
+}
+
+.checkbox-container label {
+    font-weight: normal;
+}
+
+@media (max-width: 600px) {
+    .graph-options {
+        padding: 15px;
+    }
+
+    select {
+        max-width: 100%; /* Full width on smaller screens */
+    }
 }
