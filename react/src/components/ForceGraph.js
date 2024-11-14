@@ -1,7 +1,6 @@
 import {useEffect, useState, useRef} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
-import {Link} from "react-router-dom";
 
 const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2}) => {
 
@@ -17,6 +16,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     const [clickedNodeId, setClickedNodeId] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+    const [graph, setGraph] = useState(null);
 
     useEffect(() => {
 
@@ -29,16 +29,17 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         };
     }, []);
 
+    // Reset expanding and pruning when creating a new graph
     useEffect(() => {
-        // Reset expanding and pruning on new search
         setNodesToPrune([])
         setGraphNodeIds(selectedNodeIds);
     }, [selectedNodeIds]);
 
+    // Fetch new graph data on change
     useEffect(() => {
         // Ensure graph only renders once at a time
         let isMounted = true;
-        getGraph(graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune).then(data => {
+        getGraphData(graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune).then(data => {
             if (isMounted) {
                 setGraphData(data);
             }
@@ -50,13 +51,15 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         };
     }, [selectedNodeIds, graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune]);
 
+    // Update graph if data changes
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
             //TODO: Review width/height
             let focusedGroupName = selectedNodeIds.length > 1 ? "Vertices in Results" : "Current Vertex";
-            const svg = ForceGraphConstructor(graphData, {
+            const g = ForceGraphConstructor(graphData, {
                 nodeGroup: d => selectedNodeIds.includes(d._id)? focusedGroupName : d._id.split('/')[0],
-                nodeTitle: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
+                nodeGroups: [focusedGroupName].concat(collections),
+                nodeHover: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
                 label: d => d.label? d.label : d._id,
                 onNodeClick: handleNodeClick,
                 interactionCallback: closePopupOnInteraction,
@@ -64,13 +67,20 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                 width: "2560",
                 height: "1280",
             });
-            const chartContainer = d3.select('#chart-container');
-            chartContainer.selectAll("*").remove();
-            chartContainer.append(() => svg);
+            setGraph(g)
         }
     }, [graphData]);
 
-    let getGraph = async (nodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune) => {
+    // Remove and rerender graph on any changes
+    useEffect(() => {
+        if (graph){
+            const chartContainer = d3.select('#chart-container');
+            chartContainer.selectAll("*").remove();
+            chartContainer.append(() => graph);
+        }
+    }, [graph])
+
+    let getGraphData = async (nodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune) => {
         let response = await fetch('/arango_api/graph/', {
             method: 'POST',
             headers: {
@@ -102,6 +112,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         return response.json();
     };
 
+    // Handle right click on node
     const handleNodeClick = (e, nodeData) => {
         setClickedNodeId(nodeData.id);
 
@@ -118,30 +129,50 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         setPopupVisible(true);
     };
 
+    // Handle closing the node popup
     const handlePopupClose = () => {
         setPopupVisible(false);
     };
 
+    // Handle expanding the graph from a specific node
     const handleExpand = () => {
-        setGraphNodeIds(graphNodeIds => [...graphNodeIds, clickedNodeId]);
+        // Fetch graph data for new node
+        getGraphData([clickedNodeId],
+            1,
+            graphName,
+            'ANY',
+            [],
+            [])
+            .then( data => {
+                console.log(data)
+                graph.updateGraph({
+                    newNodes: data["nodes"],
+                    newLinks: data["links"]
+                });
+            });
     };
 
+    // Handle collapsing part of the graph based on a specific node
     const handleCollapse = () => {
         setNodesToPrune(nodesToPrune => [...nodesToPrune, clickedNodeId]);
     };
 
+    // Handle closing node popup when panning or zooming the graph
     const closePopupOnInteraction = () => {
       setPopupVisible(false);
     };
 
+    // Handle changing the search depth of the graph
     const handleDepthChange = (event) => {
         setDepth(Number(event.target.value));
     };
 
+    // Handle changing the search direction of edges
     const handleEdgeDirectionChange = (event) => {
         setEdgeDirection(event.target.value);
     };
 
+    // Handle changing the checkboxes for collections
     const handleCheckboxChange = (collectionName) => {
         setCollectionsToPrune((prev) =>
             prev.includes(collectionName)
@@ -150,6 +181,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         );
     };
 
+    // Handle toggling options
     const toggleOptionsVisibility = () => {
         setOptionsVisible(!optionsVisible);
     };
@@ -214,7 +246,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                 >
                   Go To Page
               </a>
-              <button className="popup-button" onClick={handleExpand}>Set Additional Start Node</button>
+              <button className="popup-button" onClick={handleExpand}>Expand</button>
               <button className="popup-button" onClick={handleCollapse}>Collapse</button>
               <button className="x-button" onClick={handlePopupClose}>X</button>
           </div>
