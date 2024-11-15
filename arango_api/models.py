@@ -28,14 +28,16 @@ class DBEntry:
         return db.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
     @staticmethod
-    def get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune):
+    def get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune):
 
         query = f"""
             LET temp = (
                 FOR node_id IN @node_ids
                     FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-                        PRUNE CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                        PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
+                            CONTAINS_ARRAY(@nodes_to_prune, v._id))
                         FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                        FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
                         RETURN {{node: v, link: e}}
                 )
 
@@ -50,7 +52,8 @@ class DBEntry:
         bind_vars = {'node_ids': node_ids,
                      'graph_name': graph_name,
                      'depth': depth,
-                     'collections_to_prune': collections_to_prune}
+                     'collections_to_prune': collections_to_prune,
+                     'nodes_to_prune': nodes_to_prune}
 
         # Execute the query
         try:
