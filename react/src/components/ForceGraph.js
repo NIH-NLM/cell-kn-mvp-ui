@@ -154,7 +154,9 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
 
     // Handle collapsing part of the graph based on a specific node
     const handleCollapse = () => {
-        setNodesToPrune(nodesToPrune => [...nodesToPrune, clickedNodeId]);
+            graph.updateGraph({
+                removeNodes: [clickedNodeId],
+            });
     };
 
     // Handle closing node popup when panning or zooming the graph

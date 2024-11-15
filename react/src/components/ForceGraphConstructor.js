@@ -152,7 +152,7 @@ function ForceGraphConstructor({
 
     function drag(simulation) {
         function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
+            if (!event.active) simulation.alphaTarget(.01).restart();
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
             interactionCallback();
@@ -164,7 +164,7 @@ function ForceGraphConstructor({
         }
 
         function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
+            if (!event.active) simulation.alphaTarget(0).restart();
             event.subject.fx = null;
             event.subject.fy = null;
         }
@@ -303,22 +303,29 @@ function ForceGraphConstructor({
                 .call(wrap, 25);
         }
 
-        // Remove nodes and links
+        // Remove nodes
         if (removeNodes.length > 0) {
             nodes = nodes.filter(node => !removeNodes.includes(node.id));
             simulation.nodes(nodes);
 
-            g.select("nodes")
+            nodeContainer
                 .selectAll("g")
                 .filter(d => removeNodes.includes(d.id))
                 .remove();
+
+            // Collect every edge connected to these nodes
+            let nodeLinks = links
+                .filter(edge => removeNodes.includes(edge.source.id) || removeNodes.includes(edge.target.id));
+            removeLinks.push(...nodeLinks)
         }
 
+        // Remove links
         if (removeLinks.length > 0) {
-            links = links.filter(link => !removeLinks.includes(link.source.id + '-' + link.target.id));
+            // TODO: Handle finding nodes based on removeLinks input, in cases where only removeLinks are added
+            links = links.filter(link => !removeLinks.includes(link));
             forceLink.links(links);
 
-            g.select("link-container")
+            linkContainer
                 .selectAll("g")
                 .filter(d => removeLinks.some(link => link.source.id + '-' + link.target.id === d.source.id + '-' + d.target.id))
                 .remove();
