@@ -40,7 +40,7 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
             let focusedGroupName = nodeIds.length > 1 ? "Vertices in Results" : "Current Vertex";
             const svg = ForceGraphConstructor(graphData, {
                 nodeGroup: d => nodeIds.includes(d._id)? focusedGroupName : d._id.split('/')[0],
-                nodeTitle: d => d.definition? `${d.term}\n\n${d.definition}` : `${d.term}`,
+                nodeTitle: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
                 label: d => d.label? d.label : d._id,
                 nodeStrength: -100,
                 width: "2560",
