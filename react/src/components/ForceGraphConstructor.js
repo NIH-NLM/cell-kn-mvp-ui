@@ -19,7 +19,7 @@ function ForceGraphConstructor({
                         linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
                         linkStrokeLinecap = "round", // link stroke linecap
                         initialScale = 6, // initial zoom level
-                        colors = d3.schemeTableau10, // an array of color strings, for the node groups
+                        colors = [...d3.schemePaired, ...d3.schemeDark2], // an array of color schemes, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
                         invalidation // when this promise resolves, stop the simulation
@@ -33,7 +33,7 @@ function ForceGraphConstructor({
     let links = [] // All links
 
     // Construct forces and simulation
-    const forceNode = d3.forceManyBody();
+    const forceNode = d3.forceManyBody().strength(-100);
     const forceLink = d3.forceLink(links);
 
     const simulation = d3.forceSimulation()
@@ -147,12 +147,12 @@ function ForceGraphConstructor({
 
                     return `translate(${midX}, ${midY}) rotate(${angle})`;
                 }
-            );
+            )
     }
 
     function drag(simulation) {
         function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(.01).restart();
+            if (!event.active) simulation.alphaTarget(.2).restart();
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
             interactionCallback();
