@@ -12,6 +12,7 @@ const SearchPage = ({ match, history }) => {
         getSearchTerms(searchTerm).then(data => {
             data.sort(function (a, b) {
                 // Sort by labels if possible, else _id
+                // TODO: fix errors
                 return (a.label && b.label)
                     ? a.label.toLowerCase().localeCompare(b.label.toLowerCase())
                     : a._id.toLowerCase().localeCompare(b._id.toLowerCase());

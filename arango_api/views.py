@@ -45,7 +45,8 @@ def get_graph(request):
     graph_name = request.data.get('graph_name')
     edge_direction = request.data.get('edge_direction')
     collections_to_prune = request.data.get('collections_to_prune')
-    search_results = DBEntry.get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune)
+    nodes_to_prune = request.data.get('nodes_to_prune')
+    search_results = DBEntry.get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune)
     return JsonResponse(search_results, safe=False)
 
 
@@ -55,7 +56,6 @@ def get_all(request):
     return JsonResponse(search_results, safe=False)
 
 
-##TODO: Need to ensure raw AQL is never accepted from front end
 @api_view(['POST'])
 def run_aql_query(request):
     # Extract the AQL query from the request body

@@ -441,3 +441,31 @@ option {
         max-width: 100%; /* Full width on smaller screens */
     }
 }
+
+.node-popup {
+    backgroundColor: var(--color-bg);
+    box-shadow: 0 2px 10px black;
+    z-index: 1000;
+    position: absolute;
+    flex-direction: column;
+}
+
+.popup-button {
+    color: var(--color-text);
+    background-color: var(--color-light);
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0px;
+}
+
+.popup-button:hover {
+    color: var(--color-gray)
+}
+
+.x-button {
+    background-color: red;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    padding: 0px;
+}
