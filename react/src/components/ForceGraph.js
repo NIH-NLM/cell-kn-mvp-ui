@@ -6,7 +6,7 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
 
     const [depth, setDepth] = useState(defaultDepth);
     const [graphData, setGraphData] = useState({});
-    const [graphName, setGraphName] = useState("CL");
+    const [graphName, setGraphName] = useState("CL-Full");
     const [edgeDirection, setEdgeDirection] = useState("OUTBOUND");
     const [collections, setCollections] = useState([]);
     const [collectionsToPrune, setCollectionsToPrune] = useState([]);
@@ -15,7 +15,6 @@ const ForceGraph = ({ nodeIds: nodeIds, defaultDepth: defaultDepth = 2}) => {
     useEffect(() => {
 
         fetchCollections().then(data => {
-            console.log(data)
             setCollections(data)
         } );
     }, []);
