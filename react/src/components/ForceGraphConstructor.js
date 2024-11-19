@@ -9,16 +9,18 @@ function ForceGraphConstructor({
                         nodeGroups, // an array of ordinal values representing the node groups
                         label, // given d in nodes, a label string
                         nodeHover, // given d in nodes, a title string
-                        fontSize = "4px",
+                        nodeFontSize,
+                        linkFontSize,
                         onNodeClick,
                         interactionCallback,
+                        nodeRadius = 16,
                         linkSource = ({_from}) => _from, // given d in links, returns a node identifier string
                         linkTarget = ({_to}) => _to, // given d in links, returns a node identifier string
                         linkStroke = "#999", // link stroke color
                         linkStrokeOpacity = 0.6, // link stroke opacity
                         linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
                         linkStrokeLinecap = "round", // link stroke linecap
-                        initialScale = 6, // initial zoom level
+                        initialScale = 2, // initial zoom level
                         colors = [...d3.schemePaired, ...d3.schemeDark2], // an array of color schemes, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
@@ -33,7 +35,7 @@ function ForceGraphConstructor({
     let links = [] // All links
 
     // Construct forces and simulation
-    const forceNode = d3.forceManyBody().strength(-100);
+    const forceNode = d3.forceManyBody().strength(-2500);
     const forceLink = d3.forceLink(links);
 
     const simulation = d3.forceSimulation()
@@ -203,7 +205,32 @@ function ForceGraphConstructor({
           });
     }
 
-    function updateGraph({ newNodes = [], newLinks = [], removeNodes = [], removeLinks = [] }) {
+    // Update node font size
+    function updateNodeFontSize(newFontSize) {
+
+        // Update node font size
+        nodeFontSize = newFontSize
+        nodeContainer
+            .selectAll("text")
+            .style("font-size", newFontSize + "px")
+    }
+
+    // Update link font size
+    function updateLinkFontSize(newFontSize) {
+
+        // Update link font size
+        linkFontSize = newFontSize
+        linkContainer
+            .selectAll("text")
+            .style("font-size", newFontSize + "px")
+    }
+
+    function updateGraph({
+                             newNodes = [],
+                             newLinks = [],
+                             removeNodes = [],
+                             removeLinks = [],
+    }) {
 
         // Add new nodes and links to the simulation
         if (newNodes.length > 0) {
@@ -233,7 +260,7 @@ function ForceGraphConstructor({
 
             // Returns a selection of circles, newly append to each g in node
             node.append("circle")
-                .attr("r", 5)
+                .attr("r", nodeRadius)
                 .attr("fill", d => color(d.nodeGroup))
                 .on("contextmenu", function(event, d) {
                     event.preventDefault();
@@ -243,10 +270,10 @@ function ForceGraphConstructor({
             // Append text
             node.append("text")
                 .text(d => d.nodeLabel)
-                .style("font-size", fontSize)
+                .style("font-size", nodeFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
-                .attr("y", 7.5)
+                .attr("y", nodeRadius + nodeFontSize)
                 .call(wrap, 25);
 
 
@@ -296,7 +323,7 @@ function ForceGraphConstructor({
             // Append text to each line
             link.append("text")
                 .text(d => d.label)
-                .style("font-size", fontSize)
+                .style("font-size", linkFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
                 // .attr("y", 7.5)
@@ -338,7 +365,9 @@ function ForceGraphConstructor({
     // Return the SVG node and the updateGraph method to interact with the graph
     return Object.assign(svg.node(), {
         scales: { color },
-        updateGraph
+        updateGraph,
+        updateNodeFontSize,
+        updateLinkFontSize,
     });
 }
 

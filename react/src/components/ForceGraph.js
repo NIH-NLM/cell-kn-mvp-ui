@@ -16,6 +16,8 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     const [clickedNodeId, setClickedNodeId] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+    const [nodeFontSize, setNodeFontSize] = useState(12);
+    const [edgeFontSize, setEdgeFontSize] = useState(8);
     const [graph, setGraph] = useState(null);
 
     useEffect(() => {
@@ -57,8 +59,10 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
             //TODO: Review width/height
             let focusedGroupName = selectedNodeIds.length > 1 ? "Vertices in Results" : "Current Vertex";
             const g = ForceGraphConstructor(graphData, {
-                nodeGroup: d => selectedNodeIds.includes(d._id)? focusedGroupName : d._id.split('/')[0],
-                nodeGroups: [focusedGroupName].concat(collections),
+                nodeGroup: d => d._id.split('/')[0],
+                nodeGroups: collections,
+                nodeFontSize: nodeFontSize,
+                linkFontSize: edgeFontSize,
                 nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
                 label: d => d.label? d.label : d._id,
                 onNodeClick: handleNodeClick,
@@ -174,6 +178,18 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         setEdgeDirection(event.target.value);
     };
 
+    const handleNodeFontSizeChange = (event) => {
+        const newFontSize = parseInt(event.target.value, 10);
+        setNodeFontSize(newFontSize);
+        graph.updateNodeFontSize(newFontSize)
+    };
+
+    const handleEdgeFontSizeChange = (event) => {
+        const newFontSize = parseInt(event.target.value, 10);
+        setEdgeFontSize(newFontSize);
+        graph.updateLinkFontSize(newFontSize)
+    };
+
     // Handle changing the checkboxes for collections
     const handleCheckboxChange = (collectionName) => {
         setCollectionsToPrune((prev) =>
@@ -213,6 +229,28 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                           </option>
                       ))}
                   </select>
+              </div>
+              <div className="font-size-picker">
+                  <div className="node-font-size-picker">
+                      <label htmlFor="node-font-size-select">Select node font size:</label>
+                      <select id="node-font-size-select" value={nodeFontSize} onChange={handleNodeFontSizeChange}>
+                          {[8, 10, 12, 14, 16, 18, 20, 22, 24].map((size) => (
+                              <option key={size} value={size}>
+                                  {size}px
+                              </option>
+                          ))}
+                      </select>
+                  </div>
+                  <div className="edge-font-size-picker">
+                      <label htmlFor="edge-font-size-select">Select edge font size:</label>
+                      <select id="edge-font-size-select" value={edgeFontSize} onChange={handleEdgeFontSizeChange}>
+                          {[4, 6, 8, 10, 12, 14, 16, 18, 20].map((size) => (
+                              <option key={size} value={size}>
+                                  {size}px
+                              </option>
+                          ))}
+                      </select>
+                  </div>
               </div>
               <div className="collection-picker">
                   <label>Select collections to include in graph traversal:</label>
