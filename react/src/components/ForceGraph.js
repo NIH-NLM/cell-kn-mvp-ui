@@ -19,6 +19,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     const [nodeFontSize, setNodeFontSize] = useState(12);
     const [edgeFontSize, setEdgeFontSize] = useState(8);
     const [graph, setGraph] = useState(null);
+    const [isSimOn, setIsSimOn] = useState(true);
 
     useEffect(() => {
 
@@ -199,6 +200,11 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         );
     };
 
+    const handleToggle = () => {
+        graph.toggleSimulation(!isSimOn)
+        setIsSimOn(!isSimOn);
+    };
+
     // Handle toggling options
     const toggleOptionsVisibility = () => {
         setOptionsVisible(!optionsVisible);
@@ -267,6 +273,11 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                           </div>
                       ))}
                   </div>
+              </div>
+              <div className="simulation-toggle">
+                  <label >Toggle Simulation</label>
+                  <input type="checkbox" checked={isSimOn} onChange={handleToggle} />
+                  <span className="slider"></span>
               </div>
           </div>
           <div id="chart-container"></div>

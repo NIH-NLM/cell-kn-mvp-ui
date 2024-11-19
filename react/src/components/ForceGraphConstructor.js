@@ -24,6 +24,8 @@ function ForceGraphConstructor({
                         colors = [...d3.schemePaired, ...d3.schemeDark2], // an array of color schemes, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
+                        nodeForceStrength = -2500,
+                        centerForceStrength = 1,
                         invalidation // when this promise resolves, stop the simulation
                     } = {}) {
 
@@ -35,13 +37,14 @@ function ForceGraphConstructor({
     let links = [] // All links
 
     // Construct forces and simulation
-    const forceNode = d3.forceManyBody().strength(-2500);
+    const forceNode = d3.forceManyBody().strength(nodeForceStrength);
+    const forceCenter = d3.forceCenter().strength(centerForceStrength);
     const forceLink = d3.forceLink(links);
 
     const simulation = d3.forceSimulation()
         .force("link", forceLink)
         .force("charge", forceNode)
-        .force("center",  d3.forceCenter())
+        .force("center",  forceCenter)
         .on("tick", ticked);
 
     // Create main svg element
@@ -115,8 +118,6 @@ function ForceGraphConstructor({
 
     updateGraph({newNodes: nodeData, newLinks: linkData})
 
-    if (invalidation != null) invalidation.then(() => simulation.stop());
-
     function intern(value) {
         return value !== null && typeof value === "object" ? value.valueOf() : value;
     }
@@ -133,7 +134,6 @@ function ForceGraphConstructor({
             .attr("y2", d => d.target.y);
 
 
-        // Update node positions
         let node = nodeContainer.selectAll("g")
         node
             .attr("transform",function(d) { return "translate("+[d.x,d.y]+")"; });
@@ -223,6 +223,20 @@ function ForceGraphConstructor({
         linkContainer
             .selectAll("text")
             .style("font-size", newFontSize + "px")
+    }
+
+    function toggleSimulation(isSimActive) {
+        if (isSimActive){
+            simulation.alpha(.5).restart()
+            forceNode.strength(nodeForceStrength)
+            forceCenter.strength(centerForceStrength)
+            forceLink.links(links);
+        } else {
+            simulation.stop()
+            forceNode.strength(0)
+            forceCenter.strength(0)
+            forceLink.links([])
+        }
     }
 
     function updateGraph({
@@ -368,6 +382,7 @@ function ForceGraphConstructor({
         updateGraph,
         updateNodeFontSize,
         updateLinkFontSize,
+        toggleSimulation,
     });
 }
 
