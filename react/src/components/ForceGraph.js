@@ -1,9 +1,14 @@
 import {useEffect, useState, useRef} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
+import jsPDF from 'jspdf';
 
 const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2}) => {
 
+    // Init refs
+    const chartContainerRef = useRef();
+
+    // Init states
     const [depth, setDepth] = useState(defaultDepth);
     const [graphNodeIds, setGraphNodeIds] = useState(selectedNodeIds);
     const [graphData, setGraphData] = useState({});
@@ -24,7 +29,8 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     useEffect(() => {
 
         fetchCollections().then(data => {
-            setCollections(data)
+            // Sort alphabetically, ignoring case
+            setCollections(data.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())))
         } );
         document.addEventListener('click', closePopupOnInteraction);
         return () => {
@@ -205,6 +211,47 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         setIsSimOn(!isSimOn);
     };
 
+    const exportGraph = (format) => {
+        const svgElement = chartContainerRef.current.querySelector('svg');
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(svgBlob);
+
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let scaleFactor = 6;
+
+            canvas.width = img.width * scaleFactor;
+            canvas.height = img.height * scaleFactor;
+
+            ctx.fillStyle = 'white';
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(scaleFactor, scaleFactor);
+            ctx.drawImage(img, 0, 0);
+
+            if (format === 'png') {
+                // Export as PNG
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = imgData;
+                link.download = 'graph.png';
+                link.click();
+            } else if (format === 'pdf') {
+                // Export as PDF
+                // TODO: set max size to PDF to ensure not truncated
+                const pdf = new jsPDF('landscape', 'mm', [canvas.width, canvas.height]);
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('graph.pdf');
+            }
+
+            URL.revokeObjectURL(url);
+        };
+        img.src = url;
+    };
+
     // Handle toggling options
     const toggleOptionsVisibility = () => {
         setOptionsVisible(!optionsVisible);
@@ -240,7 +287,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                   <div className="node-font-size-picker">
                       <label htmlFor="node-font-size-select">Select node font size:</label>
                       <select id="node-font-size-select" value={nodeFontSize} onChange={handleNodeFontSizeChange}>
-                          {[8, 10, 12, 14, 16, 18, 20, 22, 24].map((size) => (
+                          {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
                               <option key={size} value={size}>
                                   {size}px
                               </option>
@@ -250,7 +297,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                   <div className="edge-font-size-picker">
                       <label htmlFor="edge-font-size-select">Select edge font size:</label>
                       <select id="edge-font-size-select" value={edgeFontSize} onChange={handleEdgeFontSizeChange}>
-                          {[4, 6, 8, 10, 12, 14, 16, 18, 20].map((size) => (
+                          {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map((size) => (
                               <option key={size} value={size}>
                                   {size}px
                               </option>
@@ -279,8 +326,12 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                   <input type="checkbox" checked={isSimOn} onChange={handleToggle} />
                   <span className="slider"></span>
               </div>
+              <div className="export-buttons">
+                  <button onClick={() => exportGraph('png')}>Download as PNG</button>
+                  <button onClick={() => exportGraph('pdf')}>Download as PDF</button>
+              </div>
           </div>
-          <div id="chart-container"></div>
+          <div id="chart-container" ref={chartContainerRef}></div>
           <div
               className="node-popup"
               style={popupVisible ?

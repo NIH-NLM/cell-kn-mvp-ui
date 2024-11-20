@@ -442,6 +442,12 @@ option {
     font-weight: normal;
 }
 
+.export-buttons button {
+    background-color: inherit;
+    margin: 0 1rem;
+    padding: .25rem;
+}
+
 @media (max-width: 600px) {
     .graph-options {
         padding: 15px;
