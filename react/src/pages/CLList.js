@@ -23,7 +23,7 @@ const CLList = ({ match, history }) => {
     let sortClList = (clList) => {
         let sortedList = Object.values(clList)
         sortedList.sort(function(a, b) {
-            return parseInt(a._key) - parseInt(b._key);  //TODO: Handle non-int keys?
+            return parseInt(a._key) - parseInt(b._key);  //TODO: Handle non-int keys
         })
         setClList(sortedList)
     }
