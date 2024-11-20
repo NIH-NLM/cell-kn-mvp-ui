@@ -9,19 +9,23 @@ function ForceGraphConstructor({
                         nodeGroups, // an array of ordinal values representing the node groups
                         label, // given d in nodes, a label string
                         nodeHover, // given d in nodes, a title string
-                        fontSize = "4px",
+                        nodeFontSize,
+                        linkFontSize,
                         onNodeClick,
                         interactionCallback,
+                        nodeRadius = 16,
                         linkSource = ({_from}) => _from, // given d in links, returns a node identifier string
                         linkTarget = ({_to}) => _to, // given d in links, returns a node identifier string
                         linkStroke = "#999", // link stroke color
                         linkStrokeOpacity = 0.6, // link stroke opacity
                         linkStrokeWidth = 1.5, // given d in links, returns a stroke width in pixels
                         linkStrokeLinecap = "round", // link stroke linecap
-                        initialScale = 6, // initial zoom level
-                        colors = d3.schemeTableau10, // an array of color strings, for the node groups
+                        initialScale = 2, // initial zoom level
+                        colors = [...d3.schemePaired, ...d3.schemeDark2], // an array of color schemes, for the node groups
                         width = 640, // outer width, in pixels
                         height = 400, // outer height, in pixels
+                        nodeForceStrength = -2500,
+                        centerForceStrength = 1,
                         invalidation // when this promise resolves, stop the simulation
                     } = {}) {
 
@@ -33,13 +37,14 @@ function ForceGraphConstructor({
     let links = [] // All links
 
     // Construct forces and simulation
-    const forceNode = d3.forceManyBody();
+    const forceNode = d3.forceManyBody().strength(nodeForceStrength);
+    const forceCenter = d3.forceCenter().strength(centerForceStrength);
     const forceLink = d3.forceLink(links);
 
     const simulation = d3.forceSimulation()
         .force("link", forceLink)
         .force("charge", forceNode)
-        .force("center",  d3.forceCenter())
+        .force("center",  forceCenter)
         .on("tick", ticked);
 
     // Create main svg element
@@ -113,8 +118,6 @@ function ForceGraphConstructor({
 
     updateGraph({newNodes: nodeData, newLinks: linkData})
 
-    if (invalidation != null) invalidation.then(() => simulation.stop());
-
     function intern(value) {
         return value !== null && typeof value === "object" ? value.valueOf() : value;
     }
@@ -131,7 +134,6 @@ function ForceGraphConstructor({
             .attr("y2", d => d.target.y);
 
 
-        // Update node positions
         let node = nodeContainer.selectAll("g")
         node
             .attr("transform",function(d) { return "translate("+[d.x,d.y]+")"; });
@@ -147,12 +149,12 @@ function ForceGraphConstructor({
 
                     return `translate(${midX}, ${midY}) rotate(${angle})`;
                 }
-            );
+            )
     }
 
     function drag(simulation) {
         function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(.01).restart();
+            if (!event.active) simulation.alphaTarget(.2).restart();
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
             interactionCallback();
@@ -203,7 +205,46 @@ function ForceGraphConstructor({
           });
     }
 
-    function updateGraph({ newNodes = [], newLinks = [], removeNodes = [], removeLinks = [] }) {
+    // Update node font size
+    function updateNodeFontSize(newFontSize) {
+
+        // Update node font size
+        nodeFontSize = newFontSize
+        nodeContainer
+            .selectAll("text")
+            .style("font-size", newFontSize + "px")
+    }
+
+    // Update link font size
+    function updateLinkFontSize(newFontSize) {
+
+        // Update link font size
+        linkFontSize = newFontSize
+        linkContainer
+            .selectAll("text")
+            .style("font-size", newFontSize + "px")
+    }
+
+    function toggleSimulation(isSimActive) {
+        if (isSimActive){
+            simulation.alpha(.5).restart()
+            forceNode.strength(nodeForceStrength)
+            forceCenter.strength(centerForceStrength)
+            forceLink.links(links);
+        } else {
+            simulation.stop()
+            forceNode.strength(0)
+            forceCenter.strength(0)
+            forceLink.links([])
+        }
+    }
+
+    function updateGraph({
+                             newNodes = [],
+                             newLinks = [],
+                             removeNodes = [],
+                             removeLinks = [],
+    }) {
 
         // Add new nodes and links to the simulation
         if (newNodes.length > 0) {
@@ -233,7 +274,7 @@ function ForceGraphConstructor({
 
             // Returns a selection of circles, newly append to each g in node
             node.append("circle")
-                .attr("r", 5)
+                .attr("r", nodeRadius)
                 .attr("fill", d => color(d.nodeGroup))
                 .on("contextmenu", function(event, d) {
                     event.preventDefault();
@@ -243,10 +284,10 @@ function ForceGraphConstructor({
             // Append text
             node.append("text")
                 .text(d => d.nodeLabel)
-                .style("font-size", fontSize)
+                .style("font-size", nodeFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
-                .attr("y", 7.5)
+                .attr("y", nodeRadius + nodeFontSize)
                 .call(wrap, 25);
 
 
@@ -296,7 +337,7 @@ function ForceGraphConstructor({
             // Append text to each line
             link.append("text")
                 .text(d => d.label)
-                .style("font-size", fontSize)
+                .style("font-size", linkFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
                 // .attr("y", 7.5)
@@ -338,7 +379,10 @@ function ForceGraphConstructor({
     // Return the SVG node and the updateGraph method to interact with the graph
     return Object.assign(svg.node(), {
         scales: { color },
-        updateGraph
+        updateGraph,
+        updateNodeFontSize,
+        updateLinkFontSize,
+        toggleSimulation,
     });
 }
 

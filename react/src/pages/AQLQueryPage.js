@@ -6,7 +6,7 @@ const AQLQueryPage = () => {
     const [nodeIds, setNodeIds] = useState({});
     const [error, setError] = useState(null);
     const [predefinedQueries, setPredefinedQueries] = useState([]);
-    const [selectedQueryId, setSelectedQueryId] = useState('');
+    const [selectedQuery, setSelectedQuery] = useState('');
     const [term, setTerm] = useState('');
     const [ncbiTerm, setNcbiTerm] = useState('');
 
@@ -20,6 +20,7 @@ const AQLQueryPage = () => {
                     throw new Error('Failed to fetch predefined queries');
                 }
                 const data = await response.json();
+                console.log(data)
                 setPredefinedQueries(data);
             } catch (err) {
                 console.error(err);
@@ -31,9 +32,10 @@ const AQLQueryPage = () => {
 
     const handleQueryChange = (event) => {
         const selectedId = event.target.value;
-        setSelectedQueryId(selectedId);
-        const selectedQuery = predefinedQueries.find(q => q.id === parseInt(selectedId));
-        setQueryTemplate(selectedQuery ? selectedQuery.query : '');
+        const sq = predefinedQueries.find(q => q.id === parseInt(selectedId));
+        console.log(sq)
+        setSelectedQuery(sq);
+        setQueryTemplate(sq ? sq.query : '');
     };
 
     const executeQuery = async () => {
@@ -78,13 +80,13 @@ const AQLQueryPage = () => {
                 </select>
                 <input
                     type="text"
-                    placeholder="Enter text to find in NCBITaxon vertices..."
+                    placeholder={selectedQuery.placeholder_1}
                     value={ncbiTerm}
                     onChange={(e) => setNcbiTerm(e.target.value)}
                 />
                 <input
                     type="text"
-                    placeholder="Enter text to find in UBERON vertices..."
+                    placeholder={selectedQuery.placeholder_2}
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                 />

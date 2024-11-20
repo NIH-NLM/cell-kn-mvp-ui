@@ -400,6 +400,16 @@ option {
     margin-bottom: 5px;
 }
 
+.font-size-picker {
+    flex-direction: row;
+    display: flex;
+}
+
+.font-size-picker div {
+    padding: 0 1rem;
+    margin-bottom: 1rem;
+}
+
 .graph-options select {
     padding: 8px;
     border-radius: 4px;
@@ -414,6 +424,7 @@ option {
 
 .checkboxes-container {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     margin-bottom: 5px;
 }
@@ -429,6 +440,12 @@ option {
 
 .checkbox-container label {
     font-weight: normal;
+}
+
+.export-buttons button {
+    background-color: inherit;
+    margin: 0 1rem;
+    padding: .25rem;
 }
 
 @media (max-width: 600px) {

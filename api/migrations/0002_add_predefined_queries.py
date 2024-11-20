@@ -31,21 +31,28 @@ def create_predefined_queries(apps, schema_editor):
 
                 RETURN { nodes: filteredCLs}
                 """,
+            'placeholder_1': 'Enter text to find in NCBITaxon vertices...',
+            'placeholder_2': 'Enter text to find in UBERON vertices...',
         },
         {
-            'name': 'Test Query',
+            'name': 'Compare publication HLCA_2023_Sikkema and cellRef_2023_Guo',
             'query': """
-                LET clList = (
-                    FOR cl IN `CL-UBERON`
-                        RETURN cl
-                )
-                RETURN clList
+                LET node1 = DOCUMENT('publication', 'HLCA_2023_Sikkema')
+                LET node2 = DOCUMENT('publication', 'cellRef_2023_Guo')
+                RETURN { nodes: [node1, node2] }
             """,
+            'placeholder_1': 'HLCA_2023_Sikkema',
+            'placeholder_2': 'cellRef_2023_Guo',
         },
     ]
 
     for query in queries:
-        PredefinedQuery.objects.create(name=query['name'], query=query['query'])
+        PredefinedQuery.objects.create(
+            name=query['name'],
+            query=query['query'],
+            placeholder_1=query['placeholder_1'],
+            placeholder_2=query['placeholder_2']
+        )
 
 class Migration(migrations.Migration):
 
