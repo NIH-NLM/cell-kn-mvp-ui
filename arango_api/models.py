@@ -107,8 +107,7 @@ class DBEntry:
                 FOR doc IN {collection["name"]}
                     FILTER CONTAINS(doc.label, @search_term) 
                         OR CONTAINS(doc.term, @search_term) 
-                        OR CONTAINS(doc.comment, @search_term) 
-                        OR CONTAINS(doc.definition, @search_term)
+                    LIMIT 100
                     RETURN doc
             """)
 
