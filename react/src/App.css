@@ -1,25 +1,29 @@
 :root {
-  --color-main: #00bfff;
-  --color-text: #383a3f;
-  --color-dark: #1f2124;
-  --color-gray: #677;
-  --color-bg: #f3f6f9;
-  --color-light: #acb4bd;
-  --color-lighter: #f9f9f9;
-  --color-white: #fff;
-  --color-border:#e0e3e6;
+    --color-main: #0071bc;
+    --color-text: #212121;
+    --color-text-on-dark: #ffffff;
+    --color-dark: #212121;
+    --color-gray: #323a45;
+    --color-bg: #dce4ef;
+    --color-light: #d6d7d9;
+    --color-lighter: #f1f1f1;
+    --color-white: #fff;
+    --color-border:#aeb0b5;
+    --color-focus:#3e94cf
 }
 
 .dark {
-  --color-main: #00bfff;
-  --color-text: #d6d1d1;
-  --color-dark: #f5f6f7;
-  --color-gray: #999;
-  --color-bg: #1f2124;
-  --color-light: #acb4bd;
-  --color-lighter: #191970;
-  --color-white: #2e3235;
-  --color-border:#252629;
+    --color-main: #205493;
+    --color-text: #212121;
+    --color-text-on-dark: #ffffff;
+    --color-dark: #f1f1f1;
+    --color-gray: #5b616b;
+    --color-bg: #323a45;
+    --color-light: #aeb0b5;
+    --color-lighter: #112e51;
+    --color-white: #323a45;
+    --color-border:#212121;
+    --color-focus:#3e94cf
 }
 
 /* BASE STYLES */
@@ -29,7 +33,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Roboto Mono', sans-serif;
   color: inherit;
   scroll-behavior: smooth;
 }
@@ -231,7 +235,7 @@ td{
 }
 
 tr:nth-of-type(even) {
-  background-color: var(--color-bg);
+  background-color: var(--color-lighter);
 }
 
 tr:nth-of-type(odd) {
@@ -240,7 +244,7 @@ tr:nth-of-type(odd) {
 
 /*Browse Box*/
 .browse-box{
-  background-color: var(--color-gray);
+  background-color: var(--color-light);
   display: grid;
   grid-template-columns: auto auto auto;
   grid-template-rows: auto auto;
@@ -301,7 +305,7 @@ tr:nth-of-type(odd) {
 }
 
 .browse-box a:hover {
-  background: var(--color-light)
+  background: var(--color-lighter)
 }
 
 .td-link:hover {
