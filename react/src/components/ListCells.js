@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom'
 let getLabel = (cell) => {
 
     let label = ""
-    try {
+    if (cell.label) {
         label = cell.label
-    }
-    catch {
+    } else if (cell.term){
+        label = cell.term
+    } else{
         label = cell._id
     }
     return label
