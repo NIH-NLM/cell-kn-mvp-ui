@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import ForceGraph from "../components/ForceGraph";
 
 const SearchPage = () => {
     const debounceTimeoutRef = useRef(null);
@@ -8,9 +9,10 @@ const SearchPage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false); // Track loading state for fetching more results
-
-    // Track the number of results to load
     const [resultsLoaded, setResultsLoaded] = useState(100); // Initially load 100 results
+    const [selectedItems, setSelectedItems] = useState([]); // Track selected items
+    const [nodeIds, setNodeIds] = useState([]); // nodeIds will be used in the graph, separate from currently selected items
+    const [error, setError] = useState(null); // For displaying potential errors
 
     // Fetch search terms from the API with pagination
     const getSearchTerms = async (searchTerm, limit = 100) => {
@@ -74,9 +76,36 @@ const SearchPage = () => {
         }
     };
 
+    // Add selected item to the list
+    const handleSelectItem = (item) => {
+        setSelectedItems(prev => [...prev, item]);
+        // Optional: Close the dropdown after selection
+        setShowResults(false);
+        setInput('');
+    };
+
+    // Update nodeIds to generate graph
+    const generateGraph = () => {
+        setNodeIds(selectedItems.map((item) => item._id));
+    };
+
     return (
         <div className="search-container">
-            <div className="search-bar-container">
+            {selectedItems.length > 0 && (
+                <>
+                    <ul>
+                        {selectedItems.map((item, index) => (
+                            <li key={index}>{item.label}</li>
+                        ))}
+                    </ul>
+                    <div className="generate-graph-button">
+                        <button onClick={generateGraph}>Generate Graph</button>
+                    </div>
+                </>
+            )}
+            <div className="search-bar-container"
+                 // TODO: fix position of search on screen - perhaps left and right for sunburst and search?
+                style={showResults && searchResults.length > 0 ? { margin: 0 } : { margin: "0 0 50vh 0" }}>
                 <div className="search-bar">
                     <input
                         type="text"
@@ -96,15 +125,26 @@ const SearchPage = () => {
                 <div>
                     <ul className="search-results-list">
                         {searchResults.map((item, index) => (
-                            <Link key={index} to={item._id} onMouseDown={(e) => e.preventDefault()}>
-                                <li className="search-results-list-item">
-                                    {item.label ? item.label : item.term}
-                                </li>
-                            </Link>
+                            <li
+                                key={index}
+                                className="list-item"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => handleSelectItem(item)}
+                            >
+                                {item.label ? item.label : item.term}
+                            </li>
                         ))}
                     </ul>
                 </div>
             </div>
+            <div className="graph-container">
+                {Object.keys(nodeIds).length > 0 ? (
+                    <ForceGraph nodeIds={nodeIds} defaultDepth={2} />
+                ) : (
+                    <div>{error}</div>
+                )}
+            </div>
+
         </div>
     );
 };

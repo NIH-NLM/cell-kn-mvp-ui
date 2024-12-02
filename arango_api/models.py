@@ -139,3 +139,55 @@ class DBEntry:
             results = []
 
         return results
+
+    @staticmethod
+    def get_sunburst():
+
+        # Ids of root nodes for each collection
+        node_ids = [
+            "CL/0000000"
+        ]
+
+        edge_col = "CL-CL"
+
+        depth = 3
+
+        query = f"""
+            FOR v, e IN 0..@depth INBOUND @node_id @edge_col
+                RETURN {{v, e}}
+        """
+
+        bind_vars = {'node_id': node_ids[0], 'edge_col': edge_col, 'depth': depth}
+
+        # Execute the query
+        try:
+            cursor = db.aql.execute(query, bind_vars=bind_vars)
+            results = list(cursor)  # Collect the results
+
+            # Init data and path dict
+            data = results.pop(0)['v']  # The root object is the first one
+            data['children'] = []  # Initialize the children attribute for the root
+            paths = {data['_id']: data}  # Dictionary to store object by _id for quick lookup
+
+            # Iterate through results
+            for result in results:
+                v = result['v']
+                e = result['e']
+
+                parent_id = e['_to']  # Parent's _id
+                parent = paths.get(parent_id)  # Find parent object by _id
+
+                # If parent exists, append this object to the parent's children list
+                if parent:
+                    if 'children' not in parent:
+                        parent['children'] = []  # Ensure the parent has a children list
+                    parent['children'].append(v)
+
+                # Store the current object in the paths dictionary for future lookups
+                paths[v['_id']] = v
+
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            data = []
+
+        return data
