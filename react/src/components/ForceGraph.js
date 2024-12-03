@@ -259,7 +259,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     };
 
   return (
-      <div>
+      <div className="graph-container">
           <button onClick={toggleOptionsVisibility} className="toggle-button">
               {optionsVisible ? 'Toggle Options ▼' : 'Toggle Options ▲'}
           </button>

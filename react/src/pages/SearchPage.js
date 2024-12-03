@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import ForceGraph from "../components/ForceGraph";
+import SelectedItemsTable from "../components/SelectedItemsTable";
 
-const SearchPage = () => {
+const SearchPage = ({ generateGraph }) => {
     const debounceTimeoutRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
@@ -11,8 +10,6 @@ const SearchPage = () => {
     const [loading, setLoading] = useState(false); // Track loading state for fetching more results
     const [resultsLoaded, setResultsLoaded] = useState(100); // Initially load 100 results
     const [selectedItems, setSelectedItems] = useState([]); // Track selected items
-    const [nodeIds, setNodeIds] = useState([]); // nodeIds will be used in the graph, separate from currently selected items
-    const [error, setError] = useState(null); // For displaying potential errors
 
     // Fetch search terms from the API with pagination
     const getSearchTerms = async (searchTerm, limit = 100) => {
@@ -79,33 +76,19 @@ const SearchPage = () => {
     // Add selected item to the list
     const handleSelectItem = (item) => {
         setSelectedItems(prev => [...prev, item]);
-        // Optional: Close the dropdown after selection
         setShowResults(false);
         setInput('');
     };
 
-    // Update nodeIds to generate graph
-    const generateGraph = () => {
-        setNodeIds(selectedItems.map((item) => item._id));
+    // Remove selected item to the list
+     const removeSelectedItem = (item) => {
+         console.log(selectedItems.filter(d => d._id !== item._id))
+        setSelectedItems(prev => prev.filter(d => d._id !== item._id));
     };
 
     return (
         <div className="search-container">
-            {selectedItems.length > 0 && (
-                <>
-                    <ul>
-                        {selectedItems.map((item, index) => (
-                            <li key={index}>{item.label}</li>
-                        ))}
-                    </ul>
-                    <div className="generate-graph-button">
-                        <button onClick={generateGraph}>Generate Graph</button>
-                    </div>
-                </>
-            )}
-            <div className="search-bar-container"
-                 // TODO: fix position of search on screen - perhaps left and right for sunburst and search?
-                style={showResults && searchResults.length > 0 ? { margin: 0 } : { margin: "0 0 50vh 0" }}>
+            <div className="search-bar-container">
                 <div className="search-bar">
                     <input
                         type="text"
@@ -115,36 +98,28 @@ const SearchPage = () => {
                         onFocus={handleFocus}
                         onBlur={handleBlur}
                     />
+                    <div
+                        className={`search-results-container ${showResults ? 'show' : ''}`}
+                        onScroll={handleScroll} // Attach scroll event listener
+                    >
+                        <div>
+                            <ul className="search-results-list">
+                                {searchResults.map((item, index) => (
+                                    <li
+                                        key={index}
+                                        className="list-item"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => handleSelectItem(item)}
+                                    >
+                                        {item.label ? item.label : item.term}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div
-                className="search-results-container"
-                style={showResults ? { display: "flex" } : { display: "none" }}
-                onScroll={handleScroll} // Attach scroll event listener
-            >
-                <div>
-                    <ul className="search-results-list">
-                        {searchResults.map((item, index) => (
-                            <li
-                                key={index}
-                                className="list-item"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => handleSelectItem(item)}
-                            >
-                                {item.label ? item.label : item.term}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-            <div className="graph-container">
-                {Object.keys(nodeIds).length > 0 ? (
-                    <ForceGraph nodeIds={nodeIds} defaultDepth={2} />
-                ) : (
-                    <div>{error}</div>
-                )}
-            </div>
-
+            <SelectedItemsTable selectedItems={selectedItems} generateGraph={generateGraph} removeSelectedItem={removeSelectedItem} />
         </div>
     );
 };

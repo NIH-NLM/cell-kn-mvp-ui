@@ -93,13 +93,9 @@ const AQLQueryPage = () => {
                 <button onClick={executeQuery}>Search for Cells</button>
             </div>
             {error && <div className="error-message">{error}</div>}
-            <div className="graph-container">
-                {Object.keys(nodeIds).length > 0 ? (
-                    <ForceGraph nodeIds={nodeIds} defaultDepth={1} />
-                ) : (
-                    <div>{error}</div>
-                )}
-            </div>
+            {Object.keys(nodeIds).length > 0 && (
+                <ForceGraph nodeIds={nodeIds} defaultDepth={2} />
+            )}
         </div>
     );
 };
