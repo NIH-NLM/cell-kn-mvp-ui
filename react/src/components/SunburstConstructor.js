@@ -14,8 +14,8 @@ function SunburstConstructor (data, size) {
 
   // Compute the layout.
   const hierarchy = d3.hierarchy(data)
-      .sum(d => d.children ? d.children.length : 1)
-      .sort((a, b) => b.children && a.children ? b.children.length - a.children.length : 1);
+      .sum(d => 1)
+      // .sort((a, b) => b._id - a._id);
   console.log("hierarchy", hierarchy)
   const root = d3.partition()
       .size([2 * Math.PI, hierarchy.height + 1])
@@ -54,7 +54,7 @@ function SunburstConstructor (data, size) {
 
   const format = d3.format(",d");
   path.append("title")
-      .text(d => `${d.ancestors().map(d => d.data.label).reverse().join("/")}\n${format(d.children ? d.children.length : 1)}`);
+      .text(d => `${d.ancestors().map(d => d.data.label).reverse().join("/")}\n${format(1)}`);
 
   const label = svg.append("g")
       .attr("pointer-events", "none")
@@ -74,6 +74,15 @@ function SunburstConstructor (data, size) {
       .attr("fill", "none")
       .attr("pointer-events", "all")
       .on("click", clicked);
+
+  const centerText = svg.append("text")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em")
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .text(data.label);
 
   // Handle zoom on click.
   function clicked(event, p) {
@@ -109,6 +118,9 @@ function SunburstConstructor (data, size) {
       }).transition(t)
         .attr("fill-opacity", d => +labelVisible(d.target))
         .attrTween("transform", d => () => labelTransform(d.current));
+
+    // Update the center text based on the current node's data
+    centerText.text(p.data.label);
   }
 
   function arcVisible(d) {
