@@ -19,7 +19,7 @@ const ExplorationPage = () => {
                 <SearchPage generateGraph={generateGraph}/>
             </div>
             {Object.keys(nodeIds).length > 0 && (
-                <ForceGraph nodeIds={nodeIds} defaultDepth={2} />
+                <ForceGraph nodeIds={nodeIds} defaultDepth={1} />
             )}
         </div>
     )

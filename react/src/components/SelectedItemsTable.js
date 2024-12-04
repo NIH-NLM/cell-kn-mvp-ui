@@ -3,7 +3,6 @@ import {Link} from "react-router-dom";
 const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }) => {
 
     function handleGenerateGraph() {
-        console.log("handleGenerateGraph", selectedItems)
         generateGraph(selectedItems)
     }
 

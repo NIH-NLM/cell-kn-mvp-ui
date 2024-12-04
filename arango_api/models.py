@@ -38,20 +38,26 @@ class DBEntry:
                             CONTAINS_ARRAY(@nodes_to_prune, v._id))
                         FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
                         FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                        RETURN {{node: v, link: e}}
+                        RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
                 )
 
             LET uniqueNodes = UNIQUE(temp[*].node)
+            LET filteredNodes = UNIQUE(
+                FOR object in temp
+                    FILTER object.depth != (@depth + 1)
+                    RETURN object.node
+            ) 
 
             RETURN {{
-                nodes: uniqueNodes,
-                links: temp[*].link
+                nodes: filteredNodes,
+                links: temp[*].link,
             }}
         """
 
+        # Depth is increased by one to find all edges that connect to final nodes
         bind_vars = {'node_ids': node_ids,
                      'graph_name': graph_name,
-                     'depth': depth,
+                     'depth': int(depth) + 1,
                      'collections_to_prune': collections_to_prune,
                      'nodes_to_prune': nodes_to_prune}
 
@@ -59,8 +65,14 @@ class DBEntry:
         try:
             cursor = db.aql.execute(query, bind_vars=bind_vars)
             results = list(cursor)[0]  # Collect the results - one element should be guaranteed
-            # Remove None values from the links - root node edge is always null
-            results['links'] = [link for link in results['links'] if link is not None]
+            # Extract the list of _id values from the nodes
+            node_ids = [node["_id"] for node in results['nodes']]
+            # Filter links where _to or _from is not in the list of node_ids
+            results['links'] = [
+                link for link in results['links']
+                if link is not None
+                and (link["_to"] in node_ids and link["_from"] in node_ids)
+            ]
         except Exception as e:
             print(f"Error executing query: {e}")
             results = []
@@ -171,6 +183,7 @@ class DBEntry:
         root_nodes = []
 
         # Query to traverse the graph for each root node
+        # TODO: Check whether it is better to combine into one query
         for node_id in node_ids:
             collection_type = node_id.split('/')[0]
             edge_col = edge_collections.get(collection_type)
@@ -220,7 +233,7 @@ class DBEntry:
                 print(f"Error processing node {node_id}: {e}")
 
         # Create a Root node that links only to the root nodes in node_ids
-        graph_root = {"label": "Root", "children": root_nodes}
+        graph_root = {"label": "NLM Knowledge Network", "children": root_nodes}
 
         return graph_root
 

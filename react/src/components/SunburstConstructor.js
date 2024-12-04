@@ -2,7 +2,6 @@ import * as d3 from "d3";
 
 function SunburstConstructor (data, size) {
 
-  console.log(data)
 
   // Specify the chart’s dimensions.
   const width = size;
@@ -16,7 +15,6 @@ function SunburstConstructor (data, size) {
   const hierarchy = d3.hierarchy(data)
       .sum(d => 1)
       // .sort((a, b) => b._id - a._id);
-  console.log("hierarchy", hierarchy)
   const root = d3.partition()
       .size([2 * Math.PI, hierarchy.height + 1])
     (hierarchy);

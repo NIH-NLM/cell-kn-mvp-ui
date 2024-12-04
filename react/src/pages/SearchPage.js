@@ -82,7 +82,6 @@ const SearchPage = ({ generateGraph }) => {
 
     // Remove selected item to the list
      const removeSelectedItem = (item) => {
-         console.log(selectedItems.filter(d => d._id !== item._id))
         setSelectedItems(prev => prev.filter(d => d._id !== item._id));
     };
 

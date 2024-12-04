@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
 
-const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2}) => {
+const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
 
     // Init refs
     const chartContainerRef = useRef();
@@ -156,7 +156,6 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
             [],
             [])
             .then( data => {
-                console.log(data)
                 graph.updateGraph({
                     newNodes: data["nodes"],
                     newLinks: data["links"]
