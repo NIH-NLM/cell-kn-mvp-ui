@@ -142,52 +142,85 @@ class DBEntry:
 
     @staticmethod
     def get_sunburst():
-
-        # Ids of root nodes for each collection
+        # Root node ids for each collection
+        # Note that NCBITaxon is starting from cellular organisms, and not root
         node_ids = [
-            "CL/0000000"
+            "CL/0000000",
+            "GO/0008150",
+            "GO/0003674",
+            "GO/0005575",
+            "NCBITaxon/131567",
+            "PATO/0000001",
+            "PR/000000001",
+            "UBERON/0000000",
         ]
 
-        edge_col = "CL-CL"
+        # Edge collections for each type
+        edge_collections = {
+            "CL": "CL-CL",
+            "GO": "GO-GO",
+            "NCBITaxon": "NCBITaxon-NCBITaxon",
+            "PATO": "PATO-PATO",
+            "PR": "PR-PR",
+            "UBERON": "UBERON-UBERON"
+        }
 
         depth = 3
 
-        query = f"""
-            FOR v, e IN 0..@depth INBOUND @node_id @edge_col
-                RETURN {{v, e}}
-        """
+        # Initialize an empty list to collect the final results for the sunburst
+        root_nodes = []
 
-        bind_vars = {'node_id': node_ids[0], 'edge_col': edge_col, 'depth': depth}
+        # Query to traverse the graph for each root node
+        for node_id in node_ids:
+            collection_type = node_id.split('/')[0]
+            edge_col = edge_collections.get(collection_type)
 
-        # Execute the query
-        try:
-            cursor = db.aql.execute(query, bind_vars=bind_vars)
-            results = list(cursor)  # Collect the results
+            # Query to get nodes for a specific root node and edge collection
+            query = f"""
+                FOR v, e IN 0..@depth INBOUND @node_id @edge_col
+                    RETURN {{v, e}}
+            """
 
-            # Init data and path dict
-            data = results.pop(0)['v']  # The root object is the first one
-            data['children'] = []  # Initialize the children attribute for the root
-            paths = {data['_id']: data}  # Dictionary to store object by _id for quick lookup
+            bind_vars = {'node_id': node_id, 'edge_col': edge_col, 'depth': depth}
 
-            # Iterate through results
-            for result in results:
-                v = result['v']
-                e = result['e']
+            # Execute the query
+            try:
+                cursor = db.aql.execute(query, bind_vars=bind_vars)
+                results = list(cursor)  # Collect the results
 
-                parent_id = e['_to']  # Parent's _id
-                parent = paths.get(parent_id)  # Find parent object by _id
+                # Process the results to form the sunburst structure
+                paths = {}  # Dictionary to store object by _id for quick lookup
 
-                # If parent exists, append this object to the parent's children list
-                if parent:
-                    if 'children' not in parent:
-                        parent['children'] = []  # Ensure the parent has a children list
-                    parent['children'].append(v)
+                # Initialize the first root object (the node we start with)
+                data = results.pop(0)['v']
+                data['children'] = []  # Initialize the children attribute
+                paths[data['_id']] = data  # Store the root node in paths
 
-                # Store the current object in the paths dictionary for future lookups
-                paths[v['_id']] = v
+                # Iterate through results to build the child hierarchy
+                for result in results:
+                    v = result['v']
+                    e = result['e']
 
-        except Exception as e:
-            print(f"Error executing query: {e}")
-            data = []
+                    parent_id = e['_to']  # Parent's _id
+                    parent = paths.get(parent_id)  # Look up the parent object
 
-        return data
+                    # If parent exists, append this object to the parent's children list
+                    if parent:
+                        if 'children' not in parent:
+                            parent['children'] = []  # Ensure the parent has a children list
+                        parent['children'].append(v)
+
+                    # Store the current object in paths for future lookups
+                    paths[v['_id']] = v
+
+                # Append the processed data for this root node to root_nodes
+                root_nodes.append(data)
+
+            except Exception as e:
+                print(f"Error processing node {node_id}: {e}")
+
+        # Create a Root node that links only to the root nodes in node_ids
+        graph_root = {"label": "Root", "children": root_nodes}
+
+        return graph_root
+
