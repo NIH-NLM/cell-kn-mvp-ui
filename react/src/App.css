@@ -563,7 +563,26 @@ option {
   flex: 2;
 }
 
+/* Selected items table */
+
+.selected-items-table-actions {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+
+.selected-items-table-actions * {
+    padding: 1rem 0;
+    background-color: var(--color-light);
+    transition: filter 0.3s ease;
+}
+
+.selected-items-table-actions *:hover {
+    filter: brightness(85%);
+}
+
 .generate-graph-button {
     display: flex;
     justify-content: center;
+    margin-top: 0.5rem;
 }

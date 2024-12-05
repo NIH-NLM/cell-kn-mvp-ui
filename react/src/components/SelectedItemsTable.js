@@ -26,7 +26,7 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }
                         <tr key={item._id || index}>
                             <td>{item.term || item._id}</td>
                             <td>{item.label}</td>
-                            <td>
+                            <td className="selected-items-table-actions">
                                 <button onClick={() => handleRemoveItem(item)}>
                                     Remove
                                 </button>
