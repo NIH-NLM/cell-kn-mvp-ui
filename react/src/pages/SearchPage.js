@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SelectedItemsTable from "../components/SelectedItemsTable";
+import SearchResultsTable from "../components/SearchResultsTable";
 
 const SearchPage = ({ generateGraph }) => {
     const debounceTimeoutRef = useRef(null);
@@ -21,11 +22,12 @@ const SearchPage = ({ generateGraph }) => {
         const fetchSearchResults = async () => {
             setLoading(true);
             const data = await getSearchTerms(searchTerm, resultsLoaded);
-            data.sort((a, b) => {
-                return (a.label && b.label)
-                    ? a.label.toString().toLowerCase().localeCompare(b.label.toString().toLowerCase())
-                    : a._id.split('/')[1].toLowerCase().localeCompare(b._id.split('/')[1].toLowerCase());
-            });
+            // data.sort((a, b) => {
+            //     return (a.label && b.label)
+            //         ? a.label.toString().toLowerCase().localeCompare(b.label.toString().toLowerCase())
+            //         : a._id.split('/')[1].toLowerCase().localeCompare(b._id.split('/')[1].toLowerCase());
+            // });
+            console.log(data)
             setSearchResults(data);
             setLoading(false);
         };
@@ -97,25 +99,12 @@ const SearchPage = ({ generateGraph }) => {
                         onFocus={handleFocus}
                         onBlur={handleBlur}
                     />
-                    <div
-                        className={`search-results-container ${showResults ? 'show' : ''}`}
-                        onScroll={handleScroll} // Attach scroll event listener
-                    >
-                        <div>
-                            <ul className="search-results-list">
-                                {searchResults.map((item, index) => (
-                                    <li
-                                        key={index}
-                                        className="list-item"
-                                        onMouseDown={(e) => e.preventDefault()}
-                                        onClick={() => handleSelectItem(item)}
-                                    >
-                                        {item.label ? item.label : item.term}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
+                </div>
+                <div
+                    className={`search-results-container ${showResults ? 'show' : ''}`}
+                    onScroll={handleScroll} // Attach scroll event listener
+                >
+                    <SearchResultsTable searchResults={searchResults} handleSelectItem={handleSelectItem}/>
                 </div>
             </div>
             <SelectedItemsTable selectedItems={selectedItems} generateGraph={generateGraph} removeSelectedItem={removeSelectedItem} />

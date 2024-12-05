@@ -161,11 +161,15 @@ class DBEntry:
 
         for collection in collections:
             union_queries.append(f"""
-                FOR doc IN {collection["name"]}
+                LET results = (
+                    FOR doc IN {collection["name"]}
                     FILTER CONTAINS(doc.label, @search_term) 
                         OR CONTAINS(doc.term, @search_term) 
+                        OR CONTAINS(doc._id, @search_term) 
                     LIMIT 100
                     RETURN doc
+                    )
+                RETURN {{{collection["name"]}: results}}
             """)
 
         # Combine all queries into a single AQL statement
@@ -180,9 +184,14 @@ class DBEntry:
             print(f"Error executing query: {e}")
             results = []
 
+        # Flatten and reformat results into one dictionary
         flat_results = list(chain.from_iterable(results))
+        merged_dict = {}
 
-        return flat_results
+        for d in flat_results:
+            merged_dict.update(d)
+
+        return merged_dict
 
     @staticmethod
     def run_aql_query(query):
