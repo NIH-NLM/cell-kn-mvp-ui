@@ -276,7 +276,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
               <div className="edge-direction-picker">
                   <label htmlFor="edge-direction-select">Select direction of edge traversal from CL vertices:</label>
                   <select id="edge-direction-select" value={edgeDirection} onChange={handleEdgeDirectionChange}>
-                      {["OUTBOUND", "INBOUND", "ANY"].map((value) => (
+                      {["OUTBOUND", "INBOUND", "ANY", "DUAL"].map((value) => (
                           <option key={value} value={value}>
                               {value}
                           </option>

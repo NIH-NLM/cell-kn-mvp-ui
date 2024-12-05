@@ -9,7 +9,8 @@ class DBEntry:
     def get_document_collections():
         # Filter for document collections
         all_collections = db.collections()
-        collections = [collection for collection in all_collections if collection['type'] == "document" and not collection['name'].startswith("_")]
+        collections = [collection for collection in all_collections if
+                       collection['type'] == "document" and not collection['name'].startswith("_")]
         return collections
 
     @staticmethod
@@ -29,49 +30,93 @@ class DBEntry:
 
     @staticmethod
     def get_graph(node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune):
+        # Construct the appropriate AQL query based on edge_direction
+        print("edge_direction", edge_direction)
+        if edge_direction == 'DUAL':
+            # Combine inbound and outbound traversals
+            query = f"""
+                        LET tempIn = (
+                            FOR node_id IN @node_ids
+                                FOR v, e, p IN 0..@depth INBOUND node_id GRAPH @graph_name
+                                    PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
+                                        CONTAINS_ARRAY(@nodes_to_prune, v._id))
+                                    FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                                    FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
+                                    RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                        )
 
-        query = f"""
-            LET temp = (
-                FOR node_id IN @node_ids
-                    FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-                        PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
-                            CONTAINS_ARRAY(@nodes_to_prune, v._id))
-                        FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
-                        FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                        RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                        LET tempOut = (
+                            FOR node_id IN @node_ids
+                                FOR v, e, p IN 0..@depth OUTBOUND node_id GRAPH @graph_name
+                                    PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
+                                        CONTAINS_ARRAY(@nodes_to_prune, v._id))
+                                    FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                                    FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
+                                    RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                        )
+
+                        LET combined = UNION(tempIn, tempOut)
+
+                        LET uniqueNodes = UNIQUE(combined[*].node)
+                        LET filteredNodes = UNIQUE(
+                            FOR object in combined
+                                FILTER object.depth != (@depth + 1)
+                                RETURN object.node
+                        ) 
+
+                        RETURN {{
+                            nodes: filteredNodes,
+                            links: combined[*].link,
+                        }}
+                    """
+
+        else:
+            query = f"""
+                LET temp = (
+                    FOR node_id IN @node_ids
+                        FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+                            PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
+                                CONTAINS_ARRAY(@nodes_to_prune, v._id))
+                            FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
+                            FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
+                            RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
                 )
 
-            LET uniqueNodes = UNIQUE(temp[*].node)
-            LET filteredNodes = UNIQUE(
-                FOR object in temp
-                    FILTER object.depth != (@depth + 1)
-                    RETURN object.node
-            ) 
+                LET uniqueNodes = UNIQUE(temp[*].node)
+                LET filteredNodes = UNIQUE(
+                    FOR object in temp
+                        FILTER object.depth != (@depth + 1)
+                        RETURN object.node
+                ) 
 
-            RETURN {{
-                nodes: filteredNodes,
-                links: temp[*].link,
-            }}
-        """
+                RETURN {{
+                    nodes: filteredNodes,
+                    links: temp[*].link,
+                }}
+            """
 
         # Depth is increased by one to find all edges that connect to final nodes
-        bind_vars = {'node_ids': node_ids,
-                     'graph_name': graph_name,
-                     'depth': int(depth) + 1,
-                     'collections_to_prune': collections_to_prune,
-                     'nodes_to_prune': nodes_to_prune}
+        bind_vars = {
+            'node_ids': node_ids,
+            'graph_name': graph_name,
+            'depth': int(depth) + 1,
+            'collections_to_prune': collections_to_prune,
+            'nodes_to_prune': nodes_to_prune
+        }
 
         # Execute the query
         try:
             cursor = db.aql.execute(query, bind_vars=bind_vars)
             results = list(cursor)[0]  # Collect the results - one element should be guaranteed
+
             # Extract the list of _id values from the nodes
             node_ids = [node["_id"] for node in results['nodes']]
+
             # Filter links where _to or _from is not in the list of node_ids
             results['links'] = [
                 link for link in results['links']
                 if link is not None
-                and (link["_to"] in node_ids and link["_from"] in node_ids)
+                   and (link["_to"] in node_ids and link["_from"] in node_ids)
             ]
         except Exception as e:
             print(f"Error executing query: {e}")
@@ -236,4 +281,3 @@ class DBEntry:
         graph_root = {"label": "NLM Knowledge Network", "children": root_nodes}
 
         return graph_root
-
