@@ -27,7 +27,6 @@ const SearchPage = ({ generateGraph }) => {
             //         ? a.label.toString().toLowerCase().localeCompare(b.label.toString().toLowerCase())
             //         : a._id.split('/')[1].toLowerCase().localeCompare(b._id.split('/')[1].toLowerCase());
             // });
-            console.log(data)
             setSearchResults(data);
             setLoading(false);
         };

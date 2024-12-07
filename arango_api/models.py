@@ -42,7 +42,7 @@ class DBEntry:
                                         CONTAINS_ARRAY(@nodes_to_prune, v._id))
                                     FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
                                     FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                                    RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                                    RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
                         )
 
                         LET tempOut = (
@@ -52,7 +52,7 @@ class DBEntry:
                                         CONTAINS_ARRAY(@nodes_to_prune, v._id))
                                     FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
                                     FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                                    RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                                    RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
                         )
 
                         LET combined = UNION(tempIn, tempOut)
@@ -61,7 +61,7 @@ class DBEntry:
                         LET filteredNodes = UNIQUE(
                             FOR object in combined
                                 FILTER object.depth != (@depth + 1)
-                                RETURN object.node
+                                RETURN {{node: object.node, path: object.path, origin: object.origin}}
                         ) 
 
                         RETURN {{
@@ -79,14 +79,14 @@ class DBEntry:
                                 CONTAINS_ARRAY(@nodes_to_prune, v._id))
                             FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
                             FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                            RETURN {{node: v, link: e, depth: LENGTH(p.vertices)}}
+                            RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
                 )
 
                 LET uniqueNodes = UNIQUE(temp[*].node)
                 LET filteredNodes = UNIQUE(
                     FOR object in temp
                         FILTER object.depth != (@depth + 1)
-                        RETURN object.node
+                        RETURN {{node: object.node, path: object.path, origin: object.origin}}
                 ) 
 
                 RETURN {{
@@ -110,7 +110,7 @@ class DBEntry:
             results = list(cursor)[0]  # Collect the results - one element should be guaranteed
 
             # Extract the list of _id values from the nodes
-            node_ids = [node["_id"] for node in results['nodes']]
+            node_ids = [node["node"]["_id"] for node in results['nodes']]
 
             # Filter links where _to or _from is not in the list of node_ids
             results['links'] = [
@@ -118,6 +118,28 @@ class DBEntry:
                 if link is not None
                    and (link["_to"] in node_ids and link["_from"] in node_ids)
             ]
+
+            # Group results by origin node
+            grouped_nodes = {}
+
+            # Iterate through each object in the data
+            for item in results["nodes"]:
+                if isinstance(item, dict) and all(k in item for k in ['node', 'path', 'origin']):
+                    origin = item["origin"]
+
+                    # If the origin is not in the dictionary, initialize an empty list
+                    if origin not in grouped_nodes:
+                        grouped_nodes[origin] = []
+
+                    # Append the node and path to the corresponding origin
+                    grouped_nodes[origin].append({"node": item["node"], "path": item["path"]})
+                else:
+                    print(f"Warning: The item {item} is not in the expected format.")
+
+            print(grouped_nodes)
+            results["nodes"] = grouped_nodes
+
+
         except Exception as e:
             print(f"Error executing query: {e}")
             results = []
