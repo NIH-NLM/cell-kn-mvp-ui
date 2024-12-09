@@ -16,7 +16,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     // TODO: Review using graphName as a state instead of a global variable
     const [graphName, setGraphName] = useState("CL-Full");
     const [edgeDirection, setEdgeDirection] = useState("ANY");
-    const [setOperation, setSetOperation] = useState("Union");
+    const [setOperation, setSetOperation] = useState("Intersection");
     const [collections, setCollections] = useState([]);
     const [collectionsToPrune, setCollectionsToPrune] = useState([]);
     const [nodesToPrune, setNodesToPrune] = useState([]);
