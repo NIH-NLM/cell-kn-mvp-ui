@@ -157,11 +157,12 @@ a {
 
 /*table formatting*/
 table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  text-indent: initial;
-  border-spacing: 2px;
+     width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    text-indent: initial;
+    border-spacing: 2px;
+    overflow-wrap: break-word;
 }
 
 tbody {
@@ -258,14 +259,18 @@ tr:nth-of-type(odd) {
 
 /*Search Bar*/
 .search-container{
-  margin-top: 14rem;
   display: flex;
   flex-direction: column;
+    justify-content: space-between;
 }
 
-.search-bar-container, .search-results-container{
-  display: flex;
-  justify-content: center;
+.search-bar-container, .search-results-container {
+    display: flex;
+    justify-content: center;
+}
+
+.search-bar-container {
+    position: relative;
 }
 
 .search-bar input{
@@ -277,18 +282,58 @@ tr:nth-of-type(odd) {
   width: 20rem;
 }
 
-.search-results-container{
-    max-height: 50vh;
-    overflow: visible;
+.search-results-container {
+    position: absolute;
+    max-height: 80vh;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    border: 1px solid #ccc;
+    display: none;
+}
+
+.search-results-container.show {
+    display: flex;
 }
 
 .search-results-container div{
   box-shadow: 2px 10px 20px 0px;
   background: var(--color-white);
   border-radius: 5px;
-  margin-top: .5rem;
-  margin-bottom: 4rem;
   overflow: auto;
+}
+
+.search-results-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.search-results-table th, .search-results-table td {
+    border: 1px solid #ddd;
+}
+
+.search-results-table th {
+    color: var(--color-text-on-dark);
+    background-color: var(--color-gray);
+}
+
+.search-results-table td {
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Limit tbody to 2 rows with scroll */
+.search-results-table tbody {
+    display: block;
+    max-height: 6rem;
+    overflow-y: auto;
+}
+
+.search-results-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .search-results-list{
@@ -296,11 +341,18 @@ tr:nth-of-type(odd) {
     flex-direction: column;
     list-style: none;
     box-shadow: 5px 10px var(--color-dark);
+    padding: 0;
+    margin: 0;
+}
+
+.search-results-list li {
+    margin: 0;
+    padding: 0;
 }
 
 /*Hover color changes*/
 
-.app-header a:hover, .cl-list a:hover {
+.app-header a:hover, .cl-list a:hover, table a:hover {
   color: var(--color-gray)
 }
 
@@ -488,4 +540,49 @@ option {
     top: 0px;
     right: 0px;
     padding: 0px;
+}
+
+/* Exploration page */
+.exploration-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sunburst-search-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.sunburst-search-container > :first-child {
+  flex: 3;
+}
+
+.sunburst-search-container > :last-child {
+  flex: 2;
+}
+
+/* Selected items table */
+
+.selected-items-table-actions {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+
+.selected-items-table-actions * {
+    padding: 1rem 0;
+    background-color: var(--color-light);
+    transition: filter 0.3s ease;
+}
+
+.selected-items-table-actions *:hover {
+    filter: brightness(85%);
+}
+
+.generate-graph-button {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
 }

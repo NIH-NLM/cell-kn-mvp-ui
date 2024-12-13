@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
 
-const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2}) => {
+const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
 
     // Init refs
     const chartContainerRef = useRef();
@@ -11,9 +11,12 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     // Init states
     const [depth, setDepth] = useState(defaultDepth);
     const [graphNodeIds, setGraphNodeIds] = useState(selectedNodeIds);
+    const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
+    // TODO: Review using graphName as a state instead of a global variable
     const [graphName, setGraphName] = useState("CL-Full");
     const [edgeDirection, setEdgeDirection] = useState("ANY");
+    const [setOperation, setSetOperation] = useState("Intersection");
     const [collections, setCollections] = useState([]);
     const [collectionsToPrune, setCollectionsToPrune] = useState([]);
     const [nodesToPrune, setNodesToPrune] = useState([]);
@@ -50,7 +53,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         let isMounted = true;
         getGraphData(graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune).then(data => {
             if (isMounted) {
-                setGraphData(data);
+                setRawData(data);
             }
         });
 
@@ -59,6 +62,13 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
             isMounted = false;
         };
     }, [selectedNodeIds, graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune]);
+
+    // Parse set operation on change
+    useEffect(() => {
+        if (Object.keys(rawData).length !== 0) {
+            setGraphData(performSetOperation(rawData, setOperation))
+        }
+    }, [rawData, setOperation])
 
     // Update graph if data changes
     useEffect(() => {
@@ -114,6 +124,167 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
         return response.json();
     };
 
+    function performSetOperation(data, operation) {
+        const nodes = data.nodes;
+        const links = data.links;
+
+        // Function to get all node ids across all origin groups
+        const getAllNodeIdsFromOrigins = (operation) => {
+            const nodeIdsPerOrigin = Object.values(nodes).map(originGroup => {
+                return new Set(originGroup.map(item => item.node._id));
+            });
+
+            if (operation === 'Intersection') {
+                // For intersection, return the intersection of all node sets
+                return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
+                    if (acc === null) {
+                        return nodeIdsSet;
+                    }
+                    return new Set([...acc].filter(id => nodeIdsSet.has(id)));
+                }, null);
+            }
+
+            if (operation === 'Union') {
+                // For union, return the union of all node sets
+                return new Set(nodeIdsPerOrigin.flatMap(nodeIdsSet => [...nodeIdsSet]));
+            }
+
+            if (operation === 'SymmetricDifference') {
+                // For symmetric difference, return the symmetric difference of all node sets
+                return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
+                    if (acc === null) {
+                        return nodeIdsSet;
+                    }
+                    const result = new Set();
+                    // Add nodes in either set, but not both
+                    acc.forEach(id => {
+                        if (!nodeIdsSet.has(id)) {
+                            result.add(id);
+                        }
+                    });
+                    nodeIdsSet.forEach(id => {
+                        if (!acc.has(id)) {
+                            result.add(id);
+                        }
+                    });
+                    return result;
+                }, null);
+            }
+
+            throw new Error('Unknown operation');
+        };
+
+        // Function to add nodes from paths to the intersection set
+        const addNodesFromPathsToSet = (nodeIdsSet) => {
+            Object.values(nodes).forEach(originGroup => {
+                originGroup.forEach(item => {
+                    if (nodeIdsSet.has(item.node._id)) {
+                        // Add all vertices in the path to the set
+                        item.path.vertices.forEach(vertex => {
+                            nodeIdsSet.add(vertex._id);
+                        });
+                    }
+                });
+            });
+        };
+
+        // Intersection operation: Get only nodes in the intersection and their paths
+        const intersection = () => {
+            let intersectionNodeIds = getAllNodeIdsFromOrigins('Intersection');
+
+            // Add nodes from paths to the intersection set
+            addNodesFromPathsToSet(intersectionNodeIds);
+
+            // Filter out links that don't have both _from and _to in the intersected node set
+            const filteredLinks = links.filter(link =>
+                intersectionNodeIds.has(link._from) && intersectionNodeIds.has(link._to)
+            );
+
+            // Collect nodes that are in the intersection
+            const filteredNodes = [];
+            Object.values(nodes).forEach(originGroup => {
+                originGroup.forEach(item => {
+                    if (intersectionNodeIds.has(item.node._id)) {
+                        filteredNodes.push(item.node);
+                    }
+                });
+            });
+
+            // Return the result with filtered nodes and links
+            return {
+                nodes: filteredNodes,
+                links: filteredLinks
+            };
+        };
+
+        // Symmetric Difference operation: Remove nodes that are in all groups, plus their paths
+        const symmetricDifference = () => {
+            let diffNodeIds = getAllNodeIdsFromOrigins('SymmetricDifference');
+
+            // Add nodes from paths to the symmetric difference set
+            addNodesFromPathsToSet(diffNodeIds);
+
+            // Filter out links that don't have both _from and _to in the diff node set
+            const filteredLinks = links.filter(link =>
+                diffNodeIds.has(link._from) && diffNodeIds.has(link._to)
+            );
+
+            // Collect nodes that are in the symmetric difference
+            const filteredNodes = [];
+            Object.values(nodes).forEach(originGroup => {
+                originGroup.forEach(item => {
+                    if (diffNodeIds.has(item.node._id)) {
+                        filteredNodes.push(item.node);
+                    }
+                });
+            });
+
+            // Return the result with filtered nodes and links
+            return {
+                nodes: filteredNodes,
+                links: filteredLinks
+            };
+        };
+
+        // Union operation: Get all nodes from all groups and their paths
+        const union = () => {
+            let unionNodeIds = getAllNodeIdsFromOrigins('Union');
+
+            // Filter out links that don't have both _from and _to in the union node set
+            const filteredLinks = links.filter(link =>
+                unionNodeIds.has(link._from) && unionNodeIds.has(link._to)
+            );
+
+            // Collect nodes that are in the union
+            const filteredNodes = [];
+            Object.values(nodes).forEach(originGroup => {
+                originGroup.forEach(item => {
+                    if (unionNodeIds.has(item.node._id)) {
+                        filteredNodes.push(item.node);
+                    }
+                });
+            });
+
+            // Return the result with all nodes and links
+            return {
+                nodes: filteredNodes,
+                links: filteredLinks
+            };
+        };
+
+        // Execute based on the operation
+        switch (operation) {
+            case 'Intersection':
+                return intersection();
+            case 'Union':
+                return union();
+            case 'SymmetricDifference':
+                return symmetricDifference();
+            default:
+                throw new Error('Unknown operation');
+        }
+    }
+
     const fetchCollections = async () => {
         let response = await fetch('/arango_api/collections/');
         if (!response.ok) {
@@ -155,9 +326,8 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
             [],
             [])
             .then( data => {
-                console.log(data)
                 graph.updateGraph({
-                    newNodes: data["nodes"],
+                    newNodes: data["nodes"][clickedNodeId].map(d => d["node"]),
                     newLinks: data["links"]
                 });
             });
@@ -183,6 +353,11 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     // Handle changing the search direction of edges
     const handleEdgeDirectionChange = (event) => {
         setEdgeDirection(event.target.value);
+    };
+
+    // Handle changing the set operation
+    const handleOperationChange = (event) => {
+        setSetOperation(event.target.value);
     };
 
     const handleNodeFontSizeChange = (event) => {
@@ -258,13 +433,13 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
     };
 
   return (
-      <div>
+      <div className="graph-container">
           <button onClick={toggleOptionsVisibility} className="toggle-button">
               {optionsVisible ? 'Toggle Options ▼' : 'Toggle Options ▲'}
           </button>
           <div className="graph-options" style={optionsVisible ? {display:"flex"} : {display:"none"}}>
               <div className="depth-picker">
-                  <label htmlFor="depth-select">Select depth of edges from CL vertices:</label>
+                  <label htmlFor="depth-select">Select depth of edge traversal:</label>
                   <select id="depth-select" value={depth} onChange={handleDepthChange}>
                       {[0, 1, 2, 3, 4].map((value) => (
                           <option key={value} value={value}>
@@ -274,9 +449,19 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 2})
                   </select>
               </div>
               <div className="edge-direction-picker">
-                  <label htmlFor="edge-direction-select">Select direction of edge traversal from CL vertices:</label>
+                  <label htmlFor="edge-direction-select">Select direction of edge traversal from origin:</label>
                   <select id="edge-direction-select" value={edgeDirection} onChange={handleEdgeDirectionChange}>
-                      {["OUTBOUND", "INBOUND", "ANY"].map((value) => (
+                      {["OUTBOUND", "INBOUND", "ANY", "DUAL"].map((value) => (
+                          <option key={value} value={value}>
+                              {value}
+                          </option>
+                      ))}
+                  </select>
+              </div>
+              <div className="edge-direction-picker">
+                  <label htmlFor="edge-direction-select">Select operation for shown nodes (multi-origin graphs only)</label>
+                  <select id="edge-direction-select" value={setOperation} onChange={handleOperationChange}>
+                      {["Intersection", "Union", "SymmetricDifference"].map((value) => (
                           <option key={value} value={value}>
                               {value}
                           </option>

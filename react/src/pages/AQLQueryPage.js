@@ -20,7 +20,6 @@ const AQLQueryPage = () => {
                     throw new Error('Failed to fetch predefined queries');
                 }
                 const data = await response.json();
-                console.log(data)
                 setPredefinedQueries(data);
             } catch (err) {
                 console.error(err);
@@ -33,7 +32,6 @@ const AQLQueryPage = () => {
     const handleQueryChange = (event) => {
         const selectedId = event.target.value;
         const sq = predefinedQueries.find(q => q.id === parseInt(selectedId));
-        console.log(sq)
         setSelectedQuery(sq);
         setQueryTemplate(sq ? sq.query : '');
     };
@@ -93,13 +91,9 @@ const AQLQueryPage = () => {
                 <button onClick={executeQuery}>Search for Cells</button>
             </div>
             {error && <div className="error-message">{error}</div>}
-            <div className="graph-container">
-                {Object.keys(nodeIds).length > 0 ? (
-                    <ForceGraph nodeIds={nodeIds} defaultDepth={1} />
-                ) : (
-                    <div>{error}</div>
-                )}
-            </div>
+            {Object.keys(nodeIds).length > 0 && (
+                <ForceGraph nodeIds={nodeIds} defaultDepth={1} />
+            )}
         </div>
     );
 };

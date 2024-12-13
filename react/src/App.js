@@ -11,6 +11,7 @@ import CellPage from "./pages/CellPage";
 import SearchPage from "./pages/SearchPage";
 import BrowsePage from "./pages/BrowsePage";
 import AQLQueryPage from "./pages/AQLQueryPage";
+import ExplorationPage from "./pages/ExplorationPage";
 
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
                     <Route path="/aql" component={AQLQueryPage} />
                     <Route path="/:coll/:id" component={CellPage} />
                     <Route path="/:coll" component={CLList} />
-                    <Route path="/" component={SearchPage} />
+                    <Route path="/" component={ExplorationPage} />
                 </Switch>
             </div>
         </div>

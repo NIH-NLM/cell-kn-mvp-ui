@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import SelectedItemsTable from "../components/SelectedItemsTable";
+import SearchResultsTable from "../components/SearchResultsTable";
 
-const SearchPage = () => {
+const SearchPage = ({ generateGraph }) => {
     const debounceTimeoutRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false); // Track loading state for fetching more results
-
-    // Track the number of results to load
     const [resultsLoaded, setResultsLoaded] = useState(100); // Initially load 100 results
+    const [selectedItems, setSelectedItems] = useState([]); // Track selected items
 
     // Fetch search terms from the API with pagination
     const getSearchTerms = async (searchTerm, limit = 100) => {
@@ -22,11 +22,11 @@ const SearchPage = () => {
         const fetchSearchResults = async () => {
             setLoading(true);
             const data = await getSearchTerms(searchTerm, resultsLoaded);
-            data.sort((a, b) => {
-                return (a.label && b.label)
-                    ? a.label.toString().toLowerCase().localeCompare(b.label.toString().toLowerCase())
-                    : a._id.split('/')[1].toLowerCase().localeCompare(b._id.split('/')[1].toLowerCase());
-            });
+            // data.sort((a, b) => {
+            //     return (a.label && b.label)
+            //         ? a.label.toString().toLowerCase().localeCompare(b.label.toString().toLowerCase())
+            //         : a._id.split('/')[1].toLowerCase().localeCompare(b._id.split('/')[1].toLowerCase());
+            // });
             setSearchResults(data);
             setLoading(false);
         };
@@ -74,6 +74,18 @@ const SearchPage = () => {
         }
     };
 
+    // Add selected item to the list
+    const handleSelectItem = (item) => {
+        setSelectedItems(prev => [...prev, item]);
+        setShowResults(false);
+        setInput('');
+    };
+
+    // Remove selected item to the list
+     const removeSelectedItem = (item) => {
+        setSelectedItems(prev => prev.filter(d => d._id !== item._id));
+    };
+
     return (
         <div className="search-container">
             <div className="search-bar-container">
@@ -87,24 +99,14 @@ const SearchPage = () => {
                         onBlur={handleBlur}
                     />
                 </div>
-            </div>
-            <div
-                className="search-results-container"
-                style={showResults ? { display: "flex" } : { display: "none" }}
-                onScroll={handleScroll} // Attach scroll event listener
-            >
-                <div>
-                    <ul className="search-results-list">
-                        {searchResults.map((item, index) => (
-                            <Link key={index} to={item._id} onMouseDown={(e) => e.preventDefault()}>
-                                <li className="search-results-list-item">
-                                    {item.label ? item.label : item.term}
-                                </li>
-                            </Link>
-                        ))}
-                    </ul>
+                <div
+                    className={`search-results-container ${showResults ? 'show' : ''}`}
+                    onScroll={handleScroll} // Attach scroll event listener
+                >
+                    <SearchResultsTable searchResults={searchResults} handleSelectItem={handleSelectItem}/>
                 </div>
             </div>
+            <SelectedItemsTable selectedItems={selectedItems} generateGraph={generateGraph} removeSelectedItem={removeSelectedItem} />
         </div>
     );
 };

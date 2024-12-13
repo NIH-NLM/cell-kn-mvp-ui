@@ -71,3 +71,8 @@ def run_aql_query(request):
     except Exception as e:
         ##TODO: Handle errors
         return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+def get_sunburst(request):
+    search_results = DBEntry.get_sunburst()
+    return JsonResponse(search_results, safe=False)
