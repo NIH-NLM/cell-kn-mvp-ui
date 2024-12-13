@@ -13,5 +13,5 @@ ARANGO_DB_USER = env('ARANGO_DB_USER')
 ARANGO_DB_PASSWORD = env('ARANGO_DB_PASSWORD')
 
 # Configure the connection
-client = ArangoClient()
+client = ArangoClient(ARANGO_DB_HOST)
 db = client.db(ARANGO_DB_NAME, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD)
