@@ -26,6 +26,28 @@
     --color-focus:#3e94cf
 }
 
+/* Generic classes */
+
+.background-color-main {
+    background-color: var(--color-main);
+    color: var(--color-text-on-dark)
+}
+
+.background-color-gray {
+    background-color: var(--color-gray);
+    color: var(--color-text-on-dark)
+}
+
+.background-color-light {
+    background-color: var(--color-light);
+    color: var(--color-text)
+}
+
+.background-color-bg {
+    background-color: var(--color-bg);
+    color: var(--color-text)
+}
+
 /* BASE STYLES */
 
 
@@ -435,7 +457,11 @@ option {
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
+}
+
+.graph-options * {
+    margin-bottom: 0.5rem;
 }
 
 .toggle-button {
@@ -447,7 +473,6 @@ option {
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
 }
 
 .graph-options label {
@@ -482,20 +507,18 @@ option {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 5px;
+    justify-content: center;
+    margin-bottom: 0.25rem;
 }
 
 .checkbox-container {
     display: flex;
+    margin: 0 0.5rem;
     align-items: center;
 }
 
-.checkbox-container input {
-    margin-right: 10px;
-}
-
-.checkbox-container label {
-    font-weight: normal;
+.checkbox-container button {
+    padding: 0.25rem;
 }
 
 .export-buttons button {
@@ -540,6 +563,15 @@ option {
     top: 0px;
     right: 0px;
     padding: 0px;
+}
+
+/* Simulation Toggle */
+.simulation-toggle {
+    display: flex;
+}
+
+.simulation-toggle *{
+    padding: 0 0.5rem;
 }
 
 /* Exploration page */

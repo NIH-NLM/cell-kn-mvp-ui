@@ -150,7 +150,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                 return new Set(nodeIdsPerOrigin.flatMap(nodeIdsSet => [...nodeIdsSet]));
             }
 
-            if (operation === 'SymmetricDifference') {
+            if (operation === 'Symmetric Difference') {
                 // For symmetric difference, return the symmetric difference of all node sets
                 return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
                     if (acc === null) {
@@ -220,7 +220,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
 
         // Symmetric Difference operation: Remove nodes that are in all groups, plus their paths
         const symmetricDifference = () => {
-            let diffNodeIds = getAllNodeIdsFromOrigins('SymmetricDifference');
+            let diffNodeIds = getAllNodeIdsFromOrigins('Symmetric Difference');
 
             // Add nodes from paths to the symmetric difference set
             addNodesFromPathsToSet(diffNodeIds);
@@ -279,7 +279,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                 return intersection();
             case 'Union':
                 return union();
-            case 'SymmetricDifference':
+            case 'Symmetric Difference':
                 return symmetricDifference();
             default:
                 throw new Error('Unknown operation');
@@ -374,7 +374,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     };
 
     // Handle changing the checkboxes for collections
-    const handleCheckboxChange = (collectionName) => {
+    const handleCollectionChange = (collectionName) => {
         setCollectionsToPrune((prev) =>
             prev.includes(collectionName)
                 ? prev.filter(name => name !== collectionName)
@@ -460,9 +460,9 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                   </select>
               </div>
               <div className="edge-direction-picker">
-                  <label htmlFor="edge-direction-select">Select operation for shown nodes (multi-origin graphs only)</label>
+                  <label htmlFor="edge-direction-select">Select set operation for shown nodes (multi-origin graphs only)</label>
                   <select id="edge-direction-select" value={setOperation} onChange={handleOperationChange}>
-                      {["Intersection", "Union", "SymmetricDifference"].map((value) => (
+                      {["Intersection", "Union", "Symmetric Difference"].map((value) => (
                           <option key={value} value={value}>
                               {value}
                           </option>
@@ -496,13 +496,15 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                   <div className="checkboxes-container">
                       {collections.map((collection) => (
                           <div key={collection} className="checkbox-container">
-                              <input
-                                  type="checkbox"
+                              <button
+                                  type="button"
                                   id={collection}
                                   checked={!collectionsToPrune.includes(collection)}
-                                  onChange={() => handleCheckboxChange(collection)}
-                              />
-                              <label htmlFor={collection}>{collection}</label>
+                                  onClick={() => handleCollectionChange(collection)}
+                                  className={!collectionsToPrune.includes(collection)? "background-color-light" : "background-color-gray"}
+                              >
+                                  {collection}
+                              </button>
                           </div>
                       ))}
                   </div>
