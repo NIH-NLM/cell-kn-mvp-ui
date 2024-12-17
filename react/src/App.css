@@ -26,6 +26,32 @@
     --color-focus:#3e94cf
 }
 
+/* Generic classes */
+
+.background-color-main {
+    background-color: var(--color-main);
+    color: var(--color-text-on-dark)
+}
+
+.background-color-gray {
+    background-color: var(--color-gray);
+    color: var(--color-text-on-dark)
+}
+
+button.background-color-gray:hover {
+    color: var(--color-light)
+}
+
+.background-color-light {
+    background-color: var(--color-light);
+    color: var(--color-text)
+}
+
+.background-color-bg {
+    background-color: var(--color-bg);
+    color: var(--color-text)
+}
+
 /* BASE STYLES */
 
 
@@ -435,7 +461,11 @@ option {
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
+}
+
+.graph-options * {
+    margin-bottom: 0.5rem;
 }
 
 .toggle-button {
@@ -447,7 +477,6 @@ option {
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
 }
 
 .graph-options label {
@@ -482,20 +511,18 @@ option {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 5px;
+    justify-content: center;
+    margin-bottom: 0.25rem;
 }
 
 .checkbox-container {
     display: flex;
+    margin: 0 0.5rem;
     align-items: center;
 }
 
-.checkbox-container input {
-    margin-right: 10px;
-}
-
-.checkbox-container label {
-    font-weight: normal;
+.checkbox-container button {
+    padding: 0.25rem;
 }
 
 .export-buttons button {
@@ -542,6 +569,16 @@ option {
     padding: 0px;
 }
 
+/* Simulation Toggle */
+
+.simulation-toggle *{
+    padding: 0 0.5rem;
+}
+
+.simulation-toggle label{
+    display: inline-block;
+}
+
 /* Exploration page */
 .exploration-page {
   display: flex;
@@ -585,4 +622,70 @@ option {
     display: flex;
     justify-content: center;
     margin-top: 0.5rem;
+}
+
+/* Simulation Slider */
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    margin: 0 1rem;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
 }

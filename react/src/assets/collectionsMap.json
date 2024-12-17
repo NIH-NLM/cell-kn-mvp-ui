@@ -1,0 +1,58 @@
+[
+  ["anatomic_structure", {
+    "display_name": "Anatomic Structure",
+    "abbreviated_name": "Anatomic Structure"
+  }],
+  ["biomarker_combination", {
+    "display_name": "Biomarker Combination",
+    "abbreviated_name": "Biomarker Combination"
+  }],
+  ["cell_set", {
+    "display_name": "Cell Set",
+    "abbreviated_name": "Cell Set"
+  }],
+  ["CHEBI", {
+    "display_name": "Chemical Entities of Biological Interest (ChEBI)",
+    "abbreviated_name": "ChEBI"
+  }],
+  ["CL", {
+    "display_name": "Cell Ontology (CL)",
+    "abbreviated_name": "CL"
+  }],
+  ["disease", {
+    "display_name": "Disease",
+    "abbreviated_name": "Disease"
+  }],
+  ["drug_product", {
+    "display_name": "Drug Product",
+    "abbreviated_name": "Drug Product"
+  }],
+  ["gene_name", {
+    "display_name": "Gene Name",
+    "abbreviated_name": "Gene Name"
+  }],
+  ["GO", {
+    "display_name": "Gene Ontology (GO)",
+    "abbreviated_name": "GO"
+  }],
+  ["NCBITaxon", {
+    "display_name": "NCBI Taxon",
+    "abbreviated_name": "NCBI Taxon"
+  }],
+  ["PATO", {
+    "display_name": "PATO",
+    "abbreviated_name": "PATO"
+  }],
+  ["PR", {
+    "display_name": "Protein (PR)",
+    "abbreviated_name": "PR"
+  }],
+  ["publication", {
+    "display_name": "Publication",
+    "abbreviated_name": "Publication"
+  }],
+  ["UBERON", {
+    "display_name": "Uber-anatomy ontology (UBERON)",
+    "abbreviated_name": "UBERON"
+  }]
+]

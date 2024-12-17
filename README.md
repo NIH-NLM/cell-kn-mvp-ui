@@ -63,3 +63,10 @@ To update frontend (React):
 cd react
 npm run build
 ```
+
+For automatic builds of React frontend, instead run:
+```bash
+cd react
+npm run watch
+```
+

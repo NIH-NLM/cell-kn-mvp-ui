@@ -1,7 +1,9 @@
-import {useEffect, useState, useRef} from "react";
+import {useEffect, useState, useRef, useContext} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
+import {GraphNameContext} from "./Contexts";
+import collectionsMapData from '../assets/collectionsMap.json';
 
 const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
 
@@ -13,8 +15,6 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     const [graphNodeIds, setGraphNodeIds] = useState(selectedNodeIds);
     const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
-    // TODO: Review using graphName as a state instead of a global variable
-    const [graphName, setGraphName] = useState("CL-Full");
     const [edgeDirection, setEdgeDirection] = useState("ANY");
     const [setOperation, setSetOperation] = useState("Intersection");
     const [collections, setCollections] = useState([]);
@@ -29,11 +29,14 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     const [graph, setGraph] = useState(null);
     const [isSimOn, setIsSimOn] = useState(true);
 
+    const graphName = useContext(GraphNameContext);
+    const collectionsMap = new Map(collectionsMapData);
+
     useEffect(() => {
 
         fetchCollections().then(data => {
-            // Sort alphabetically, ignoring case
-            setCollections(data.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())))
+            // Set collections state
+            setCollections(parseCollections(data))
         } );
         document.addEventListener('click', closePopupOnInteraction);
         return () => {
@@ -78,6 +81,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
             const g = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
                 nodeGroups: collections,
+                collectionsMap: collectionsMap,
                 nodeFontSize: nodeFontSize,
                 linkFontSize: edgeFontSize,
                 nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
@@ -124,6 +128,12 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
         return response.json();
     };
 
+    function parseCollections(collections) {
+        // Sort collections alphabetically
+        return collections.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+
+    }
+
     function performSetOperation(data, operation) {
         const nodes = data.nodes;
         const links = data.links;
@@ -149,7 +159,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                 return new Set(nodeIdsPerOrigin.flatMap(nodeIdsSet => [...nodeIdsSet]));
             }
 
-            if (operation === 'SymmetricDifference') {
+            if (operation === 'Symmetric Difference') {
                 // For symmetric difference, return the symmetric difference of all node sets
                 return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
                     if (acc === null) {
@@ -219,7 +229,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
 
         // Symmetric Difference operation: Remove nodes that are in all groups, plus their paths
         const symmetricDifference = () => {
-            let diffNodeIds = getAllNodeIdsFromOrigins('SymmetricDifference');
+            let diffNodeIds = getAllNodeIdsFromOrigins('Symmetric Difference');
 
             // Add nodes from paths to the symmetric difference set
             addNodesFromPathsToSet(diffNodeIds);
@@ -278,7 +288,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                 return intersection();
             case 'Union':
                 return union();
-            case 'SymmetricDifference':
+            case 'Symmetric Difference':
                 return symmetricDifference();
             default:
                 throw new Error('Unknown operation');
@@ -373,7 +383,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     };
 
     // Handle changing the checkboxes for collections
-    const handleCheckboxChange = (collectionName) => {
+    const handleCollectionChange = (collectionName) => {
         setCollectionsToPrune((prev) =>
             prev.includes(collectionName)
                 ? prev.filter(name => name !== collectionName)
@@ -381,7 +391,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
         );
     };
 
-    const handleToggle = () => {
+    const handleSimulationToggle = () => {
         graph.toggleSimulation(!isSimOn)
         setIsSimOn(!isSimOn);
     };
@@ -459,9 +469,9 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                   </select>
               </div>
               <div className="edge-direction-picker">
-                  <label htmlFor="edge-direction-select">Select operation for shown nodes (multi-origin graphs only)</label>
+                  <label htmlFor="edge-direction-select">Select set operation for shown nodes (multi-origin graphs only)</label>
                   <select id="edge-direction-select" value={setOperation} onChange={handleOperationChange}>
-                      {["Intersection", "Union", "SymmetricDifference"].map((value) => (
+                      {["Intersection", "Union", "Symmetric Difference"].map((value) => (
                           <option key={value} value={value}>
                               {value}
                           </option>
@@ -495,21 +505,24 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                   <div className="checkboxes-container">
                       {collections.map((collection) => (
                           <div key={collection} className="checkbox-container">
-                              <input
-                                  type="checkbox"
+                              <button
                                   id={collection}
                                   checked={!collectionsToPrune.includes(collection)}
-                                  onChange={() => handleCheckboxChange(collection)}
-                              />
-                              <label htmlFor={collection}>{collection}</label>
+                                  onClick={() => handleCollectionChange(collection)}
+                                  className={!collectionsToPrune.includes(collection)? "background-color-light" : "background-color-gray"}
+                              >
+                                  {collectionsMap.has(collection)? collectionsMap.get(collection)["display_name"] : collection}
+                              </button>
                           </div>
                       ))}
                   </div>
               </div>
               <div className="simulation-toggle">
-                  <label >Toggle Simulation</label>
-                  <input type="checkbox" checked={isSimOn} onChange={handleToggle} />
-                  <span className="slider"></span>
+                  Toggle Simulation
+                  <label className="switch">
+                      <input type="checkbox" checked={isSimOn} onChange={handleSimulationToggle} />
+                      <span className="slider round"></span>
+                  </label>
               </div>
               <div className="export-buttons">
                   <button onClick={() => exportGraph('png')}>Download as PNG</button>
