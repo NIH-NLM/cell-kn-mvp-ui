@@ -506,7 +506,6 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                       {collections.map((collection) => (
                           <div key={collection} className="checkbox-container">
                               <button
-                                  type="button"
                                   id={collection}
                                   checked={!collectionsToPrune.includes(collection)}
                                   onClick={() => handleCollectionChange(collection)}
