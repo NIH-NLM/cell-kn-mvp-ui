@@ -382,7 +382,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
         );
     };
 
-    const handleToggle = () => {
+    const handleSimulationToggle = () => {
         graph.toggleSimulation(!isSimOn)
         setIsSimOn(!isSimOn);
     };
@@ -510,9 +510,11 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                   </div>
               </div>
               <div className="simulation-toggle">
-                  <label >Toggle Simulation</label>
-                  <input type="checkbox" checked={isSimOn} onChange={handleToggle} />
-                  <span className="slider"></span>
+                  Toggle Simulation
+                  <label className="switch">
+                      <input type="checkbox" checked={isSimOn} onChange={handleSimulationToggle} />
+                      <span className="slider round"></span>
+                  </label>
               </div>
               <div className="export-buttons">
                   <button onClick={() => exportGraph('png')}>Download as PNG</button>
