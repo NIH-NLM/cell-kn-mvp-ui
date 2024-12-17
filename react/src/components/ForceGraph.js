@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
 import {GraphNameContext} from "./Contexts";
+import collectionsMapData from '../assets/collectionsMap.json';
 
 const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
 
@@ -29,12 +30,13 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     const [isSimOn, setIsSimOn] = useState(true);
 
     const graphName = useContext(GraphNameContext);
+    const collectionsMap = new Map(collectionsMapData);
 
     useEffect(() => {
 
         fetchCollections().then(data => {
-            // Sort alphabetically, ignoring case
-            setCollections(data.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())))
+            // Set collections state
+            setCollections(parseCollections(data))
         } );
         document.addEventListener('click', closePopupOnInteraction);
         return () => {
@@ -79,6 +81,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
             const g = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
                 nodeGroups: collections,
+                collectionsMap: collectionsMap,
                 nodeFontSize: nodeFontSize,
                 linkFontSize: edgeFontSize,
                 nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
@@ -124,6 +127,12 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
 
         return response.json();
     };
+
+    function parseCollections(collections) {
+        // Sort collections alphabetically
+        return collections.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+
+    }
 
     function performSetOperation(data, operation) {
         const nodes = data.nodes;
@@ -503,7 +512,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
                                   onClick={() => handleCollectionChange(collection)}
                                   className={!collectionsToPrune.includes(collection)? "background-color-light" : "background-color-gray"}
                               >
-                                  {collection}
+                                  {collectionsMap.has(collection)? collectionsMap.get(collection)["display_name"] : collection}
                               </button>
                           </div>
                       ))}

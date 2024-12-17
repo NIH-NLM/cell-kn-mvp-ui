@@ -7,6 +7,7 @@ function ForceGraphConstructor({
                         nodeId = d => d._id, // given d in nodes, returns a unique identifier (string)
                         nodeGroup, // given d in nodes, returns an (ordinal) value for color
                         nodeGroups, // an array of ordinal values representing the node groups
+                        collectionsMap, // A map from names of collections to names to be shown
                         label, // given d in nodes, a label string
                         nodeHover, // given d in nodes, a title string
                         nodeFontSize,
@@ -114,7 +115,7 @@ function ForceGraphConstructor({
         .attr("x", 25)
         .attr("y", 9)
         .attr("dy", ".5em")
-        .text(d => d); // Text corresponds to the group names
+        .text(collection => collectionsMap.has(collection)? collectionsMap.get(collection)["abbreviated_name"] : collection); // Text corresponds to the group names
 
     updateGraph({newNodes: nodeData, newLinks: linkData})
 
