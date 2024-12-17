@@ -1,13 +1,15 @@
-import {useEffect, useState} from "react";
+import {useContext, useEffect, useState} from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "./SunburstConstructor";
+import {GraphNameContext} from "./Contexts";
 
 const Sunburst = () => {
 
     // TODO: Review using graphName as a state instead of a global variable
-    const [graphName, setGraphName] = useState("CL-Full");
     const [graphData, setGraphData] = useState({});
     const [graph, setGraph] = useState(null);
+
+    const graphName = useContext(GraphNameContext);
 
     // Fetch new graph data
     useEffect(() => {

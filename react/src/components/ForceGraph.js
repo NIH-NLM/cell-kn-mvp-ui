@@ -1,7 +1,8 @@
-import {useEffect, useState, useRef} from "react";
+import {useEffect, useState, useRef, useContext} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
+import {GraphNameContext} from "./Contexts";
 
 const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
 
@@ -13,8 +14,6 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     const [graphNodeIds, setGraphNodeIds] = useState(selectedNodeIds);
     const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
-    // TODO: Review using graphName as a state instead of a global variable
-    const [graphName, setGraphName] = useState("CL-Full");
     const [edgeDirection, setEdgeDirection] = useState("ANY");
     const [setOperation, setSetOperation] = useState("Intersection");
     const [collections, setCollections] = useState([]);
@@ -28,6 +27,8 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     const [edgeFontSize, setEdgeFontSize] = useState(8);
     const [graph, setGraph] = useState(null);
     const [isSimOn, setIsSimOn] = useState(true);
+
+    const graphName = useContext(GraphNameContext);
 
     useEffect(() => {
 
