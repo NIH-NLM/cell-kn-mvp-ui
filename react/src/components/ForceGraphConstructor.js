@@ -274,14 +274,33 @@ function ForceGraphConstructor({
                 .enter().append("g")
                 .call(drag(simulation));
 
-            // Returns a selection of circles, newly append to each g in node
-            node.append("circle")
-                .attr("r", nodeRadius)
-                .attr("fill", d => color(d.nodeGroup))
-                .on("contextmenu", function(event, d) {
-                    event.preventDefault();
-                    onNodeClick(event, d);
-                });
+            // Add nodes
+            node.each(function(d) {
+                // Check if the node's id is in the originNodeIds array
+                if (originNodeIds.includes(d.id)) {
+                    // Add two circles for nodes whose id is in originNodeIds
+                    d3.select(this).append("circle") // Outer circle
+                        .attr("r", nodeRadius * 1.2)
+                        .attr("fill", d => color(d.nodeGroup)); // Fill color based on collection group
+                    d3.select(this).append("circle") // Inner circle
+                        .attr("r", nodeRadius / 2)
+                        .attr("fill", "white") // Opaque center
+                        .on("contextmenu", function(event, d) {
+                            event.preventDefault();
+                            onNodeClick(event, d);
+                        });
+
+                } else {
+                    // Add a circle for other nodes
+                    d3.select(this).append("circle")
+                        .attr("r", nodeRadius)
+                        .attr("fill", d => color(d.nodeGroup))  // Fill color based on collection group
+                        .on("contextmenu", function(event, d) {
+                            event.preventDefault();
+                            onNodeClick(event, d);
+                        });
+                }
+            });
 
             // Append text
             node.append("text")
