@@ -38,6 +38,10 @@
     color: var(--color-text-on-dark)
 }
 
+button.background-color-gray:hover {
+    color: var(--color-light)
+}
+
 .background-color-light {
     background-color: var(--color-light);
     color: var(--color-text)
