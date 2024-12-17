@@ -8,6 +8,7 @@ function ForceGraphConstructor({
                         nodeGroup, // given d in nodes, returns an (ordinal) value for color
                         nodeGroups, // an array of ordinal values representing the node groups
                         collectionsMap, // A map from names of collections to names to be shown
+                        originNodeIds, // Ids of nodes graph originated from
                         label, // given d in nodes, a label string
                         nodeHover, // given d in nodes, a title string
                         nodeFontSize,

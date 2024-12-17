@@ -5,14 +5,14 @@ import jsPDF from 'jspdf';
 import {GraphNameContext} from "./Contexts";
 import collectionsMapData from '../assets/collectionsMap.json';
 
-const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1}) => {
+const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) => {
 
     // Init refs
     const chartContainerRef = useRef();
 
     // Init states
     const [depth, setDepth] = useState(defaultDepth);
-    const [graphNodeIds, setGraphNodeIds] = useState(selectedNodeIds);
+    const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
     const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
     const [edgeDirection, setEdgeDirection] = useState("ANY");
@@ -47,8 +47,8 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     // Reset expanding and pruning when creating a new graph
     useEffect(() => {
         setNodesToPrune([])
-        setGraphNodeIds(selectedNodeIds);
-    }, [selectedNodeIds]);
+        setGraphNodeIds(originNodeIds);
+    }, [originNodeIds]);
 
     // Fetch new graph data on change
     useEffect(() => {
@@ -64,7 +64,7 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
         return () => {
             isMounted = false;
         };
-    }, [selectedNodeIds, graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune]);
+    }, [originNodeIds, graphNodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune]);
 
     // Parse set operation on change
     useEffect(() => {
@@ -77,11 +77,11 @@ const ForceGraph = ({ nodeIds: selectedNodeIds, defaultDepth: defaultDepth = 1})
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
             //TODO: Review width/height
-            let focusedGroupName = selectedNodeIds.length > 1 ? "Vertices in Results" : "Current Vertex";
             const g = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
                 nodeGroups: collections,
                 collectionsMap: collectionsMap,
+                originNodeIds: originNodeIds,
                 nodeFontSize: nodeFontSize,
                 linkFontSize: edgeFontSize,
                 nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
