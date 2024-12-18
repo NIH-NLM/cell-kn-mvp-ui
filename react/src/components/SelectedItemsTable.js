@@ -13,7 +13,7 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }
     return(
         selectedItems.length > 0 && (
             <fieldset>
-                <legend>test</legend>
+                <legend>Origin Nodes</legend>
                 <table className="selected-items-table">
                     <thead>
                     <tr>
