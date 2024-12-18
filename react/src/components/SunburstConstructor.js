@@ -45,16 +45,23 @@ function SunburstConstructor (data, size, handleSunburstClick) {
 
       .attr("d", d => arc(d.current));
 
-  // Make arcs selectable
-  path.on("contextmenu", function(event, d) {
+  // Make arcs context menu open with right click
+  path.style("cursor", "pointer")
+      .on("contextmenu", function(event, d) {
         event.preventDefault();
         handleSunburstClick(event, d);
       });
 
   // Make them navigable if they have children.
   path.filter(d => d.children)
-      .style("cursor", "pointer")
       .on("click", clicked);
+
+  // Make arcs context menu clickable if they do not have children
+  path.filter(d => !d.children)
+      .on("click", function(event, d) {
+        event.preventDefault();
+        handleSunburstClick(event, d);
+      });
 
   const format = d3.format(",d");
   path.append("title")

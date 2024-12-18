@@ -1,8 +1,7 @@
-import {useContext, useEffect, useState} from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "./SunburstConstructor";
 import {GraphNameContext} from "./Contexts";
-import sunburstConstructor from "./SunburstConstructor";
 
 const Sunburst = ({addSelectedItem}) => {
 
@@ -11,6 +10,8 @@ const Sunburst = ({addSelectedItem}) => {
     const [clickedItem, setClickedItem] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+
+    const popupRef = useRef(null);
 
 
     const graphName = useContext(GraphNameContext);
@@ -48,6 +49,24 @@ const Sunburst = ({addSelectedItem}) => {
             chartContainer.append(() => graph);
         }
     }, [graph])
+
+    // Add event listeners to close popup window if clicks occur outside popup
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+        // Check if the click is outside the popup
+        if (popupRef.current && !popupRef.current.contains(event.target)) {
+            handlePopupClose();
+        }
+        };
+
+        // Add event listener for clicks on the document
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // Cleanup the event listener when the component unmounts or popup visibility changes
+        return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     let getGraphData = async (graphName) => {
         let response = await fetch('/arango_api/sunburst/', {
@@ -100,6 +119,7 @@ const Sunburst = ({addSelectedItem}) => {
             <div>
                 <div id="sunburst-container" />
                 <div
+                    ref={popupRef}
                     className="node-popup"
                     style={popupVisible ?
                         {display:"flex",
@@ -112,6 +132,7 @@ const Sunburst = ({addSelectedItem}) => {
                         href={`/#/${clickedItem? clickedItem["_id"] : ""}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={handlePopupClose}
                     >
                         Go To Page
                     </a>
