@@ -12,22 +12,25 @@ import SearchPage from "./pages/SearchPage";
 import BrowsePage from "./pages/BrowsePage";
 import AQLQueryPage from "./pages/AQLQueryPage";
 import ExplorationPage from "./pages/ExplorationPage";
+import {ActiveNavProvider} from "./components/ActiveNavContext";
 
 function App() {
   return (
     <Router>
-        <div className="site-container background-color-white">
-            <Header />
-            <div className="app">
-                <Switch>
-                    <Route path="/browse" component={BrowsePage} />
-                    <Route path="/aql" component={AQLQueryPage} />
-                    <Route path="/:coll/:id" component={CellPage} />
-                    <Route path="/:coll" component={CLList} />
-                    <Route path="/" component={ExplorationPage} />
-                </Switch>
-            </div>
+        <ActiveNavProvider>
+            <div className="site-container background-color-white">
+                <Header />
+                <div className="app">
+                    <Switch>
+                        <Route path="/browse" component={BrowsePage} />
+                        <Route path="/aql" component={AQLQueryPage} />
+                        <Route path="/:coll/:id" component={CellPage} />
+                        <Route path="/:coll" component={CLList} />
+                        <Route path="/" component={ExplorationPage} />
+                    </Switch>
+                </div>
         </div>
+      </ActiveNavProvider>
     </Router>
   );
 }

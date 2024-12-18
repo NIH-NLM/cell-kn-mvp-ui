@@ -9,7 +9,7 @@
     --color-light: #d6d7d9;
     --color-white: #fff;
     --color-border:#aeb0b5;
-    --color-focus:#3e94cf;
+    --color-focus:#0071bc;
     --color-visted:#4c2c92;
 }
 
@@ -24,7 +24,7 @@
     --color-light: #aeb0b5;
     --color-white: #323a45;
     --color-border:#212121;
-    --color-focus:#3e94cf;
+    --color-focus:#0071bc;
     --color-visted:#4c2c92;
 }
 
@@ -124,10 +124,8 @@ a {
     margin: 1em 0;
 }
 
-.navbar button {
-    border: 0;
-    background: transparent;
-    cursor: pointer;
+.navbar h4:hover {
+    text-decoration: underline;
 }
 
 .navbar button > svg {
@@ -135,6 +133,10 @@ a {
     height: 25px;
     width: 25px;
     object-fit: cover;
+}
+
+.active-nav {
+    color: var(--color-focus);
 }
 
 .app-body {
