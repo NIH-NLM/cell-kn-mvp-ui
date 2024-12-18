@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import {GraphNameContext} from "./Contexts";
 import collectionsMapData from '../assets/collectionsMap.json';
 
-const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) => {
+const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, heightRatio = 0.5}) => {
 
     // Init refs
     const chartContainerRef = useRef();
@@ -76,7 +76,6 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
     // Update graph if data changes
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
-            //TODO: Review width/height
             const g = ForceGraphConstructor(graphData, {
                 nodeGroup: d => d._id.split('/')[0],
                 nodeGroups: collections,
@@ -90,7 +89,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
                 interactionCallback: closePopupOnInteraction,
                 nodeStrength: -100,
                 width: "2560",
-                height: "1280",
+                heightRatio: heightRatio,
             });
             setGraph(g)
         }

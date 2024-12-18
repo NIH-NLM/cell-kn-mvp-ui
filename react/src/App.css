@@ -232,6 +232,10 @@ tr {
   padding: 0 2rem 1rem 0;
 }
 
+.cell-item-list {
+    max-width: 40%;
+}
+
 .cl {
   margin-top: 2rem;
 }
@@ -241,8 +245,9 @@ tr {
 }
 
 .cell-item-container{
-  text-wrap: balance;
-  word-wrap: break-word;
+    display: flex;
+    text-wrap: balance;
+    word-wrap: break-word;
 }
 
 .cell-edges-container{

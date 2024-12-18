@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 
 const CellCard = ({ cell: cell }) => {
     return (
@@ -12,7 +11,7 @@ const CellCard = ({ cell: cell }) => {
                                     return (
                                         <tr>
                                             <td className="nowrap">{key}</td>
-                                            <td>{value}</td>
+                                            <td>{Array.isArray(value) ? value.join(", ") : value }</td>
                                         </tr>
                                     )
                                 } else {

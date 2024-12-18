@@ -60,7 +60,7 @@ const CellPage = ({ match, history }) => {
                 </div>
                 <div className="cell-item-container">
                     <CellCard cell={cell} />
-                    <ForceGraph nodeIds={[cell._id]}/>
+                    <ForceGraph nodeIds={[cell._id]} heightRatio={1} />
                 </div>
             </div>
         )
