@@ -280,10 +280,10 @@ function ForceGraphConstructor({
                 if (originNodeIds.includes(d.id)) {
                     // Add two circles for nodes whose id is in originNodeIds
                     d3.select(this).append("circle") // Outer circle
-                        .attr("r", nodeRadius * 1.2)
+                        .attr("r", nodeRadius)
                         .attr("fill", d => color(d.nodeGroup)); // Fill color based on collection group
                     d3.select(this).append("circle") // Inner circle
-                        .attr("r", nodeRadius / 2)
+                        .attr("r", nodeRadius * .7)
                         .attr("fill", "white") // Opaque center
                         .on("contextmenu", function(event, d) {
                             event.preventDefault();
