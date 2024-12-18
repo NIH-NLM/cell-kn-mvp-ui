@@ -16,7 +16,7 @@ import ExplorationPage from "./pages/ExplorationPage";
 function App() {
   return (
     <Router>
-        <div className="site-container">
+        <div className="site-container background-color-white">
             <Header />
             <div className="app">
                 <Switch>

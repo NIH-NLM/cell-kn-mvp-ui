@@ -12,7 +12,8 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }
 
     return(
         selectedItems.length > 0 && (
-            <div>
+            <fieldset>
+                <legend>test</legend>
                 <table className="selected-items-table">
                     <thead>
                     <tr>
@@ -41,7 +42,7 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }
                 <div className="generate-graph-button">
                     <button onClick={handleGenerateGraph}>Generate Graph</button>
                 </div>
-            </div>
+            </fieldset>
         )
     )
 }
