@@ -8,7 +8,7 @@ const Sunburst = ({addSelectedItem}) => {
 
     const [graphData, setGraphData] = useState({});
     const [graph, setGraph] = useState(null);
-    const [clickedItemId, setClickedItemId] = useState(null);
+    const [clickedItem, setClickedItem] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
 
@@ -69,7 +69,7 @@ const Sunburst = ({addSelectedItem}) => {
 
     // Handle right click on node
     const handleSunburstClick = (e, data) => {
-        setClickedItemId(data.data._id);
+        setClickedItem(data.data);
 
         // Get the mouse position and current scroll state
         const { clientX, clientY } = e;
@@ -85,7 +85,7 @@ const Sunburst = ({addSelectedItem}) => {
     }
 
     function handleSelectItem(){
-        addSelectedItem(clickedItemId);
+        addSelectedItem(clickedItem);
         handlePopupClose();
     }
 
@@ -109,7 +109,7 @@ const Sunburst = ({addSelectedItem}) => {
                 >
                     <a
                         className="popup-button"
-                        href={`/#/${clickedItemId}`}
+                        href={`/#/${clickedItem? clickedItem["_id"] : ""}`}
                         target="_blank"
                         rel="noopener noreferrer"
                     >
