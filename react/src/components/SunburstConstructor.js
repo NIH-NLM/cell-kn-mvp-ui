@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-function SunburstConstructor (data, size) {
+function SunburstConstructor (data, size, handleSunburstClick) {
 
 
   // Specify the chart’s dimensions.
@@ -45,7 +45,13 @@ function SunburstConstructor (data, size) {
 
       .attr("d", d => arc(d.current));
 
-  // Make them clickable if they have children.
+  // Make arcs selectable
+  path.on("contextmenu", function(event, d) {
+        event.preventDefault();
+        handleSunburstClick(event, d);
+      });
+
+  // Make them navigable if they have children.
   path.filter(d => d.children)
       .style("cursor", "pointer")
       .on("click", clicked);

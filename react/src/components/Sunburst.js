@@ -2,12 +2,16 @@ import {useContext, useEffect, useState} from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "./SunburstConstructor";
 import {GraphNameContext} from "./Contexts";
+import sunburstConstructor from "./SunburstConstructor";
 
-const Sunburst = () => {
+const Sunburst = ({addSelectedItem}) => {
 
-    // TODO: Review using graphName as a state instead of a global variable
     const [graphData, setGraphData] = useState({});
     const [graph, setGraph] = useState(null);
+    const [clickedItemId, setClickedItemId] = useState(null);
+    const [popupVisible, setPopupVisible] = useState(false);
+    const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+
 
     const graphName = useContext(GraphNameContext);
 
@@ -31,7 +35,7 @@ const Sunburst = () => {
     useEffect(() => {
         if (Object.keys(graphData).length !== 0){
             //TODO: Review size
-            const g = SunburstConstructor(graphData, 928);
+            const g = SunburstConstructor(graphData, 928, handleSunburstClick);
             setGraph(g)
         }
     }, [graphData]);
@@ -63,9 +67,57 @@ const Sunburst = () => {
         return response.json();
     };
 
+    // Handle right click on node
+    const handleSunburstClick = (e, data) => {
+        setClickedItemId(data.data._id);
+
+        // Get the mouse position and current scroll state
+        const { clientX, clientY } = e;
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+
+        // Adjust the popup position by adding the scroll offsets
+        setPopupPosition({
+            x: clientX + 10 + scrollX,
+            y: clientY + 10 + scrollY,
+        });
+        setPopupVisible(true);
+    }
+
+    function handleSelectItem(){
+        addSelectedItem(clickedItemId);
+        handlePopupClose();
+    }
+
+    // Handle closing the node popup
+    const handlePopupClose = () => {
+        setPopupVisible(false);
+    };
+
+
 
     return (
-            <div id="sunburst-container">
+            <div>
+                <div id="sunburst-container" />
+                <div
+                    className="node-popup"
+                    style={popupVisible ?
+                        {display:"flex",
+                            left: `${popupPosition.x + 10}px`,
+                            top: `${popupPosition.y + 10}px`,
+                        } : {display:"none"}}
+                >
+                    <a
+                        className="popup-button"
+                        href={`/#/${clickedItemId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Go To Page
+                    </a>
+                    <button className="popup-button" onClick={handleSelectItem}>Add as origin</button>
+                    <button className="x-button" onClick={handlePopupClose}>X</button>
+                </div>
             </div>
         )
 }
