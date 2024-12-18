@@ -4,9 +4,15 @@ import {Link} from "react-router-dom";
 const Header = () => {
 
     return (
-        <div className="app-header background-color-main">
-            <Link to="/"><h3>Search</h3></Link>
-            <Link to="/aql"><h3>Query</h3></Link>
+        <div>
+            <div className="app-header background-color-main">
+                <h1>NLM Knowledge Network</h1>
+                <div>Login</div>
+            </div>
+            <div className="navbar background-color-light-bg">
+                <Link to="/"><h4>Browse</h4></Link>
+                <Link to="/aql"><h4>Query</h4></Link>
+            </div>
         </div>
     )
 }
