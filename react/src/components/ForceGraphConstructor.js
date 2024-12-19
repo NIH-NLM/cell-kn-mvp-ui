@@ -302,13 +302,23 @@ function ForceGraphConstructor({
                 }
             });
 
-            // Append text
+            // Append label text
             node.append("text")
                 .text(d => d.nodeLabel)
                 .style("font-size", nodeFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
                 .attr("y", nodeRadius + nodeFontSize)
+                .call(wrap, 25);
+
+            // Append collection text
+            node.append("text")
+                // collectionsMap.has(collection)? collectionsMap.get(collection)["abbreviated_name"] : collection
+                .text(d => collectionsMap.has(d._id.split("/")[0]) ? collectionsMap.get(d._id.split("/")[0])["abbreviated_name"] : d._id.split("/")[0])
+                .style("font-size", nodeFontSize + "px")
+                .style("fill", "black")
+                .attr("text-anchor", "middle")
+                .attr("y", -(nodeRadius + nodeFontSize))
                 .call(wrap, 25);
 
 
