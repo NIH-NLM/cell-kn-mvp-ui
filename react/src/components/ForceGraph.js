@@ -28,6 +28,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
     const [edgeFontSize, setEdgeFontSize] = useState(8);
     const [graph, setGraph] = useState(null);
     const [isSimOn, setIsSimOn] = useState(true);
+    const [labelStates, setLabelStates] = useState({".collection-label": true, ".link-label": true, ".node-label": true})
 
     const graphName = useContext(GraphNameContext);
     const collectionsMap = new Map(collectionsMapData);
@@ -104,6 +105,17 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
             chartContainer.append(() => graph);
         }
     }, [graph])
+
+    // Toggle labels when labelStates changes
+    useEffect(() => {
+        // Check if 'graph' and 'graph.toggleLabels' are defined
+        if (graph !== null && typeof graph.toggleLabels === 'function') {
+            // If 'graph' and 'graph.toggleLabels' exist, call the toggleLabels method
+            for (let labelClass in labelStates) {
+                graph.toggleLabels(labelStates[labelClass], labelClass);
+            }
+        }
+    }, [labelStates]);
 
     let getGraphData = async (nodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune) => {
         let response = await fetch('/arango_api/graph/', {
@@ -391,6 +403,14 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
         );
     };
 
+    const handleLabelToggle = (labelClass) => {
+        setLabelStates(prevStates => {
+            // Update the specific label state
+            const newStates = { ...prevStates, [labelClass]: !prevStates[labelClass] };
+            return newStates;
+        });
+    };
+
     const handleSimulationToggle = () => {
         graph.toggleSimulation(!isSimOn)
         setIsSimOn(!isSimOn);
@@ -515,6 +535,32 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1}) =
                               </button>
                           </div>
                       ))}
+                  </div>
+              </div>
+              <div className="labels-toggle-container">
+                  <label>Toggle Labels</label>
+                  <div className="labels-toggle">
+                      <div className="collection-toggle">
+                          Collection
+                          <label className="switch">
+                              <input type="checkbox" checked={labelStates[".collection-label"]} onChange={() => handleLabelToggle(".collection-label")} />
+                              <span className="slider round"></span>
+                          </label>
+                      </div>
+                      <div className="edge-toggle">
+                          Edge
+                          <label className="switch">
+                              <input type="checkbox" checked={labelStates[".link-label"]} onChange={() => handleLabelToggle(".link-label")} />
+                              <span className="slider round"></span>
+                          </label>
+                      </div>
+                      <div className="node-toggle">
+                          Node
+                          <label className="switch">
+                              <input type="checkbox" checked={labelStates[".node-label"]} onChange={() => handleLabelToggle(".node-label")} />
+                              <span className="slider round"></span>
+                          </label>
+                      </div>
                   </div>
               </div>
               <div className="simulation-toggle">
