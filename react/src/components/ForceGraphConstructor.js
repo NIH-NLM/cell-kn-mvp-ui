@@ -242,6 +242,27 @@ function ForceGraphConstructor({
         }
     }
 
+    function toggleLabels(areLabelsOn, labelClass) {
+        let container
+
+        if (labelClass.includes("link")) {
+            container = linkContainer
+        } else {
+            container = nodeContainer
+        }
+        if (areLabelsOn){
+            // Display Labels
+            container
+                .selectAll(labelClass)
+                .style("display", "block")
+        } else {
+            // Hide Labels
+            container
+                .selectAll(labelClass)
+                .style("display", "none")
+        }
+    }
+
     function updateGraph({
                              newNodes = [],
                              newLinks = [],
@@ -303,13 +324,24 @@ function ForceGraphConstructor({
                 }
             });
 
-            // Append text
+            // Append label text
             node.append("text")
                 .text(d => d.nodeLabel)
                 .style("font-size", nodeFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
                 .attr("y", nodeRadius + nodeFontSize)
+                .attr("class", "node-label")
+                .call(wrap, 25);
+
+            // Append collection text
+            node.append("text")
+                .text(d => collectionsMap.has(d._id.split("/")[0]) ? collectionsMap.get(d._id.split("/")[0])["abbreviated_name"] : d._id.split("/")[0])
+                .style("font-size", nodeFontSize + "px")
+                .style("fill", "black")
+                .attr("text-anchor", "middle")
+                .attr("y", -(nodeRadius + nodeFontSize))
+                .attr("class", "collection-label")
                 .call(wrap, 25);
 
 
@@ -362,7 +394,7 @@ function ForceGraphConstructor({
                 .style("font-size", linkFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
-                // .attr("y", 7.5)
+                .attr("class", "link-label")
                 .call(wrap, 25);
         }
 
@@ -405,6 +437,7 @@ function ForceGraphConstructor({
         updateNodeFontSize,
         updateLinkFontSize,
         toggleSimulation,
+        toggleLabels,
     });
 }
 

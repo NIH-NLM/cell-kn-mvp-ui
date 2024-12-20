@@ -680,3 +680,17 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
+
+/* Label toggles */
+.labels-toggle-container {
+    text-align: center;
+}
+
+.labels-toggle {
+    display: flex;
+    margin-top: 1rem;
+}
+
+.labels-toggle * {
+    display: flex;
+}
