@@ -443,7 +443,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
 
   return (
       <div className="graph-container">
-          <button onClick={toggleOptionsVisibility} className="toggle-button">
+          <button onClick={toggleOptionsVisibility} className="toggle-button background-color-white">
               {optionsVisible ? 'Toggle Options ▼' : 'Toggle Options ▲'}
           </button>
           <div className="graph-options" style={optionsVisible ? {display:"flex"} : {display:"none"}}>
@@ -508,7 +508,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
                                   id={collection}
                                   checked={!collectionsToPrune.includes(collection)}
                                   onClick={() => handleCollectionChange(collection)}
-                                  className={!collectionsToPrune.includes(collection)? "background-color-light" : "background-color-gray"}
+                                  className={collectionsToPrune.includes(collection)? "background-color-light" : "background-color-bg"}
                               >
                                   {collectionsMap.has(collection)? collectionsMap.get(collection)["display_name"] : collection}
                               </button>

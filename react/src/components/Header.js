@@ -1,12 +1,35 @@
-import React from 'react'
-import {Link} from "react-router-dom";
+import React, {useEffect} from 'react'
+import {Link, useLocation} from "react-router-dom";
+import {useActiveNav} from "./ActiveNavContext";
 
 const Header = () => {
 
+      const { activeNav, setActive } = useActiveNav();
+      const location = useLocation();
+
+      // Update activeNav whenever location changes
+      useEffect(() => {
+        setActive(location.pathname);
+      }, [location, setActive]);
+
     return (
-        <div className="app-header">
-            <Link to="/"><h3>Search</h3></Link>
-            <Link to="/aql"><h3>Query</h3></Link>
+        <div>
+            <div className="app-header background-color-main">
+                <h1>NLM Knowledge Network</h1>
+                <div>Login</div>
+            </div>
+            <div className="navbar background-color-light-bg">
+                <Link to="/">
+                    <h4 className={activeNav === '/' ? 'active-nav' : ''}>
+                        Browse
+                    </h4>
+                </Link>
+                <Link to="/aql">
+                    <h4 className={activeNav === '/aql' ? 'active-nav' : ''}>
+                        Query
+                    </h4>
+                </Link>
+            </div>
         </div>
     )
 }
