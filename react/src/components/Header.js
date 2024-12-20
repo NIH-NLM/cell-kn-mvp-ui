@@ -21,12 +21,17 @@ const Header = () => {
             <div className="navbar background-color-light-bg">
                 <Link to="/">
                     <h4 className={activeNav === '/' ? 'active-nav' : ''}>
-                        Browse
+                        Explore
                     </h4>
                 </Link>
                 <Link to="/aql">
                     <h4 className={activeNav === '/aql' ? 'active-nav' : ''}>
                         Query
+                    </h4>
+                </Link>
+                <Link to="/browse">
+                    <h4 className={activeNav.startsWith('/browse') ? 'active-nav' : ''}>
+                        Browse
                     </h4>
                 </Link>
             </div>
