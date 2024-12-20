@@ -25,7 +25,7 @@ function ForceGraphConstructor({
                         initialScale = 2, // initial zoom level
                         colors = [...d3.schemePaired, ...d3.schemeDark2], // an array of color schemes, for the node groups
                         width = 640, // outer width, in pixels
-                        height = 400, // outer height, in pixels
+                        heightRatio= .5, // outer height, multiplied by width. I.E., .5 height ratio will result in height half of the width
                         nodeForceStrength = -2500,
                         centerForceStrength = 1,
                         invalidation // when this promise resolves, stop the simulation
@@ -50,6 +50,7 @@ function ForceGraphConstructor({
         .on("tick", ticked);
 
     // Create main svg element
+    let height = width * heightRatio
     const svg = d3.create("svg")
         .attr("width", width)
         .attr("height", height)
