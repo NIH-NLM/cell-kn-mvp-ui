@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import SelectedItemsTable from "../components/SelectedItemsTable";
 import SearchResultsTable from "../components/SearchResultsTable";
 
-const SearchPage = ({ generateGraph }) => {
+const SearchPage = ({ generateGraph, selectedItems, removeSelectedItem, addSelectedItem }) => {
     const debounceTimeoutRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [input, setInput] = useState('');
@@ -10,7 +10,6 @@ const SearchPage = ({ generateGraph }) => {
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false); // Track loading state for fetching more results
     const [resultsLoaded, setResultsLoaded] = useState(100); // Initially load 100 results
-    const [selectedItems, setSelectedItems] = useState([]); // Track selected items
 
     // Fetch search terms from the API with pagination
     const getSearchTerms = async (searchTerm, limit = 100) => {
@@ -74,17 +73,12 @@ const SearchPage = ({ generateGraph }) => {
         }
     };
 
-    // Add selected item to the list
-    const handleSelectItem = (item) => {
-        setSelectedItems(prev => [...prev, item]);
+    function handleSelectItem(item){
+        addSelectedItem(item);
         setShowResults(false);
         setInput('');
-    };
+    }
 
-    // Remove selected item to the list
-     const removeSelectedItem = (item) => {
-        setSelectedItems(prev => prev.filter(d => d._id !== item._id));
-    };
 
     return (
         <div className="search-container">
