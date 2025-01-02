@@ -170,6 +170,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
                 return new Set(nodeIdsPerOrigin.flatMap(nodeIdsSet => [...nodeIdsSet]));
             }
 
+            // TODO: While operation is correct under the parameters, it is not intuitive. Fix.
             if (operation === 'Symmetric Difference') {
                 // For symmetric difference, return the symmetric difference of all node sets
                 return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
@@ -195,7 +196,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
             throw new Error('Unknown operation');
         };
 
-        // Function to add nodes from paths to the intersection set
+        // Function to add nodes from paths to the set
         const addNodesFromPathsToSet = (nodeIdsSet) => {
             Object.values(nodes).forEach(originGroup => {
                 originGroup.forEach(item => {
@@ -209,101 +210,48 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
             });
         };
 
-        // Intersection operation: Get only nodes in the intersection and their paths
-        const intersection = () => {
-            let intersectionNodeIds = getAllNodeIdsFromOrigins('Intersection');
+        let nodeIds = getAllNodeIdsFromOrigins(operation);
 
-            // Add nodes from paths to the intersection set
-            addNodesFromPathsToSet(intersectionNodeIds);
+        // Add nodes from paths to the intersection set
+        addNodesFromPathsToSet(nodeIds);
 
-            // Filter out links that don't have both _from and _to in the intersected node set
-            const filteredLinks = links.filter(link =>
-                intersectionNodeIds.has(link._from) && intersectionNodeIds.has(link._to)
-            );
+        // Set to track unique link pairs (_from, _to)
+        const seenLinks = new Set();
 
-            // Collect nodes that are in the intersection
-            const filteredNodes = [];
-            Object.values(nodes).forEach(originGroup => {
-                originGroup.forEach(item => {
-                    if (intersectionNodeIds.has(item.node._id)) {
-                        filteredNodes.push(item.node);
-                    }
-                });
+        // Filter out links that don't have both _from and _to in the intersected node set, and remove duplicates
+        const filteredLinks = links.filter(link => {
+            // Check if both _from and _to are in nodeIds
+            if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
+                // Create a unique key for the link pair (_from, _to)
+                const linkKey = `${link._from}-${link._to}`;
+
+                // If the link pair hasn't been seen before, keep it, otherwise filter it out
+                if (seenLinks.has(linkKey)) {
+                    return false;
+                } else {
+                    seenLinks.add(linkKey);
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        // Collect nodes that are in the intersection
+        const filteredNodes = [];
+        Object.values(nodes).forEach(originGroup => {
+            originGroup.forEach(item => {
+                if (nodeIds.size != 0 && nodeIds.has(item.node._id)) {
+                    filteredNodes.push(item.node);
+                    nodeIds.delete(item.node._id)
+                }
             });
+        });
 
-            // Return the result with filtered nodes and links
-            return {
-                nodes: filteredNodes,
-                links: filteredLinks
-            };
+        // Return the result with filtered nodes and links
+        return {
+            nodes: filteredNodes,
+            links: filteredLinks
         };
-
-        // Symmetric Difference operation: Remove nodes that are in all groups, plus their paths
-        const symmetricDifference = () => {
-            let diffNodeIds = getAllNodeIdsFromOrigins('Symmetric Difference');
-
-            // Add nodes from paths to the symmetric difference set
-            addNodesFromPathsToSet(diffNodeIds);
-
-            // Filter out links that don't have both _from and _to in the diff node set
-            const filteredLinks = links.filter(link =>
-                diffNodeIds.has(link._from) && diffNodeIds.has(link._to)
-            );
-
-            // Collect nodes that are in the symmetric difference
-            const filteredNodes = [];
-            Object.values(nodes).forEach(originGroup => {
-                originGroup.forEach(item => {
-                    if (diffNodeIds.has(item.node._id)) {
-                        filteredNodes.push(item.node);
-                    }
-                });
-            });
-
-            // Return the result with filtered nodes and links
-            return {
-                nodes: filteredNodes,
-                links: filteredLinks
-            };
-        };
-
-        // Union operation: Get all nodes from all groups and their paths
-        const union = () => {
-            let unionNodeIds = getAllNodeIdsFromOrigins('Union');
-
-            // Filter out links that don't have both _from and _to in the union node set
-            const filteredLinks = links.filter(link =>
-                unionNodeIds.has(link._from) && unionNodeIds.has(link._to)
-            );
-
-            // Collect nodes that are in the union
-            const filteredNodes = [];
-            Object.values(nodes).forEach(originGroup => {
-                originGroup.forEach(item => {
-                    if (unionNodeIds.has(item.node._id)) {
-                        filteredNodes.push(item.node);
-                    }
-                });
-            });
-
-            // Return the result with all nodes and links
-            return {
-                nodes: filteredNodes,
-                links: filteredLinks
-            };
-        };
-
-        // Execute based on the operation
-        switch (operation) {
-            case 'Intersection':
-                return intersection();
-            case 'Union':
-                return union();
-            case 'Symmetric Difference':
-                return symmetricDifference();
-            default:
-                throw new Error('Unknown operation');
-        }
     }
 
     const fetchCollections = async () => {
