@@ -33,9 +33,10 @@ def create_predefined_queries(apps, schema_editor):
                 """,
             'placeholder_1': 'Enter text to find in NCBITaxon vertices...',
             'placeholder_2': 'Enter text to find in UBERON vertices...',
+            'settings': '{}',
         },
         {
-            'name': 'Compare publication HLCA_2023_Sikkema and cellRef_2023_Guo',
+            'name': 'Find gene-drug-disease triangles by publication',
             'query': """
                 LET node1 = DOCUMENT('publication', 'HLCA_2023_Sikkema')
                 LET node2 = DOCUMENT('publication', 'cellRef_2023_Guo')
@@ -43,6 +44,7 @@ def create_predefined_queries(apps, schema_editor):
             """,
             'placeholder_1': 'HLCA_2023_Sikkema',
             'placeholder_2': 'cellRef_2023_Guo',
+            'settings': '{initialDepth: 2}',
         },
     ]
 
@@ -51,7 +53,8 @@ def create_predefined_queries(apps, schema_editor):
             name=query['name'],
             query=query['query'],
             placeholder_1=query['placeholder_1'],
-            placeholder_2=query['placeholder_2']
+            placeholder_2=query['placeholder_2'],
+            settings=query['settings']
         )
 
 class Migration(migrations.Migration):
