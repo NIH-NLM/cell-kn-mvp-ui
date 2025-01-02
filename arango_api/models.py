@@ -185,9 +185,9 @@ class DBEntry:
             union_queries.append(f"""
                 LET results = (
                     FOR doc IN {collection["name"]}
-                    FILTER CONTAINS(doc.label, @search_term) 
-                        OR CONTAINS(doc.term, @search_term) 
-                        OR CONTAINS(doc._id, @search_term) 
+                    FILTER CONTAINS(LOWER(doc.label), LOWER(@search_term)) 
+                        OR CONTAINS(LOWER(doc.term), LOWER(@search_term)) 
+                        OR CONTAINS(LOWER(doc._id), LOWER(@search_term)) 
                     LIMIT 100
                     RETURN doc
                     )
