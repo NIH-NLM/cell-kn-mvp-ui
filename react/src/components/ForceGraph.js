@@ -5,30 +5,30 @@ import jsPDF from 'jspdf';
 import {GraphNameContext} from "./Contexts";
 import collectionsMapData from '../assets/collectionsMap.json';
 
-const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, heightRatio = 0.5}) => {
+const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = [] }) => {
 
     // Init refs
     const chartContainerRef = useRef();
 
     // Init states
-    const [depth, setDepth] = useState(defaultDepth);
+    const [depth, setDepth] = useState(settings["defaultDepth"] || 1);
     const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
     const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
-    const [edgeDirection, setEdgeDirection] = useState("ANY");
-    const [setOperation, setSetOperation] = useState("Intersection");
+    const [edgeDirection, setEdgeDirection] = useState(settings["edgeDirection"] || "ANY");
+    const [setOperation, setSetOperation] = useState(settings["SetOperation"] || "Intersection");
     const [collections, setCollections] = useState([]);
-    const [collectionsToPrune, setCollectionsToPrune] = useState([]);
-    const [nodesToPrune, setNodesToPrune] = useState([]);
+    const [collectionsToPrune, setCollectionsToPrune] = useState(settings["collectionsToPrune"] || []);
+    const [nodesToPrune, setNodesToPrune] = useState(settings["nodesToPrune"] || []);
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [clickedNodeId, setClickedNodeId] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-    const [nodeFontSize, setNodeFontSize] = useState(12);
-    const [edgeFontSize, setEdgeFontSize] = useState(8);
+    const [nodeFontSize, setNodeFontSize] = useState(settings["nodeFontSize"] || 12);
+    const [edgeFontSize, setEdgeFontSize] = useState(settings["edgeFontSize"] || 8);
     const [graph, setGraph] = useState(null);
     const [isSimOn, setIsSimOn] = useState(true);
-    const [labelStates, setLabelStates] = useState({".collection-label": true, ".link-label": true, ".node-label": true})
+    const [labelStates, setLabelStates] = useState(settings["labelStates"] || {".collection-label": true, ".link-label": true, ".node-label": true})
 
     const graphName = useContext(GraphNameContext);
     const collectionsMap = new Map(collectionsMapData);

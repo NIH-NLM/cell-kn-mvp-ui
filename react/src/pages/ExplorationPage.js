@@ -35,7 +35,7 @@ const ExplorationPage = () => {
                 />
             </div>
             {Object.keys(nodeIds).length > 0 && (
-                <ForceGraph nodeIds={nodeIds} defaultDepth={2} />
+                <ForceGraph nodeIds={nodeIds} settings={{"defaultDepth": 2}} />
             )}
         </div>
     )

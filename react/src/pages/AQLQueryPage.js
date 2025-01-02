@@ -33,6 +33,7 @@ const AQLQueryPage = () => {
         const selectedId = event.target.value;
         const sq = predefinedQueries.find(q => q.id === parseInt(selectedId));
         setSelectedQuery(sq);
+        console.log(sq)
         setQueryTemplate(sq ? sq.query : '');
     };
 
@@ -88,11 +89,11 @@ const AQLQueryPage = () => {
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                 />
-                <button onClick={executeQuery}>Search for Cells</button>
+                <button onClick={executeQuery}>Execute</button>
             </div>
             {error && <div className="error-message">{error}</div>}
             {Object.keys(nodeIds).length > 0 && (
-                <ForceGraph nodeIds={nodeIds} defaultDepth={1} />
+                <ForceGraph nodeIds={nodeIds} settings={selectedQuery.settings} />
             )}
         </div>
     );
