@@ -129,7 +129,7 @@ const Sunburst = ({addSelectedItem}) => {
                 >
                     <a
                         className="popup-button"
-                        href={`/#/${clickedItem? clickedItem["_id"] : ""}`}
+                        href={`/#/browse/${clickedItem? clickedItem["_id"] : ""}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={handlePopupClose}
