@@ -22,10 +22,10 @@ function App() {
                 <Header />
                 <div className="app">
                     <Switch>
+                        <Route path="/browse/:coll/:id" component={CellPage} />
+                        <Route path="/browse/:coll" component={CLList} />
                         <Route path="/browse" component={BrowsePage} />
                         <Route path="/aql" component={AQLQueryPage} />
-                        <Route path="/:coll/:id" component={CellPage} />
-                        <Route path="/:coll" component={CLList} />
                         <Route path="/" component={ExplorationPage} />
                     </Switch>
                 </div>

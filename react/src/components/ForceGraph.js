@@ -533,7 +533,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
           >
               <a
                   className="popup-button"
-                  href={`/#/${clickedNodeId}`}
+                  href={`/#/browse/${clickedNodeId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
