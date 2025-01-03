@@ -84,7 +84,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = [] }
                 originNodeIds: originNodeIds,
                 nodeFontSize: nodeFontSize,
                 linkFontSize: edgeFontSize,
-                nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
+                nodeHover: d => (d.label)? `${d.id}\n${d.label}` : `${d._id}`,
                 label: d => d.label? d.label : d._id,
                 onNodeClick: handleNodeClick,
                 interactionCallback: closePopupOnInteraction,
@@ -112,6 +112,11 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = [] }
             // If 'graph' and 'graph.toggleLabels' exist, call the toggleLabels method
             for (let labelClass in labelStates) {
                 graph.toggleLabels(labelStates[labelClass], labelClass);
+            }
+            // Turn off simulation when labels turn on
+            if (Object.values(labelStates).some(value => value === true)) {
+                graph.toggleSimulation(false)
+                setIsSimOn(false);
             }
         }
     }, [labelStates, graph]);
@@ -359,6 +364,12 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = [] }
     };
 
     const handleSimulationToggle = () => {
+        // Turn off labels if turning on simulation
+        if (!isSimOn) {
+            setLabelStates(
+                {".collection-label": false, ".link-label": false, ".node-label": false}
+            );
+        }
         graph.toggleSimulation(!isSimOn)
         setIsSimOn(!isSimOn);
     };
