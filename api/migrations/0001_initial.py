@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ("query", models.TextField()),
                 ("placeholder_1", models.TextField()),
                 ("placeholder_2", models.TextField()),
-                ("settings", models.TextField()),
+                ("settings", models.JSONField()),
             ],
         ),
     ]

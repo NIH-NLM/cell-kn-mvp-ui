@@ -5,6 +5,7 @@ class PredefinedQuery(models.Model):
     query = models.TextField()
     placeholder_1 = models.TextField()
     placeholder_2 = models.TextField()
+    settings = models.JSONField()
 
     def __str__(self):
         return self.name
