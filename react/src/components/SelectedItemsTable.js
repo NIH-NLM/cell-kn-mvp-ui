@@ -31,7 +31,7 @@ const SelectedItemsTable = ({ selectedItems, generateGraph, removeSelectedItem }
                                 <button onClick={() => handleRemoveItem(item)}>
                                     Remove
                                 </button>
-                                <Link to={item._id} target="_blank">
+                                <Link to={`/browse/${item._id}`} target="_blank">
                                     View
                                 </Link>
                             </td>
