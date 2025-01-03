@@ -5,30 +5,30 @@ import jsPDF from 'jspdf';
 import {GraphNameContext} from "./Contexts";
 import collectionsMapData from '../assets/collectionsMap.json';
 
-const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, heightRatio = 0.5}) => {
+const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = [] }) => {
 
     // Init refs
     const chartContainerRef = useRef();
 
     // Init states
-    const [depth, setDepth] = useState(defaultDepth);
+    const [depth, setDepth] = useState(settings["defaultDepth"] || 1);
     const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
     const [rawData, setRawData] = useState({});
     const [graphData, setGraphData] = useState({});
-    const [edgeDirection, setEdgeDirection] = useState("ANY");
-    const [setOperation, setSetOperation] = useState("Intersection");
+    const [edgeDirection, setEdgeDirection] = useState(settings["edgeDirection"] || "ANY");
+    const [setOperation, setSetOperation] = useState(settings["setOperation"] || "Intersection");
     const [collections, setCollections] = useState([]);
-    const [collectionsToPrune, setCollectionsToPrune] = useState([]);
-    const [nodesToPrune, setNodesToPrune] = useState([]);
+    const [collectionsToPrune, setCollectionsToPrune] = useState(settings["collectionsToPrune"] || []);
+    const [nodesToPrune, setNodesToPrune] = useState(settings["nodesToPrune"] || []);
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [clickedNodeId, setClickedNodeId] = useState(null);
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-    const [nodeFontSize, setNodeFontSize] = useState(12);
-    const [edgeFontSize, setEdgeFontSize] = useState(8);
+    const [nodeFontSize, setNodeFontSize] = useState(settings["nodeFontSize"] || 12);
+    const [edgeFontSize, setEdgeFontSize] = useState(settings["edgeFontSize"] || 8);
     const [graph, setGraph] = useState(null);
     const [isSimOn, setIsSimOn] = useState(true);
-    const [labelStates, setLabelStates] = useState({".collection-label": true, ".link-label": true, ".node-label": true})
+    const [labelStates, setLabelStates] = useState(settings["labelStates"] || {".collection-label": false, ".link-label": false, ".node-label": false})
 
     const graphName = useContext(GraphNameContext);
     const collectionsMap = new Map(collectionsMapData);
@@ -84,7 +84,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
                 originNodeIds: originNodeIds,
                 nodeFontSize: nodeFontSize,
                 linkFontSize: edgeFontSize,
-                nodeHover: d => (d.definition && d.term)? `${d.term}\n\n${d.definition}` : `${d._id}`,
+                nodeHover: d => (d.label)? `${d.id}\n${d.label}` : `${d._id}`,
                 label: d => d.label? d.label : d._id,
                 onNodeClick: handleNodeClick,
                 interactionCallback: closePopupOnInteraction,
@@ -105,7 +105,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
         }
     }, [graph])
 
-    // Toggle labels when labelStates changes
+    // Toggle labels when labelStates changes or graph is created
     useEffect(() => {
         // Check if 'graph' and 'graph.toggleLabels' are defined
         if (graph !== null && typeof graph.toggleLabels === 'function') {
@@ -113,8 +113,13 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
             for (let labelClass in labelStates) {
                 graph.toggleLabels(labelStates[labelClass], labelClass);
             }
+            // Turn off simulation when labels turn on
+            if (Object.values(labelStates).some(value => value === true)) {
+                graph.toggleSimulation(false)
+                setIsSimOn(false);
+            }
         }
-    }, [labelStates]);
+    }, [labelStates, graph]);
 
     let getGraphData = async (nodeIds, depth, graphName, edgeDirection, collectionsToPrune, nodesToPrune) => {
         let response = await fetch('/arango_api/graph/', {
@@ -359,6 +364,12 @@ const ForceGraph = ({ nodeIds: originNodeIds, defaultDepth: defaultDepth = 1, he
     };
 
     const handleSimulationToggle = () => {
+        // Turn off labels if turning on simulation
+        if (!isSimOn) {
+            setLabelStates(
+                {".collection-label": false, ".link-label": false, ".node-label": false}
+            );
+        }
         graph.toggleSimulation(!isSimOn)
         setIsSimOn(!isSimOn);
     };
