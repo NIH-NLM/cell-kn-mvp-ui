@@ -228,6 +228,8 @@ function ForceGraphConstructor({
             .style("font-size", newFontSize + "px")
     }
 
+    /* TODO: Remember current label states and turn labels on automatically after simulation alpha reaches 0.
+        Also call simulation.stop and set forces to 0 by default when alpha reaches 0*/
     function toggleSimulation(isSimActive) {
         if (isSimActive){
             simulation.alpha(.5).restart()

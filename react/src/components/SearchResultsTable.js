@@ -16,6 +16,7 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
     // Split filtered headers into groups of 3
     const headerChunks = splitHeadersIntoChunks(filteredHeaders, 3);
 
+    /* TODO: Add link to ListCells component on table headers */
     // Helper function to create a table cell
     const createTableCell = (key, rowIndex) => {
         // Check if the rowIndex is within the bounds of the list for this key

@@ -17,6 +17,7 @@ const SearchPage = ({ generateGraph, selectedItems, removeSelectedItem, addSelec
         return response.json();
     };
 
+    /* TODO: Re-add sorting, and move to helper function utils */
     useEffect(() => {
         const fetchSearchResults = async () => {
             setLoading(true);
