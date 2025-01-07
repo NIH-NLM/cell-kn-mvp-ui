@@ -68,6 +68,7 @@ const Sunburst = ({addSelectedItem}) => {
         };
     }, []);
 
+    /* TODO: optimize lazy loading of sunburst to allow for the entire dataset to be in sunburst */
     let getGraphData = async (graphName) => {
         let response = await fetch('/arango_api/sunburst/', {
             method: 'POST',

@@ -3,7 +3,7 @@ import {
     Route, Switch
 } from "react-router-dom";
 
-
+/* TODO: get favicon in public working */
 import './App.css';
 import Header from './components/Header'
 import CLList from "./pages/CLList";

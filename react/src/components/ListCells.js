@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
+/* TODO: Sort from utils */
 let getLabel = (cell) => {
 
     let label = ""
@@ -14,7 +15,7 @@ let getLabel = (cell) => {
     return label
 }
 
-
+/* TODO: Rename from ListCells */
 const ListCells = ({ cell: cell }) => {
     return (
         <Link to={cell._id}>

@@ -3,6 +3,8 @@ import BrowseBox from "../components/BrowseBox";
 import ListCells from "../components/ListCells";
 import {useParams} from "react-router-dom";
 
+/* TODO: Remove unneeded match, history props */
+/* TODO: Rename */
 const CLList = ({ match, history }) => {
     const { coll } = useParams();
     const [clList, setClList] = useState([]);

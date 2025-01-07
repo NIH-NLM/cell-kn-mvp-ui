@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import CellCard from "../components/CellCard";
 import ForceGraph from "../components/ForceGraph";
 
+/* TODO: Rename */
 const CellPage = ({ match, history }) => {
 
     let cellId = match.params.id
@@ -14,6 +15,7 @@ const CellPage = ({ match, history }) => {
     // Set state for inbound edges
     let [inboundEdges, setInboundEdges] = useState([])
 
+    /* TODO: Remove unneeded code - most of useEffect, and others */
     useEffect(() => {
         getCell().then(r => setCell(r))
 
@@ -46,7 +48,7 @@ const CellPage = ({ match, history }) => {
         return response.json()
     }
 
-    //TODO: Move to isolated helper functions?
+    //TODO: Move helper functions such as this to isolated helper function 'utils' */
     function capitalCase(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }

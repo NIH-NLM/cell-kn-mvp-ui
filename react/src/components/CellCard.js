@@ -1,5 +1,6 @@
 import React from 'react'
 
+/* TODO: Rename */
 const CellCard = ({ cell: cell }) => {
     return (
             <div className="cell-item-list" >

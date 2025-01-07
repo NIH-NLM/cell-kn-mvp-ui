@@ -20,6 +20,7 @@ function SunburstConstructor (data, size, handleSunburstClick) {
     (hierarchy);
   root.each(d => d.current = d);
 
+  /* TODO: Review math to make arc 360 degrees */
   // Create the arc generator.
   const arc = d3.arc()
       .startAngle(d => d.x0)

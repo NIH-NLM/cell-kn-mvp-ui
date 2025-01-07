@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import { Link } from 'react-router-dom'
 
+/* TODO: Remove edge card if there is no case for displaying edges specifically. Currently unused */
 const EdgeLink = ({edge: edge, node: node, isFrom : isFrom}) => {
     if (isFrom) {
         return (
