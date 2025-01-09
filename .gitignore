@@ -1,5 +1,8 @@
-react/build
-db.sqlite3
 .env
+.idea
+.venv
+.zshenv
 __pycache__
-core/__pycache__/*
+arangodb
+db.sqlite3
+react/build
