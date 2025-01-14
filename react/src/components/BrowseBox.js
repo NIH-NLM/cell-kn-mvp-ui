@@ -1,13 +1,19 @@
 import {Link} from "react-router-dom";
+import {useEffect, useState} from "react";
+import {fetchCollections, parseCollections} from "./Utils";
 
 const BrowseBox = ({ currentCollection }) => {
 
-    // List of collections to link to
-    const collections = [
-        "CHEBI", "CL", "GO", "NCBITaxon", "PATO", "PR", "UBERON",
-        "anatomic_structure", "biomarker_combination", "cell_set", "disease",
-        "drug_product", "gene_name", "publication"
-    ];
+    const [collections, setCollections] = useState([]);
+
+    useEffect(() => {
+
+        fetchCollections().then(data => {
+            // Set collections state
+            setCollections(parseCollections(data))
+        } );
+    }, []);
+
 
     return (
         <div className="browse-box">
