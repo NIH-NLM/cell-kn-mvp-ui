@@ -98,7 +98,8 @@ function ForceGraphConstructor({
     // Create legend
     const legend = svg.append("g")
     .attr("class", "legend")
-    .attr("transform", `translate(${-((width/2)-20)}, ${-((height/2)-20)})`);
+    .attr("transform", `translate(${-((width/2)-20)}, ${-((height/2)-20)})`)
+        .style("display", "none"); // TODO: Remove
 
     const legendItem = legend.selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
@@ -392,7 +393,7 @@ function ForceGraphConstructor({
 
             // Append text to each line
             link.append("text")
-                .text(d => d.label)
+                .text(d => d.name) // TODO: Fix
                 .style("font-size", linkFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")

@@ -1,6 +1,6 @@
 from itertools import chain
 
-from arango_api.db import db
+from arango_api.db import db, schema_db
 
 
 def get_document_collections():
@@ -30,10 +30,9 @@ def get_edges_by_id(edge_coll, dr, item_coll, item_id):
 
 
 def get_graph(
-    node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune
+    node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune, db_name
 ):
     # Construct the appropriate AQL query based on edge_direction
-    print("edge_direction", edge_direction)
     if edge_direction == "DUAL":
         # Combine inbound and outbound traversals
         query = f"""
@@ -108,7 +107,13 @@ def get_graph(
 
     # Execute the query
     try:
-        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        if db_name == "schema":
+            # Get schema db
+            cursor = schema_db.aql.execute(query, bind_vars=bind_vars)
+        else:
+            # Get base db
+            cursor = db.aql.execute(query, bind_vars=bind_vars)
+
         results = list(cursor)[
             0
         ]  # Collect the results - one element should be guaranteed
@@ -145,7 +150,6 @@ def get_graph(
             else:
                 print(f"Warning: The item {item} is not in the expected format.")
 
-        print(grouped_nodes)
         results["nodes"] = grouped_nodes
 
     except Exception as e:

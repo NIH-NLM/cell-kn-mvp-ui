@@ -49,6 +49,8 @@ def get_graph(request):
     edge_direction = request.data.get("edge_direction")
     collections_to_prune = request.data.get("collections_to_prune")
     nodes_to_prune = request.data.get("nodes_to_prune")
+    db_name = request.data.get("db_name", "base")
+
     search_results = utils.get_graph(
         node_ids,
         depth,
@@ -56,6 +58,7 @@ def get_graph(request):
         edge_direction,
         collections_to_prune,
         nodes_to_prune,
+        db_name,
     )
     return JsonResponse(search_results, safe=False)
 
@@ -70,7 +73,6 @@ def get_all(request):
 def run_aql_query(request):
     # Extract the AQL query from the request body
     query = request.data.get("query")
-    print(query)
     if not query:
         return JsonResponse({"error": "No query provided"}, status=400)
 
