@@ -110,11 +110,14 @@ function ForceGraphConstructor({
     const nodeContainer = g.append("g")
         .attr("class", "node-container");
 
+    // Check if 'originNodeIds' has any elements
+    const legendDisplay = originNodeIds.length > 0 ? "block" : "none";
+
     // Create legend
     const legend = svg.append("g")
     .attr("class", "legend")
     .attr("transform", `translate(${-((width/2)-20)}, ${-((height/2)-20)})`)
-        .style("display", "none"); // TODO: Remove
+    .style("display", legendDisplay);
 
     const legendItem = legend.selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
