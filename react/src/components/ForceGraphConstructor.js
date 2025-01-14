@@ -76,15 +76,30 @@ function ForceGraphConstructor({
 
     // Create defs and marker
     const defs = g.append("defs");
-    defs.selectAll("marker")
-        .data(["arrow"])
+    defs.append("marker")
+        .attr("id", "arrow")
         .join("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 0 10 10")
-        .attr("refX", 12)
+        .attr("refX", 11) // Length along line
+        .attr("refY", 5) // Horizontal alignment
+        .attr("markerWidth", 20)
+        .attr("markerHeight", 20)
+        .attr("orient", "auto")
+        .append("polygon")
+        .attr("points", "0,3.5 6,5 0,6.5 1,5")
+        .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
+
+    // Custom arrow marker for self-links (with adjusted refX and refY)
+    defs.append("marker")
+        .attr("id", "self-arrow")
+        .join("marker")
+        .attr("id", "self-arrow")
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", 3)  // Adjust refX for self-links
         .attr("refY", 5)
-        .attr("markerWidth", 5)
-        .attr("markerHeight", 10)
+        .attr("markerWidth", 20)
+        .attr("markerHeight", 20)
         .attr("orient", "auto")
         .append("polygon")
         .attr("points", "0,3.5 6,5 0,6.5 1,5")
@@ -137,6 +152,16 @@ function ForceGraphConstructor({
             .attr("x2", d => d.target.x)
             .attr("y2", d => d.target.y);
 
+        // Update positions for self-links
+        const selfLink = linkContainer.selectAll("path.self-link");
+        selfLink.attr("d", d => {
+            const radius = nodeRadius * 1.5; // Adjust this to control the size of the loop
+            const x = d.source.x;
+            const y = d.source.y + nodeRadius * 1.5;
+
+            // Create a circular path for self-links
+            return `M${x + radius},${y} A${radius},${radius} 0 1,1 ${x - radius},${y} A${radius},${radius} 0 1,1 ${x + radius},${y}`;
+        });
 
         let node = nodeContainer.selectAll("g")
         node
@@ -378,8 +403,9 @@ function ForceGraphConstructor({
                 .data(links)
                 .join("g")
 
-            // Append line to each g
-            link.append("line")
+            // Append line to each g for non self-links
+            link.filter(d => d.source.id !== d.target.id)
+                .append("line")
                 .attr("class", "links")
                 .attr("stroke", typeof linkStroke !== "function" ? linkStroke : null)
                 .attr("stroke-opacity", linkStrokeOpacity)
@@ -391,13 +417,36 @@ function ForceGraphConstructor({
                 .attr("y2", d => d.target.y)
                 .attr("marker-end", "url(#arrow)");
 
-            // Append text to each line
-            link.append("text")
-                .text(d => d.name) // TODO: Fix
+            // Append text to each line for non self-links
+            link.filter(d => d.source.id !== d.target.id)
+                .append("text")
+                .text(d => d.name ? d.name : d.label)
                 .style("font-size", linkFontSize + "px")
                 .style("fill", "black")
                 .attr("text-anchor", "middle")
                 .attr("class", "link-label")
+                .call(wrap, 25);
+
+            // Append circular path for self-links
+            link.filter(d => d.source.id === d.target.id)
+                .append("path")
+                .attr("class", "self-link")
+                .attr("fill", "none")
+                .attr("stroke", typeof linkStroke !== "function" ? linkStroke : null)
+                .attr("stroke-opacity", linkStrokeOpacity)
+                .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+                .attr("stroke-linecap", linkStrokeLinecap)
+                .attr("marker-mid", "url(#self-arrow)");
+
+            // Append text to each line for self-links
+            link.filter(d => d.source.id === d.target.id)
+                .append("text")
+                .text(d => d.name ? d.name : d.label)
+                .style("font-size", linkFontSize + "px")
+                .style("fill", "black")
+                .attr("text-anchor", "middle")
+                .attr("class", "link-label")
+                .attr("y", nodeRadius * 1.5 * 2) // Offset label by self-link path size
                 .call(wrap, 25);
         }
 

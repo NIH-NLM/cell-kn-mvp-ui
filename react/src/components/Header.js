@@ -34,6 +34,11 @@ const Header = () => {
                         Browse
                     </h4>
                 </Link>
+                <Link to="/schema">
+                    <h4 className={activeNav.startsWith('/schema') ? 'active-nav' : ''}>
+                        Schema
+                    </h4>
+                </Link>
             </div>
         </div>
     )

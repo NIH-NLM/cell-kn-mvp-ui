@@ -20,7 +20,7 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = {} }
     const [nodeFontSize, setNodeFontSize] = useState(settings["nodeFontSize"] || 12);
     const [edgeFontSize, setEdgeFontSize] = useState(settings["edgeFontSize"] || 8);
     const [labelStates, setLabelStates] = useState(settings["labelStates"] || {".collection-label": false, ".link-label": false, ".node-label": false})
-    const [useFocusNodes, setUseFocusNodes] = useState(settings["useFocusNodes"] || false)
+    const [useFocusNodes, setUseFocusNodes] = useState(("useFocusNodes" in settings) ? settings["useFocusNodes"] : true)
 
     // Init other states
     const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
