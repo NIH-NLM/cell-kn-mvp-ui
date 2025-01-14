@@ -4,6 +4,7 @@ import ForceGraphConstructor from "./ForceGraphConstructor";
 import jsPDF from 'jspdf';
 import collectionsMapData from '../assets/collectionsMap.json';
 import {DbNameContext, GraphNameContext} from "./Contexts";
+import {fetchCollections, parseCollections} from "./Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
 const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = {} }) => {
@@ -40,8 +41,6 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = {} }
     const dbName = useContext(DbNameContext);
 
     useEffect(() => {
-
-        console.log(settings)
 
         fetchCollections().then(data => {
             // Set collections state
@@ -153,11 +152,6 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = {} }
         return response.json();
     };
 
-    function parseCollections(collections) {
-        // Sort collections alphabetically
-        return collections.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-
-    }
 
     function performSetOperation(data, operation) {
         const nodes = data.nodes;
@@ -267,15 +261,6 @@ const ForceGraph = ({ nodeIds: originNodeIds, heightRatio = 0.5, settings = {} }
             links: filteredLinks
         };
     }
-
-    const fetchCollections = async () => {
-        let response = await fetch('/arango_api/collections/');
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-        return response.json();
-    };
 
     // Handle right click on node
     const handleNodeClick = (e, nodeData) => {
