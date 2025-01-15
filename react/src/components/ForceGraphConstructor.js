@@ -179,7 +179,10 @@ function ForceGraphConstructor({
 
                     const angle = Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x) * (180 / Math.PI);
 
-                    return `translate(${midX}, ${midY}) rotate(${angle})`;
+                    // Rotate text if the angle is more than 90 degrees or less than -90 degrees
+                    const adjustedAngle = angle + (Math.abs(angle) > 90 ? 180 : 0);
+
+                    return `translate(${midX}, ${midY}) rotate(${adjustedAngle})`
                 }
             )
     }
