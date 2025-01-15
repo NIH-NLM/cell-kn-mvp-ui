@@ -2,100 +2,102 @@ import { useEffect, useState } from "react";
 import ForceGraph from "../components/ForceGraph";
 
 const AQLQueryPage = () => {
-    const [queryTemplate, setQueryTemplate] = useState('');
-    const [nodeIds, setNodeIds] = useState({});
-    const [error, setError] = useState(null);
-    const [predefinedQueries, setPredefinedQueries] = useState([]);
-    const [selectedQuery, setSelectedQuery] = useState('');
-    const [term, setTerm] = useState('');
-    const [ncbiTerm, setNcbiTerm] = useState('');
+  const [queryTemplate, setQueryTemplate] = useState("");
+  const [nodeIds, setNodeIds] = useState({});
+  const [error, setError] = useState(null);
+  const [predefinedQueries, setPredefinedQueries] = useState([]);
+  const [selectedQuery, setSelectedQuery] = useState("");
+  const [term, setTerm] = useState("");
+  const [ncbiTerm, setNcbiTerm] = useState("");
 
-    useEffect(() => {
-        // Fetch predefined queries on component mount
-        const fetchPredefinedQueries = async () => {
-            try {
-                const response = await fetch('/api/predefined-queries/');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch predefined queries');
-                }
-                const data = await response.json();
-                setPredefinedQueries(data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        fetchPredefinedQueries();
-    }, []);
-
-    const handleQueryChange = (event) => {
-        const selectedId = event.target.value;
-        const sq = predefinedQueries.find(q => q.id === parseInt(selectedId));
-        setSelectedQuery(sq);
-        setQueryTemplate(sq ? sq.query : '');
-    };
-
-    const executeQuery = async () => {
-        setError(null); // Reset any previous error
-        try {
-            const response = await fetch(`/arango_api/aql/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    query: queryTemplate
-                        .replace(/@term/g, `"${term}"`)
-                        .replace(/@ncbiTerm/g, `"${ncbiTerm}"`)
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const data = await response.json();
-            //TODO: avoid hard-coding expected results?
-            setNodeIds(data["nodes"].map(obj => obj._id));
-        } catch (err) {
-            // TODO: Fix error logic. Currently error will almost always be about mapping over null, given a blank return
-            setError(err.message);
-            setNodeIds([]); // Clear previous results on error
+  useEffect(() => {
+    // Fetch predefined queries on component mount
+    const fetchPredefinedQueries = async () => {
+      try {
+        const response = await fetch("/api/predefined-queries/");
+        if (!response.ok) {
+          throw new Error("Failed to fetch predefined queries");
         }
+        const data = await response.json();
+        setPredefinedQueries(data);
+      } catch (err) {
+        console.error(err);
+      }
     };
 
-    return (
-        <div className="aql-query-container">
-            <div className="aql-query-input">
-                <select onChange={handleQueryChange} defaultValue="">
-                    <option value="" disabled>Select a predefined query</option>
-                    {predefinedQueries.map(query => (
-                        <option key={query.id} value={query.id}>
-                            {query.name}
-                        </option>
-                    ))}
-                </select>
-                {/* TODO: Dynamically decide how many placeholders there are based on the query itself */}
-                <input
-                    type="text"
-                    placeholder={selectedQuery.placeholder_1}
-                    value={ncbiTerm}
-                    onChange={(e) => setNcbiTerm(e.target.value)}
-                />
-                <input
-                    type="text"
-                    placeholder={selectedQuery.placeholder_2}
-                    value={term}
-                    onChange={(e) => setTerm(e.target.value)}
-                />
-                <button onClick={executeQuery}>Execute</button>
-            </div>
-            {error && <div className="error-message">{error}</div>}
-            {Object.keys(nodeIds).length > 0 && (
-                <ForceGraph nodeIds={nodeIds} settings={selectedQuery.settings} />
-            )}
-        </div>
-    );
+    fetchPredefinedQueries();
+  }, []);
+
+  const handleQueryChange = (event) => {
+    const selectedId = event.target.value;
+    const sq = predefinedQueries.find((q) => q.id === parseInt(selectedId));
+    setSelectedQuery(sq);
+    setQueryTemplate(sq ? sq.query : "");
+  };
+
+  const executeQuery = async () => {
+    setError(null); // Reset any previous error
+    try {
+      const response = await fetch(`/arango_api/aql/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: queryTemplate
+            .replace(/@term/g, `"${term}"`)
+            .replace(/@ncbiTerm/g, `"${ncbiTerm}"`),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data = await response.json();
+      //TODO: avoid hard-coding expected results?
+      setNodeIds(data["nodes"].map((obj) => obj._id));
+    } catch (err) {
+      // TODO: Fix error logic. Currently error will almost always be about mapping over null, given a blank return
+      setError(err.message);
+      setNodeIds([]); // Clear previous results on error
+    }
+  };
+
+  return (
+    <div className="aql-query-container">
+      <div className="aql-query-input">
+        <select onChange={handleQueryChange} defaultValue="">
+          <option value="" disabled>
+            Select a predefined query
+          </option>
+          {predefinedQueries.map((query) => (
+            <option key={query.id} value={query.id}>
+              {query.name}
+            </option>
+          ))}
+        </select>
+        {/* TODO: Dynamically decide how many placeholders there are based on the query itself */}
+        <input
+          type="text"
+          placeholder={selectedQuery.placeholder_1}
+          value={ncbiTerm}
+          onChange={(e) => setNcbiTerm(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder={selectedQuery.placeholder_2}
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+        />
+        <button onClick={executeQuery}>Execute</button>
+      </div>
+      {error && <div className="error-message">{error}</div>}
+      {Object.keys(nodeIds).length > 0 && (
+        <ForceGraph nodeIds={nodeIds} settings={selectedQuery.settings} />
+      )}
+    </div>
+  );
 };
 
 export default AQLQueryPage;

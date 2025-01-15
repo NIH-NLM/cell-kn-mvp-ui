@@ -30,7 +30,13 @@ def get_edges_by_id(edge_coll, dr, item_coll, item_id):
 
 
 def get_graph(
-    node_ids, depth, graph_name, edge_direction, collections_to_prune, nodes_to_prune, db_name
+    node_ids,
+    depth,
+    graph_name,
+    edge_direction,
+    collections_to_prune,
+    nodes_to_prune,
+    db_name,
 ):
     # Construct the appropriate AQL query based on edge_direction
     if edge_direction == "DUAL":
