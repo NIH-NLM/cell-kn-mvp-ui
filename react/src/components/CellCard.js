@@ -5,7 +5,7 @@ const CellCard = ({ cell: cell }) => {
   return (
     <div className="cell-item-list">
       <fieldset>
-        <legend>{cell.label}</legend>
+        <legend>{Array.isArray(cell.label) ? cell.label.join("+") : cell.label}</legend>
         <table>
           {Object.entries(cell).map(([key, value]) => {
             if (!key.startsWith("_")) {
