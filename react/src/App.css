@@ -781,3 +781,33 @@ input:checked + .slider:before {
 .browse-box .active {
   color: var(--color-focus);
 }
+
+/* Footer */
+.footer {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+  padding: 40px;
+  background-color: var(--color-light-bg);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer p {
+  margin-bottom: 15px;
+  text-align: justify;
+}
+
+.footer ul {
+  margin-top: 10px;
+  padding-left: 20px;
+  list-style-type: disc;
+  margin-bottom: 15px;
+}
+
+.footer ul li {
+  margin-bottom: 10px;
+}
+
+.footer p:last-child {
+  margin-bottom: 0;
+}

@@ -10,6 +10,7 @@ import AQLQueryPage from "./pages/AQLQueryPage";
 import ExplorationPage from "./pages/ExplorationPage";
 import SchemaPage from "./pages/SchemaPage";
 import { ActiveNavProvider } from "./components/ActiveNavContext";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
               <Route path="/" component={ExplorationPage} />
             </Switch>
           </div>
+          <Footer/>
         </div>
       </ActiveNavProvider>
     </Router>
