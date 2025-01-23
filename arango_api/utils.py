@@ -333,6 +333,6 @@ def get_sunburst():
             print(f"Error processing node {node_id}: {e}")
 
     # Create a Root node that links only to the root nodes in node_ids
-    graph_root = {"label": "NLM Knowledge Network", "children": root_nodes}
+    graph_root = {"label": "NLM Cell Knowledge Network", "children": root_nodes}
 
     return graph_root
