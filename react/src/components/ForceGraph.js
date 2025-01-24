@@ -20,7 +20,7 @@ const ForceGraph = ({
     settings["edgeDirection"] || "ANY",
   );
   const [setOperation, setSetOperation] = useState(
-    settings["setOperation"] || "Intersection",
+    settings["setOperation"] || "Union",
   );
   const [collectionsToPrune, setCollectionsToPrune] = useState(
     settings["collectionsToPrune"] || [],
@@ -57,6 +57,8 @@ const ForceGraph = ({
   const [graph, setGraph] = useState(null);
   const [isSimOn, setIsSimOn] = useState(true);
   const collectionsMap = new Map(collectionsMapData);
+  const [showNoDataPopup, setShowNoDataPopup] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Init contexts
   const graphName = useContext(GraphNameContext);
@@ -83,19 +85,24 @@ const ForceGraph = ({
   useEffect(() => {
     // Ensure graph only renders once at a time
     let isMounted = true;
-    getGraphData(
-      graphNodeIds,
-      depth,
-      graphName,
-      edgeDirection,
-      collectionsToPrune,
-      nodesToPrune,
-      dbName,
-    ).then((data) => {
-      if (isMounted) {
-        setRawData(data);
-      }
-    });
+    setIsLoading(true);
+
+    // Use setTimeout to allow React to render the loading state before proceeding with the async operation
+    setTimeout(() => {
+      getGraphData(
+        graphNodeIds,
+        depth,
+        graphName,
+        edgeDirection,
+        collectionsToPrune,
+        nodesToPrune,
+        dbName,
+      ).then((data) => {
+        if (isMounted) {
+          setRawData(data);
+        }
+      });
+    }, 0);
 
     // Cleanup function
     return () => {
@@ -114,37 +121,63 @@ const ForceGraph = ({
   // Parse set operation on change
   useEffect(() => {
     if (Object.keys(rawData).length !== 0) {
-      setGraphData(performSetOperation(rawData, setOperation));
+      const processedData = performSetOperation(rawData, setOperation);
+
+      // Check if data is empty after processing
+      if (
+        !processedData ||
+        (processedData.nodes == null || processedData.nodes.length === 0) &&
+        (processedData.links == null || processedData.links.length === 0)
+      ) {
+        setGraphData(processedData);
+        setShowNoDataPopup(true);
+      } else {
+        setGraphData(processedData);
+        setShowNoDataPopup(false);
+      }
     }
   }, [rawData, setOperation]);
 
   // Update graph if data changes
   useEffect(() => {
-    if (Object.keys(graphData).length !== 0) {
-      const g = ForceGraphConstructor(graphData, {
-        nodeGroup: (d) => d._id.split("/")[0],
-        nodeGroups: collections,
-        collectionsMap: collectionsMap,
-        originNodeIds: useFocusNodes ? originNodeIds : [],
-        nodeFontSize: nodeFontSize,
-        linkFontSize: edgeFontSize,
-        nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
-        label: (d) => (d.label ? d.label : d._id),
-        onNodeClick: handleNodeClick,
-        interactionCallback: closePopupOnInteraction,
-        nodeStrength: -100,
-        width: "2560",
-        heightRatio: heightRatio,
-      });
-      setGraph(g);
-    }
+    const updateGraph = async () => {
+      if (!showNoDataPopup && Object.keys(graphData).length !== 0) {
+        const g = await new Promise((resolve) => {
+          setTimeout(() => {
+            const graphInstance = ForceGraphConstructor(graphData, {
+              nodeGroup: (d) => d._id.split("/")[0],
+              nodeGroups: collections,
+              collectionsMap: collectionsMap,
+              originNodeIds: useFocusNodes ? originNodeIds : [],
+              nodeFontSize: nodeFontSize,
+              linkFontSize: edgeFontSize,
+              nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
+              label: (d) => (d.label ? d.label : d._id),
+              onNodeClick: handleNodeClick,
+              interactionCallback: closePopupOnInteraction,
+              nodeStrength: -100,
+              width: "2560",
+              heightRatio: heightRatio,
+            });
+            resolve(graphInstance);
+          }, 0);
+        });
+
+        setGraph(g);
+        setIsLoading(false)
+      } else {
+        setGraph(null);
+        setIsLoading(false)
+      }
+    };
+    updateGraph();
   }, [graphData]);
 
   // Remove and rerender graph on any changes
   useEffect(() => {
+    const chartContainer = d3.select("#chart-container");
+    chartContainer.selectAll("*").remove();
     if (graph) {
-      const chartContainer = d3.select("#chart-container");
-      chartContainer.selectAll("*").remove();
       chartContainer.append(() => graph);
     }
   }, [graph]);
@@ -207,26 +240,37 @@ const ForceGraph = ({
         return new Set(originGroup.map((item) => item.node._id));
       });
 
+      // Intersection returns the intersecting nodes and their connections of any two origin nodes
       if (operation === "Intersection") {
-        // For intersection, return the intersection of all node sets
-        return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
-          if (acc === null) {
-            return nodeIdsSet;
-          }
-          return new Set([...acc].filter((id) => nodeIdsSet.has(id)));
-        }, null);
-      }
+        const overlap = new Set();
+        const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) =>
+            new Set(originGroup.map((item) => item.node._id))
+        );
 
+        // Iterate over all pairs of origin groups
+        for (let i = 0; i < nodeIdsPerOrigin.length; i++) {
+          for (let j = i + 1; j < nodeIdsPerOrigin.length; j++) {
+            // Find the intersection between origin group i and j
+            const intersection = [...nodeIdsPerOrigin[i]].filter(id => nodeIdsPerOrigin[j].has(id));
+
+            // Add the intersection to the overlap set
+            intersection.forEach(id => overlap.add(id));
+          }
+        }
+
+        return overlap;
+    }
+
+      // Union returns the union of all node sets
       if (operation === "Union") {
-        // For union, return the union of all node sets
         return new Set(
           nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]),
         );
       }
 
-      // TODO: While operation is correct under the parameters, it is not intuitive. Fix.
+      // TODO: While operation is correct under the parameters, it is not intuitive. Fix?
+      // Symmetric difference returns the symmetric difference of all node sets
       if (operation === "Symmetric Difference") {
-        // For symmetric difference, return the symmetric difference of all node sets
         return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
           if (acc === null) {
             return nodeIdsSet;
@@ -266,13 +310,13 @@ const ForceGraph = ({
 
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
-    // Add nodes from paths to the intersection set
+    // Add nodes from paths
     addNodesFromPathsToSet(nodeIds);
 
     // Set to track unique link pairs (_from, _to)
     const seenLinks = new Set();
 
-    // Filter out links that don't have both _from and _to in the intersected node set, and remove duplicates
+    // Filter out links that don't have both _from and _to in the node set, and remove duplicates
     const filteredLinks = links.filter((link) => {
       // Check if both _from and _to are in nodeIds
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
@@ -290,7 +334,7 @@ const ForceGraph = ({
       return false;
     });
 
-    // Collect nodes that are in the intersection
+    // Collect nodes that are in the set
     const filteredNodes = [];
     Object.values(nodes).forEach((originGroup) => {
       originGroup.forEach((item) => {
@@ -621,7 +665,18 @@ const ForceGraph = ({
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
         </div>
       </div>
+      {isLoading && (
+          <div className="loading-bar">
+            <div className="progress"></div>
+            Loading, please wait...
+          </div>
+      )}
       <div id="chart-container" ref={chartContainerRef}></div>
+      {showNoDataPopup && (
+          <div className="popup">
+            <p>No data meets these criteria. Please adjust your options or refine your search.</p>
+          </div>
+      )}
       <div
         className="node-popup"
         style={
