@@ -20,7 +20,7 @@ const ForceGraph = ({
     settings["edgeDirection"] || "ANY",
   );
   const [setOperation, setSetOperation] = useState(
-    settings["setOperation"] || "Intersection",
+    settings["setOperation"] || "Union",
   );
   const [collectionsToPrune, setCollectionsToPrune] = useState(
     settings["collectionsToPrune"] || [],
