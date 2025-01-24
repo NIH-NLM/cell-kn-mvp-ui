@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
-import jsPDF from "jspdf";
 import collectionsMapData from "../assets/collectionsMap.json";
 import { DbNameContext, GraphNameContext } from "./Contexts";
 import { fetchCollections, parseCollections } from "./Utils";
@@ -442,19 +441,6 @@ const ForceGraph = ({
         link.href = imgData;
         link.download = "graph.png";
         link.click();
-      } else if (format === "pdf") {
-        // Export as PDF
-        // TODO: set max size to PDF to ensure not truncated
-        const pdf = new jsPDF("landscape", "mm", [canvas.width, canvas.height]);
-        pdf.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-        pdf.save("graph.pdf");
       }
 
       URL.revokeObjectURL(url);
@@ -633,7 +619,6 @@ const ForceGraph = ({
         </div>
         <div className="export-buttons">
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
-          <button onClick={() => exportGraph("pdf")}>Download as PDF</button>
         </div>
       </div>
       <div id="chart-container" ref={chartContainerRef}></div>
