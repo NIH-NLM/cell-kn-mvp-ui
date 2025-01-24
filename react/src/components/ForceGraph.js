@@ -240,26 +240,37 @@ const ForceGraph = ({
         return new Set(originGroup.map((item) => item.node._id));
       });
 
+      // Intersection returns the intersecting nodes and their connections of any two origin nodes
       if (operation === "Intersection") {
-        // For intersection, return the intersection of all node sets
-        return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
-          if (acc === null) {
-            return nodeIdsSet;
-          }
-          return new Set([...acc].filter((id) => nodeIdsSet.has(id)));
-        }, null);
-      }
+        const overlap = new Set();
+        const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) =>
+            new Set(originGroup.map((item) => item.node._id))
+        );
 
+        // Iterate over all pairs of origin groups
+        for (let i = 0; i < nodeIdsPerOrigin.length; i++) {
+          for (let j = i + 1; j < nodeIdsPerOrigin.length; j++) {
+            // Find the intersection between origin group i and j
+            const intersection = [...nodeIdsPerOrigin[i]].filter(id => nodeIdsPerOrigin[j].has(id));
+
+            // Add the intersection to the overlap set
+            intersection.forEach(id => overlap.add(id));
+          }
+        }
+
+        return overlap;
+    }
+
+      // Union returns the union of all node sets
       if (operation === "Union") {
-        // For union, return the union of all node sets
         return new Set(
           nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]),
         );
       }
 
-      // TODO: While operation is correct under the parameters, it is not intuitive. Fix.
+      // TODO: While operation is correct under the parameters, it is not intuitive. Fix?
+      // Symmetric difference returns the symmetric difference of all node sets
       if (operation === "Symmetric Difference") {
-        // For symmetric difference, return the symmetric difference of all node sets
         return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
           if (acc === null) {
             return nodeIdsSet;
@@ -299,13 +310,13 @@ const ForceGraph = ({
 
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
-    // Add nodes from paths to the intersection set
+    // Add nodes from paths
     addNodesFromPathsToSet(nodeIds);
 
     // Set to track unique link pairs (_from, _to)
     const seenLinks = new Set();
 
-    // Filter out links that don't have both _from and _to in the intersected node set, and remove duplicates
+    // Filter out links that don't have both _from and _to in the node set, and remove duplicates
     const filteredLinks = links.filter((link) => {
       // Check if both _from and _to are in nodeIds
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
@@ -323,7 +334,7 @@ const ForceGraph = ({
       return false;
     });
 
-    // Collect nodes that are in the intersection
+    // Collect nodes that are in the set
     const filteredNodes = [];
     Object.values(nodes).forEach((originGroup) => {
       originGroup.forEach((item) => {
