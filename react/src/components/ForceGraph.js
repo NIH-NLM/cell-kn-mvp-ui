@@ -58,6 +58,7 @@ const ForceGraph = ({
   const [isSimOn, setIsSimOn] = useState(true);
   const collectionsMap = new Map(collectionsMapData);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Init contexts
   const graphName = useContext(GraphNameContext);
@@ -84,19 +85,24 @@ const ForceGraph = ({
   useEffect(() => {
     // Ensure graph only renders once at a time
     let isMounted = true;
-    getGraphData(
-      graphNodeIds,
-      depth,
-      graphName,
-      edgeDirection,
-      collectionsToPrune,
-      nodesToPrune,
-      dbName,
-    ).then((data) => {
-      if (isMounted) {
-        setRawData(data);
-      }
-    });
+    setIsLoading(true);
+
+    // Use setTimeout to allow React to render the loading state before proceeding with the async operation
+    setTimeout(() => {
+      getGraphData(
+        graphNodeIds,
+        depth,
+        graphName,
+        edgeDirection,
+        collectionsToPrune,
+        nodesToPrune,
+        dbName,
+      ).then((data) => {
+        if (isMounted) {
+          setRawData(data);
+        }
+      });
+    }, 0);
 
     // Cleanup function
     return () => {
@@ -134,26 +140,37 @@ const ForceGraph = ({
 
   // Update graph if data changes
   useEffect(() => {
-    if (!showNoDataPopup) {
-      const g = ForceGraphConstructor(graphData, {
-        nodeGroup: (d) => d._id.split("/")[0],
-        nodeGroups: collections,
-        collectionsMap: collectionsMap,
-        originNodeIds: useFocusNodes ? originNodeIds : [],
-        nodeFontSize: nodeFontSize,
-        linkFontSize: edgeFontSize,
-        nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
-        label: (d) => (d.label ? d.label : d._id),
-        onNodeClick: handleNodeClick,
-        interactionCallback: closePopupOnInteraction,
-        nodeStrength: -100,
-        width: "2560",
-        heightRatio: heightRatio,
-      });
-      setGraph(g);
-    } else {
-      setGraph(null);
-    }
+    const updateGraph = async () => {
+      if (!showNoDataPopup && Object.keys(graphData).length !== 0) {
+        const g = await new Promise((resolve) => {
+          setTimeout(() => {
+            const graphInstance = ForceGraphConstructor(graphData, {
+              nodeGroup: (d) => d._id.split("/")[0],
+              nodeGroups: collections,
+              collectionsMap: collectionsMap,
+              originNodeIds: useFocusNodes ? originNodeIds : [],
+              nodeFontSize: nodeFontSize,
+              linkFontSize: edgeFontSize,
+              nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
+              label: (d) => (d.label ? d.label : d._id),
+              onNodeClick: handleNodeClick,
+              interactionCallback: closePopupOnInteraction,
+              nodeStrength: -100,
+              width: "2560",
+              heightRatio: heightRatio,
+            });
+            resolve(graphInstance);
+          }, 0);
+        });
+
+        setGraph(g);
+        setIsLoading(false)
+      } else {
+        setGraph(null);
+        setIsLoading(false)
+      }
+    };
+    updateGraph();
   }, [graphData]);
 
   // Remove and rerender graph on any changes
@@ -637,11 +654,17 @@ const ForceGraph = ({
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
         </div>
       </div>
+      {isLoading && (
+          <div className="loading-bar">
+            <div className="progress"></div>
+            Loading, please wait...
+          </div>
+      )}
       <div id="chart-container" ref={chartContainerRef}></div>
       {showNoDataPopup && (
-        <div className="popup">
-          <p>No data meets these criteria. Please adjust your options or refine your search.</p>
-        </div>
+          <div className="popup">
+            <p>No data meets these criteria. Please adjust your options or refine your search.</p>
+          </div>
       )}
       <div
         className="node-popup"

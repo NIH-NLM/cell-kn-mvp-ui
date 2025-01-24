@@ -811,3 +811,30 @@ input:checked + .slider:before {
 .footer p:last-child {
   margin-bottom: 0;
 }
+
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: #f3f3f3;
+  z-index: 9999;
+}
+
+.progress {
+  width: 95%;
+  height: 100%;
+  background-color: #4caf50;
+  animation: loadingAnimation 6s forwards;
+}
+
+@keyframes loadingAnimation {
+  0% { width: 0%; }
+  10% { width: 10%; }
+  25% { width: 25%; }
+  60% { width: 60%; }
+  80% { width: 80%; }
+  95% { width: 95%; }
+}
+
