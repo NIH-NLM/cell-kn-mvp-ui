@@ -58,6 +58,7 @@ const ForceGraph = ({
   const [graph, setGraph] = useState(null);
   const [isSimOn, setIsSimOn] = useState(true);
   const collectionsMap = new Map(collectionsMapData);
+  const [showNoDataPopup, setShowNoDataPopup] = useState(false);
 
   // Init contexts
   const graphName = useContext(GraphNameContext);
@@ -115,13 +116,26 @@ const ForceGraph = ({
   // Parse set operation on change
   useEffect(() => {
     if (Object.keys(rawData).length !== 0) {
-      setGraphData(performSetOperation(rawData, setOperation));
+      const processedData = performSetOperation(rawData, setOperation);
+
+      // Check if data is empty after processing
+      if (
+        !processedData ||
+        (processedData.nodes == null || processedData.nodes.length === 0) &&
+        (processedData.links == null || processedData.links.length === 0)
+      ) {
+        setGraphData(processedData);
+        setShowNoDataPopup(true);
+      } else {
+        setGraphData(processedData);
+        setShowNoDataPopup(false);
+      }
     }
   }, [rawData, setOperation]);
 
   // Update graph if data changes
   useEffect(() => {
-    if (Object.keys(graphData).length !== 0) {
+    if (!showNoDataPopup) {
       const g = ForceGraphConstructor(graphData, {
         nodeGroup: (d) => d._id.split("/")[0],
         nodeGroups: collections,
@@ -138,14 +152,16 @@ const ForceGraph = ({
         heightRatio: heightRatio,
       });
       setGraph(g);
+    } else {
+      setGraph(null);
     }
   }, [graphData]);
 
   // Remove and rerender graph on any changes
   useEffect(() => {
+    const chartContainer = d3.select("#chart-container");
+    chartContainer.selectAll("*").remove();
     if (graph) {
-      const chartContainer = d3.select("#chart-container");
-      chartContainer.selectAll("*").remove();
       chartContainer.append(() => graph);
     }
   }, [graph]);
@@ -637,6 +653,11 @@ const ForceGraph = ({
         </div>
       </div>
       <div id="chart-container" ref={chartContainerRef}></div>
+      {showNoDataPopup && (
+        <div className="popup">
+          <p>No data meets these criteria. Please adjust your options or refine your search.</p>
+        </div>
+      )}
       <div
         className="node-popup"
         style={
