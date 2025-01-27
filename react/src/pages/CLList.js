@@ -21,9 +21,21 @@ const CLList = ({ match, history }) => {
 
   const sortClList = (clList) => {
     const sortedList = Object.values(clList);
-    sortedList.sort((a, b) => parseInt(a._key) - parseInt(b._key));
-    setClList(sortedList);
-  };
+    // Separate items that have a label and those that don't
+    const labeledItems = sortedList.filter(item => item.label);
+    const keyItems = sortedList.filter(item => !item.label && item._key);
+
+    // Sort labeled items alphabetically by label
+    labeledItems.sort((a, b) => a.label.localeCompare(b.label));
+    // Sort items with _key numerically
+    keyItems.sort((a, b) => parseInt(a._key) - parseInt(b._key));
+
+    // Combine lists
+    const finalList = [...labeledItems, ...keyItems];
+
+    // Update the state with the sorted list
+    setClList(finalList);
+};
 
   return (
     <div>
