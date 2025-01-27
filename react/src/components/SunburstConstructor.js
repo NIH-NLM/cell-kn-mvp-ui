@@ -109,7 +109,12 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     .attr("dy", "0.35em")
     .style("font-size", "16px")
     .style("font-weight", "bold")
-    .text(data.label);
+    .text(data.label)
+    .style("cursor", "default")
+    .on("click", function(event) {
+      event.preventDefault();
+      clicked(event, root);
+    });
 
   // Handle zoom on click.
   function clicked(event, p) {
@@ -132,6 +137,9 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     );
 
     const t = svg.transition().duration(750);
+
+    // Update the cursor based on the depth of the node
+    updateCursor(p);
 
     // Transition the data on all arcs, even the ones that aren’t visible,
     // so that if this transition is interrupted, entering arcs will start
@@ -176,6 +184,13 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     const x = (((d.x0 + d.x1) / 2) * 180) / Math.PI;
     const y = ((d.y0 + d.y1) / 2) * radius;
     return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+  }
+
+  function updateCursor(p) {
+    // Change cursor based on depth: if depth is 0, use default cursor
+    const cursorStyle = p.depth === 0 ? "default" : "pointer";
+    parent.style("cursor", cursorStyle);
+    centerText.style("cursor", cursorStyle);
   }
 
   return svg.node();
