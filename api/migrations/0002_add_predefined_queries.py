@@ -1,7 +1,8 @@
 from django.db import migrations
 
+
 def create_predefined_queries(apps, schema_editor):
-    PredefinedQuery = apps.get_model('api', 'PredefinedQuery')
+    PredefinedQuery = apps.get_model("api", "PredefinedQuery")
 
     PredefinedQuery.objects.create(
         name="Find gene-drug-disease triangles by publication",
@@ -24,17 +25,21 @@ def create_predefined_queries(apps, schema_editor):
                 "NCBITaxon",
                 "PATO",
                 "PR",
-                "UBERON"
-                ],
-            "labelStates":
-                {".collection-label": False, ".link-label": False, ".node-label": False}
-        }
+                "UBERON",
+            ],
+            "labelStates": {
+                ".collection-label": False,
+                ".link-label": False,
+                ".node-label": False,
+            },
+        },
     )
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0001_initial'),
+        ("api", "0001_initial"),
     ]
 
     operations = [

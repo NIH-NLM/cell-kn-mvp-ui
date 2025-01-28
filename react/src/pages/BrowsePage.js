@@ -1,10 +1,7 @@
 import BrowseBox from "../components/BrowseBox";
 
 const BrowsePage = () => {
+  return <BrowseBox />;
+};
 
-    return (
-        <BrowseBox />
-    )
-}
-
-export default BrowsePage
+export default BrowsePage;
