@@ -1,11 +1,31 @@
+import os
+from pathlib import Path
+import subprocess
+
 from django.test import TestCase
 
 from arango_api import utils
 
 
+TESTS_DIR = Path(os.path.abspath(__file__)).parent
+SH_DIR = TESTS_DIR.parent / "sh"
+ARANGO_DB_HOME = os.environ["ARANGO_DB_HOME"]
+
+
 class UtilsTestCase(TestCase):
 
+    # @classmethod
+    # def setUpClass(cls):
+
+    #     subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
+
+    #     os.environ["ARANGO_DB_HOME"] = str(Path(TESTS_DIR / "arangodb"))
+
+    #     subprocess.run([str(SH_DIR / "start-arangodb.sh")])
+
+
     def test_get_document_collections(self):
+
         self.assertEqual(
             sorted([c["name"] for c in utils.get_document_collections()]),
             sorted(
@@ -115,3 +135,12 @@ class UtilsTestCase(TestCase):
     # TODO: Complete
     def test_get_sunburst(self):
         pass
+
+    # @classmethod
+    # def tearDownClass(cls):
+
+    #     subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
+
+    #     os.environ["ARANGO_DB_HOME"] = ARANGO_DB_HOME
+
+    #     subprocess.run([str(SH_DIR / "start-arangodb.sh")])
