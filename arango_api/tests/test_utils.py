@@ -14,15 +14,12 @@ ARANGO_DB_HOME = os.environ["ARANGO_DB_HOME"]
 
 class UtilsTestCase(TestCase):
 
-    # @classmethod
-    # def setUpClass(cls):
+    @classmethod
+    def setUpClass(cls):
 
-    #     subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
-
-    #     os.environ["ARANGO_DB_HOME"] = str(Path(TESTS_DIR / "arangodb"))
-
-    #     subprocess.run([str(SH_DIR / "start-arangodb.sh")])
-
+        subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
+        os.environ["ARANGO_DB_HOME"] = str(Path(TESTS_DIR / "arangodb"))
+        subprocess.run([str(SH_DIR / "start-arangodb.sh")])
 
     def test_get_document_collections(self):
 
@@ -37,13 +34,17 @@ class UtilsTestCase(TestCase):
                     "PATO",
                     "PR",
                     "UBERON",
-                    "anatomic_structure",
-                    "biomarker_combination",
-                    "cell_set",
-                    "disease",
-                    "drug_product",
-                    "gene_name",
-                    "publication",
+                    "anatomic_structure_cls",
+                    "biomarker_combination_cls",
+                    "biomarker_combination_ind",
+                    "cell_set_ind",
+                    "disease_cls",
+                    "drug_product_cls",
+                    "gene_cls",
+                    "publication_cls",
+                    "publication_ind",
+                    "transcript_cls",
+                    "transcript_ind",
                 ]
             ),
         )
@@ -59,27 +60,27 @@ class UtilsTestCase(TestCase):
             {
                 "_key": "0002145",
                 "_id": "CL/0002145",
-                "_rev": "_iyGFlWW---",
+                "_rev": "_jEEOlFG---",
                 "term": "CL_0002145",
                 "definition": [
                     "A multi-ciliated epithelial cell located in the trachea and bronchi, characterized by a columnar shape and motile cilia on its apical surface. These cilia facilitate mucociliary clearance by moving mucus and trapped particles toward the pharynx."
                 ],
-                "creation_date": "2010-08-24 03:38:29+00:00",
-                "label": "ciliated columnar cell of tracheobronchial tree",
-                "comment": [
-                    "These cells possess numerous cilia on their surface, typically ranging from 200 to 300 per cell. The cilia vary in length, measuring between 6 to 7 μm in the upper airways (trachea) and becoming shorter, around 4 μm, in the smaller airways (terminal bronchioles). These cells form a two-layered 'coat' in the airway: the lower 'sol' layer is watery, allowing the cilia to beat in coordinated waves, while the upper 'gel' layer is thick and sticky, trapping inhaled particles."
-                ],
                 "hasDbXref": [
-                    "FMA:70542",
                     "https://cellxgene.cziscience.com/cellguide/CL_0002145",
+                    "FMA:70542",
+                    "PMID:25386990",
                     "PMID:28400610",
                     "GOC:tfm",
                     "DOI:10.1152/ajplung.00329.2019",
-                    "DOI:10.1101/cshperspect.a028241",
                     "DOI:10.1146/annurev-physiol-021014-071931",
+                    "DOI:10.1101/cshperspect.a028241",
                     "DOI:10.1159/000196486",
-                    "PMID:25386990",
                 ],
+                "comment": [
+                    "These cells possess numerous cilia on their surface, typically ranging from 200 to 300 per cell. The cilia vary in length, measuring between 6 to 7 μm in the upper airways (trachea) and becoming shorter, around 4 μm, in the smaller airways (terminal bronchioles). These cells form a two-layered 'coat' in the airway: the lower 'sol' layer is watery, allowing the cilia to beat in coordinated waves, while the upper 'gel' layer is thick and sticky, trapping inhaled particles."
+                ],
+                "label": "ciliated columnar cell of tracheobronchial tree",
+                "creation_date": "2010-08-24 03:38:29+00:00",
                 "proposed definition": "nan",
             },
         )
@@ -94,7 +95,7 @@ class UtilsTestCase(TestCase):
                     "_id": "CL-CL/0000061-0000151",
                     "_from": "CL/0000061",
                     "_to": "CL/0000151",
-                    "_rev": "_iyDD1XS---",
+                    "_rev": "_jECr_4q---",
                     "label": "subClassOf",
                 },
                 {
@@ -102,7 +103,7 @@ class UtilsTestCase(TestCase):
                     "_id": "CL-CL/0000061-0000062",
                     "_from": "CL/0000061",
                     "_to": "CL/0000062",
-                    "_rev": "_iyDLvbC---",
+                    "_rev": "_jECvjR6---",
                     "label": "subClassOf",
                 },
                 {
@@ -110,7 +111,7 @@ class UtilsTestCase(TestCase):
                     "_id": "CL-CL/0000061-0007002",
                     "_from": "CL/0000061",
                     "_to": "CL/0007002",
-                    "_rev": "_iyDVrpW---",
+                    "_rev": "_jEC8P6S---",
                     "label": "develops from",
                 },
             ],
@@ -136,11 +137,9 @@ class UtilsTestCase(TestCase):
     def test_get_sunburst(self):
         pass
 
-    # @classmethod
-    # def tearDownClass(cls):
+    @classmethod
+    def tearDownClass(cls):
 
-    #     subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
-
-    #     os.environ["ARANGO_DB_HOME"] = ARANGO_DB_HOME
-
-    #     subprocess.run([str(SH_DIR / "start-arangodb.sh")])
+        subprocess.run([str(SH_DIR / "stop-arangodb.sh")])
+        os.environ["ARANGO_DB_HOME"] = ARANGO_DB_HOME
+        subprocess.run([str(SH_DIR / "start-arangodb.sh")])

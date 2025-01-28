@@ -31,6 +31,7 @@ def get_object(request, coll, pk):
 
 @api_view(["GET"])
 def get_related_edges(request, edge_coll, dr, item_coll, pk):
+    # TODO: Document arguments
     edges = utils.get_edges_by_id(edge_coll, dr, item_coll, pk)
     return JsonResponse(list(edges), safe=False)
 
