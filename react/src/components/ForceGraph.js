@@ -433,12 +433,12 @@ const ForceGraph = ({
     );
   };
 
-  // Remove all collections to the prune list
+  // Remove all collections from the prune list
   const handleAllOn = () => {
     setCollectionsToPrune([]);
   };
 
-  // Add all collections from the prune list
+  // Add all collections to the prune list
   const handleAllOff = () => {
     setCollectionsToPrune(collections);
   };
