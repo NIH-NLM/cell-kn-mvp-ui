@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "./ForceGraphConstructor";
 import collectionsMapData from "../assets/collectionsMap.json";
-import { DbNameContext, GraphNameContext } from "./Contexts";
+import { DbNameContext, GraphNameContext, PrunedCollections } from "./Contexts";
 import { fetchCollections, parseCollections } from "./Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
@@ -22,8 +22,9 @@ const ForceGraph = ({
   const [setOperation, setSetOperation] = useState(
     settings["setOperation"] || "Union",
   );
+  const prunedCollectionsContext = useContext(PrunedCollections)
   const [collectionsToPrune, setCollectionsToPrune] = useState(
-    settings["collectionsToPrune"] || [],
+    settings["collectionsToPrune"] || prunedCollectionsContext,
   );
   const [nodesToPrune, setNodesToPrune] = useState(
     settings["nodesToPrune"] || [],
