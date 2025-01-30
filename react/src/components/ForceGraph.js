@@ -637,7 +637,7 @@ const ForceGraph = ({
               <button
                   onClick={() => handleAllOn()}
                   className={
-                    collectionsToPrune !== collections
+                    collectionsToPrune.length === 0
                         ? "background-color-bg"
                         : "background-color-light"
                   }
