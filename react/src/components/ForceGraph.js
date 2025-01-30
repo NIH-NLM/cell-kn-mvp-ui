@@ -433,6 +433,16 @@ const ForceGraph = ({
     );
   };
 
+  // Remove all collections to the prune list
+  const handleAllOn = () => {
+    setCollectionsToPrune([]);
+  };
+
+  // Add all collections from the prune list
+  const handleAllOff = () => {
+    setCollectionsToPrune(collections);
+  };
+
   const handleLabelToggle = (labelClass) => {
     setLabelStates((prevStates) => {
       // Update the specific label state
@@ -610,6 +620,32 @@ const ForceGraph = ({
                 </button>
               </div>
             ))}
+          </div>
+          <div className="checkboxes-container">
+            <div className="checkbox-container">
+              <button
+                  onClick={() => handleAllOn()}
+                  className={
+                    collectionsToPrune !== collections
+                        ? "background-color-bg"
+                        : "background-color-light"
+                  }
+              >
+                All On
+              </button>
+            </div>
+            <div className="checkbox-container">
+              <button
+                  onClick={() => handleAllOff()}
+                  className={
+                    collectionsToPrune === collections
+                        ? "background-color-bg"
+                        : "background-color-light"
+                  }
+              >
+                All Off
+              </button>
+            </div>
           </div>
         </div>
         <div className="labels-toggle-container">
