@@ -68,8 +68,18 @@ const ForceGraph = ({
   useEffect(() => {
     fetchCollections().then((data) => {
       // Set collections state
-      setCollections(parseCollections(data));
-    });
+      let tempCollections = parseCollections(data)
+      setCollections(tempCollections);
+      // Check if "collectionsToAllow" exists in settings and only allow that collection
+      if (settings["collectionsToAllow"]) {
+        const collectionsToAllow = settings["collectionsToAllow"];
+        const collectionsToPruneFiltered = tempCollections.filter(collection =>
+          !collectionsToAllow.includes(collection)
+        );
+        setCollectionsToPrune(collectionsToPruneFiltered);
+      }
+  });
+
     document.addEventListener("click", closePopupOnInteraction);
     return () => {
       document.removeEventListener("click", closePopupOnInteraction);
@@ -523,7 +533,7 @@ const ForceGraph = ({
         <div className="depth-picker">
           <label htmlFor="depth-select">Select depth of edge traversal:</label>
           <select id="depth-select" value={depth} onChange={handleDepthChange}>
-            {[0, 1, 2, 3, 4].map((value) => (
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>

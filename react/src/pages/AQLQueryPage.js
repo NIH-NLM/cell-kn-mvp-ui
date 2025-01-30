@@ -7,8 +7,8 @@ const AQLQueryPage = () => {
   const [error, setError] = useState(null);
   const [predefinedQueries, setPredefinedQueries] = useState([]);
   const [selectedQuery, setSelectedQuery] = useState("");
-  const [term, setTerm] = useState("");
-  const [ncbiTerm, setNcbiTerm] = useState("");
+  const [value1, setValue1] = useState("");
+  const [value2, setValue2] = useState("");
 
   useEffect(() => {
     // Fetch predefined queries on component mount
@@ -35,6 +35,34 @@ const AQLQueryPage = () => {
     setQueryTemplate(sq ? sq.query : "");
   };
 
+  function replaceAll(obj, replacements) {
+    if (typeof obj === 'string') {
+      // Replace placeholders in strings
+      Object.keys(replacements).forEach(key => {
+        const regex = new RegExp(`@${key}`, 'g');
+        obj = obj.replace(regex, replacements[key]);
+      });
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      // Recurse through each item in the array
+      return obj.map(item => replaceAll(item, replacements));
+    }
+
+    if (typeof obj === 'object' && obj !== null) {
+      // Recurse through each key in the object
+      const newObj = {};
+      Object.keys(obj).forEach(key => {
+        newObj[key] = replaceAll(obj[key], replacements);
+      });
+      return newObj;
+    }
+
+    // Return other data types as-is
+    return obj;
+  }
+
   const executeQuery = async () => {
     setError(null); // Reset any previous error
     try {
@@ -45,8 +73,8 @@ const AQLQueryPage = () => {
         },
         body: JSON.stringify({
           query: queryTemplate
-            .replace(/@term/g, `"${term}"`)
-            .replace(/@ncbiTerm/g, `"${ncbiTerm}"`),
+            .replace(/@value1/g, `${value1}`)
+            .replace(/@value2/g, `${value2}`),
         }),
       });
 
@@ -55,8 +83,14 @@ const AQLQueryPage = () => {
       }
 
       const data = await response.json();
-      //TODO: avoid hard-coding expected results?
-      setNodeIds(data["nodes"].map((obj) => obj._id));
+
+      // Check if response has information
+      if (data && data["nodes"] && data["nodes"][0]){
+        //TODO: avoid hard-coding expected results?
+        setNodeIds(data["nodes"].map((obj) => obj._id));
+      } else {
+        setError("Nothing found. Please refine your search and try again")
+      }
     } catch (err) {
       // TODO: Fix error logic. Currently error will almost always be about mapping over null, given a blank return
       setError(err.message);
@@ -81,20 +115,20 @@ const AQLQueryPage = () => {
         <input
           type="text"
           placeholder={selectedQuery.placeholder_1}
-          value={ncbiTerm}
-          onChange={(e) => setNcbiTerm(e.target.value)}
+          value={value1}
+          onChange={(e) => setValue1(e.target.value)}
         />
         <input
           type="text"
           placeholder={selectedQuery.placeholder_2}
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          value={value2}
+          onChange={(e) => setValue2(e.target.value)}
         />
         <button onClick={executeQuery}>Execute</button>
       </div>
       {error && <div className="error-message">{error}</div>}
       {Object.keys(nodeIds).length > 0 && (
-        <ForceGraph nodeIds={nodeIds} settings={selectedQuery.settings} />
+        <ForceGraph nodeIds={nodeIds} settings={replaceAll(selectedQuery.settings, {"value1": value1, "value2": value2})} />
       )}
     </div>
   );
