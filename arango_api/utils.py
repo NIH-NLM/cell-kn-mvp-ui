@@ -240,6 +240,7 @@ def search_by_term(search_term):
 
 def run_aql_query(query):
 
+    print(query)
     # Execute the query
     try:
         cursor = db.aql.execute(query)
