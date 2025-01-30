@@ -4,7 +4,7 @@ import { HashRouter as Router, Route, Switch } from "react-router-dom";
 import "./App.css";
 import Header from "./components/Header";
 import CLList from "./pages/CLList";
-import CellPage from "./pages/CellPage";
+import DocumentPage from "./pages/DocumentPage";
 import BrowsePage from "./pages/BrowsePage";
 import AQLQueryPage from "./pages/AQLQueryPage";
 import ExplorationPage from "./pages/ExplorationPage";
@@ -20,7 +20,7 @@ function App() {
           <Header />
           <div className="app">
             <Switch>
-              <Route path="/browse/:coll/:id" component={CellPage} />
+              <Route path="/browse/:coll/:id" component={DocumentPage} />
               <Route path="/browse/:coll" component={CLList} />
               <Route path="/browse" component={BrowsePage} />
               <Route path="/aql" component={AQLQueryPage} />

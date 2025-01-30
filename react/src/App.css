@@ -208,21 +208,28 @@ tr {
   border-top: 1px solid #d0d0d0;
 }
 
-/*CellPage*/
-.cell-card {
+/*DocumentPage*/
+.document-card {
   display: flex;
   justify-content: space-evenly;
   flex-direction: column;
 }
 
-.cell-item-header {
+.document-item-header {
   display: flex;
   flex-direction: row;
 }
 
-.cell-item-header * {
+.document-item-header * {
   padding: 0 2rem 1rem 0;
 }
+
+.document-item-container {
+  display: flex;
+  text-wrap: balance;
+  word-wrap: break-word;
+}
+
 
 .cell-item-list {
   max-width: 40%;
@@ -234,12 +241,6 @@ tr {
 
 .cl-count {
   font-style: italic;
-}
-
-.cell-item-container {
-  display: flex;
-  text-wrap: balance;
-  word-wrap: break-word;
 }
 
 .cell-edges-container {

@@ -9,7 +9,7 @@ const SchemaPage = () => {
 
   // Props for ForceGraph
   const nodeIds = ["Cell_type/Cell_type1"];
-  const settings = { defaultDepth: 4, useFocusNodes: false };
+  const settings = { defaultDepth: 4, useFocusNodes: false, collectionsToPrune: []};
 
   return (
     // Wrapping ForceGraph with the overridden context providers
