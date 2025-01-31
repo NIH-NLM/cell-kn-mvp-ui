@@ -721,21 +721,21 @@ input:checked + .slider:before {
   gap: 2rem;
 }
 
-.document-list .list-cell {
+.document-list .list-document {
   background-color: var(--color-white);
 }
 
-.document-list .list-cell:hover {
+.document-list .list-document:hover {
   color: inherit;
   transform: translateY(-5px);
 }
 
-.list-cell h4 {
+.list-document h4 {
   font-size: 1.4rem;
   margin-bottom: 1rem;
 }
 
-.list-cell p {
+.list-document p {
   color: var(--color-gray);
   font-size: 1rem;
 }
