@@ -129,26 +129,28 @@ function ForceGraphConstructor(
     .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
     .style("display", legendDisplay);
 
+  const legendSize = 45 * heightRatio
   const legendItem = legend
     .selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
     .enter()
     .append("g")
     .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+    .attr("transform", (d, i) => `translate(0, ${i * legendSize})`);
 
   legendItem
     .append("rect")
     .attr("x", 0)
-    .attr("width", 18)
-    .attr("height", 18)
+    .attr("width", legendSize)
+    .attr("height", legendSize)
     .style("fill", color);
 
   legendItem
     .append("text")
-    .attr("x", 25)
-    .attr("y", 9)
-    .attr("dy", ".5em")
+    .attr("x", legendSize * 1.5) // Horizontal offset
+    .attr("y", legendSize/2) // Vertical offset
+    .attr("dy", (legendSize/2)+"px")
+      .style("font-size", legendSize+"px")
     .text((collection) =>
       collectionsMap.has(collection)
         ? collectionsMap.get(collection)["abbreviated_name"]
