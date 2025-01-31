@@ -3,7 +3,7 @@ import { HashRouter as Router, Route, Switch } from "react-router-dom";
 /* TODO: get favicon in public working */
 import "./App.css";
 import Header from "./components/Header";
-import CLList from "./pages/CLList";
+import DocumentList from "./pages/DocumentList";
 import DocumentPage from "./pages/DocumentPage";
 import BrowsePage from "./pages/BrowsePage";
 import AQLQueryPage from "./pages/AQLQueryPage";
@@ -21,7 +21,7 @@ function App() {
           <div className="app">
             <Switch>
               <Route path="/browse/:coll/:id" component={DocumentPage} />
-              <Route path="/browse/:coll" component={CLList} />
+              <Route path="/browse/:coll" component={DocumentList} />
               <Route path="/browse" component={BrowsePage} />
               <Route path="/aql" component={AQLQueryPage} />
               <Route path="/schema" component={SchemaPage} />
