@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import BrowseBox from "../components/BrowseBox";
-import ListCells from "../components/ListCells";
+import ListDocuments from "../components/ListDocuments";
 import { useParams } from "react-router-dom";
 
 const DocumentList = () => {
@@ -51,8 +51,8 @@ const DocumentList = () => {
             <p className="document-count">{documentList.length} results</p>
           </header>
           <div className="document-list">
-            {documentList.map((cell, index) => (
-              <ListCells key={index} cell={cell} />
+            {documentList.map((document, index) => (
+              <ListDocuments key={index} document={document} />
             ))}
           </div>
         </div>
