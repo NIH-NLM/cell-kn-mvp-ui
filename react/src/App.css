@@ -239,10 +239,6 @@ tr {
   margin-top: 2rem;
 }
 
-.cl-count {
-  font-style: italic;
-}
-
 .cell-edges-container {
   display: flex;
 }
@@ -697,13 +693,13 @@ input:checked + .slider:before {
   margin: 0 auto;
 }
 
-.cl-container {
+.document-container {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-.cl-header {
+.document-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -713,22 +709,23 @@ input:checked + .slider:before {
   border-radius: 8px;
 }
 
-.cl-count {
+.document-count {
   font-size: 1.4rem;
   font-weight: 500;
+  font-style: italic;
 }
 
-.cl-list {
+.document-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 2rem;
 }
 
-.cl-list .list-cell {
+.document-list .list-cell {
   background-color: var(--color-white);
 }
 
-.cl-list .list-cell:hover {
+.document-list .list-cell:hover {
   color: inherit;
   transform: translateY(-5px);
 }

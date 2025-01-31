@@ -3,30 +3,35 @@ import BrowseBox from "../components/BrowseBox";
 import ListCells from "../components/ListCells";
 import { useParams } from "react-router-dom";
 
-/* TODO: Remove unneeded match, history props */
-/* TODO: Rename */
-const CLList = ({ match, history }) => {
+const DocumentList = () => {
   const { coll } = useParams();
-  const [clList, setClList] = useState([]);
+  const [documentList, setDocumentList] = useState([]);
 
   useEffect(() => {
-    getClList();
+    getDocumentList();
   }, [coll]);
 
-  const getClList = async () => {
+  const getDocumentList = async () => {
     const response = await fetch(`/arango_api/collection/${coll}/`);
     const data = await response.json();
-    sortClList(data);
+    sortDocumentList(data);
   };
 
-  const sortClList = (clList) => {
-    const sortedList = Object.values(clList);
+  const sortDocumentList = (documentList) => {
+    const sortedList = Object.values(documentList);
     // Separate items that have a label and those that don't
     const labeledItems = sortedList.filter(item => item.label);
     const keyItems = sortedList.filter(item => !item.label && item._key);
 
-    // Sort labeled items alphabetically by label
-    labeledItems.sort((a, b) => a.label.localeCompare(b.label));
+    // Sort labeled items alphabetically by label, handling arrays
+    labeledItems.sort((a, b) => {
+      // Get label, use first instance if array, such as in biomarker_combination
+      const labelA = Array.isArray(a.label) ? a.label[0] : a.label;
+      const labelB = Array.isArray(b.label) ? b.label[0] : b.label;
+
+      return labelA.localeCompare(labelB);
+    });
+
     // Sort items with _key numerically
     keyItems.sort((a, b) => parseInt(a._key) - parseInt(b._key));
 
@@ -34,19 +39,19 @@ const CLList = ({ match, history }) => {
     const finalList = [...labeledItems, ...keyItems];
 
     // Update the state with the sorted list
-    setClList(finalList);
-};
+    setDocumentList(finalList);
+  };
 
   return (
     <div>
       <BrowseBox currentCollection={coll} />
       <div className="page-container">
-        <div className="cl-container">
-          <header className="cl-header">
-            <p className="cl-count">{clList.length} results</p>
+        <div className="document-container">
+          <header className="document-header">
+            <p className="document-count">{documentList.length} results</p>
           </header>
-          <div className="cl-list">
-            {clList.map((cell, index) => (
+          <div className="document-list">
+            {documentList.map((cell, index) => (
               <ListCells key={index} cell={cell} />
             ))}
           </div>
@@ -56,4 +61,4 @@ const CLList = ({ match, history }) => {
   );
 };
 
-export default CLList;
+export default DocumentList;
