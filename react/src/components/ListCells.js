@@ -5,9 +5,9 @@ import { Link } from "react-router-dom";
 let getLabel = (cell) => {
   let label = "";
   if (cell.label) {
-    label = cell.label;
+    label = Array.isArray(cell.label) ? cell.label.join("+") : cell.label;
   } else if (cell.term) {
-    label = cell.term;
+    label = Array.isArray(cell.term) ? cell.term.join("+") : cell.term;
   } else {
     label = cell._id;
   }
