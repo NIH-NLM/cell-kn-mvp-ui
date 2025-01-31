@@ -129,14 +129,14 @@ function ForceGraphConstructor(
     .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
     .style("display", legendDisplay);
 
-  const legendSize = 45
+  const legendSize = 45 * heightRatio
   const legendItem = legend
     .selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
     .enter()
     .append("g")
     .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(0, ${i * legendSize}) scale(1)`);
+    .attr("transform", (d, i) => `translate(0, ${i * legendSize})`);
 
   legendItem
     .append("rect")
