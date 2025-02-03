@@ -292,6 +292,7 @@ def get_sunburst():
         # Query to get nodes for a specific root node and edge collection
         query = f"""
             FOR v, e IN 0..@depth INBOUND @node_id @edge_col
+                FILTER e.label == 'subClassOf' OR v._id == @node_id
                 RETURN {{v, e}}
         """
 
