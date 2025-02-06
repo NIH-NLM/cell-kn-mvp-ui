@@ -1,4 +1,4 @@
-import { HashRouter as Router, Route, Switch } from "react-router-dom";
+import {HashRouter as Router, Route, Routes} from "react-router-dom";
 
 /* TODO: get favicon in public working */
 import "./App.css";
@@ -19,14 +19,14 @@ function App() {
         <div className="site-container background-color-white">
           <Header />
           <div className="app">
-            <Switch>
-              <Route path="/browse/:coll/:id" component={DocumentPage} />
-              <Route path="/browse/:coll" component={DocumentList} />
-              <Route path="/browse" component={BrowsePage} />
-              <Route path="/aql" component={AQLQueryPage} />
-              <Route path="/schema" component={SchemaPage} />
-              <Route path="/" component={ExplorationPage} />
-            </Switch>
+            <Routes>
+              <Route path="/browse/:coll/:id" element={<DocumentPage />} />
+              <Route path="/browse/:coll" element={<DocumentList/>} />
+              <Route path="/browse" element={<BrowsePage />} />
+              <Route path="/aql" element={<AQLQueryPage />} />
+              <Route path="/schema" element={<SchemaPage />} />
+              <Route path="/" element={<ExplorationPage />} />
+            </Routes>
           </div>
           <Footer/>
         </div>

@@ -16,7 +16,7 @@ let getLabel = (document) => {
 
 const ListDocuments = ({ document: document }) => {
   return (
-    <Link to={document._id}>
+    <Link to={`/browse/${document._id}`}>
       <div className="list-document">
         <h3>{getLabel(document)}</h3>
       </div>
