@@ -2,26 +2,26 @@ import React, {useState, useEffect, useContext} from "react";
 import CellCard from "../components/CellCard";
 import ForceGraph from "../components/ForceGraph";
 import { PrunedCollections } from "../components/Contexts";
+import {useParams} from "react-router-dom";
 
 // Document as described in ArangoDB documentation
-const DocumentPage = ({ match }) => {
-  let documentId = match.params.id;
-  let collection = match.params.coll;
+const DocumentPage = ({ }) => {
+  const { coll, id } = useParams();
   let [document, setDocument] = useState(null);
 
   // Modify the PrunedCollections context if this collection is part of that list
   const prunedCollections = useContext(PrunedCollections);
-  const filteredPrunedCollections = prunedCollections.includes(collection)
-    ? prunedCollections.filter(item => item !== collection)
+  const filteredPrunedCollections = prunedCollections.includes(coll)
+    ? prunedCollections.filter(item => item !== coll)
     : prunedCollections;
 
   useEffect(() => {
     getDocument().then((r) => setDocument(r));
-  }, [documentId, collection]);
+  }, [id, coll]);
 
   let getDocument = async () => {
     let response = await fetch(
-      `/arango_api/collection/${collection}/${documentId}/`,
+      `/arango_api/collection/${coll}/${id}/`,
     );
     return response.json();
   };
