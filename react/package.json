@@ -4,9 +4,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.2.0",
-    "@testing-library/user-event": "^14.6.1",
     "d3": "^7.9.0",
     "jspdf": "^2.5.2",
     "npm-watch": "^0.13.0",
@@ -51,6 +48,10 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
+    "jest": "^27.5.1",
     "prettier": "^3.4.2"
   }
 }
