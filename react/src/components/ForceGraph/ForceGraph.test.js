@@ -2,23 +2,27 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ForceGraph from './ForceGraph';
 
 describe('ForceGraph Component', () => {
-  it('renders the component correctly', () => {
+  it("Should toggle options when toggle options button is clicked", () => {
     render(<ForceGraph />);
-    // Example: Check if the toggle button is rendered
-    const toggleButton = screen.getByRole('button', { name: /toggle options/i });
-    expect(toggleButton).toBeInTheDocument();
-  });
 
-  it('changes button text when toggled', () => {
-    render(<ForceGraph />);
-    const toggleButton = screen.getByRole('button', { name: /toggle options/i });
+    // Get the button that toggles the options visibility
+    const toggleButton = screen.getByRole('button', { name: 'Toggle Options ▲' });
+    // Get the graph-options div
+    const optionsPanel = screen.getByTestId("graph-options");
 
-    // Simulate a click to toggle options
+    // Ensure options begins hidden
+    expect(optionsPanel).toHaveStyle("display: none");
+
+    // Click button
     fireEvent.click(toggleButton);
+    // After clicking, the options should be visible
+    expect(optionsPanel).toHaveStyle("display: flex");
 
-    // Check if button text changes
-    expect(toggleButton).toHaveTextContent('Toggle Options ▼');
-  });
+    // Click the toggle button again
+    fireEvent.click(toggleButton);
+    // After clicking again, the options should be hidden
+    expect(optionsPanel).toHaveStyle("display: none");
+  });;
 
   // TODO: Finish testing
 });

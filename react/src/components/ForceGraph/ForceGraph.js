@@ -528,6 +528,7 @@ const ForceGraph = ({
       </button>
       <div
         className="graph-options"
+        data-testid="graph-options"
         style={optionsVisible ? { display: "flex" } : { display: "none" }}
       >
         <div className="depth-picker">
