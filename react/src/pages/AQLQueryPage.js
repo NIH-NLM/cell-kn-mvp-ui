@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ForceGraph from "../components/ForceGraph";
+import ForceGraph from "../components/ForceGraph/ForceGraph";
 
 const AQLQueryPage = () => {
   const [queryTemplate, setQueryTemplate] = useState("");

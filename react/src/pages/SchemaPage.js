@@ -1,5 +1,5 @@
 import React from "react";
-import ForceGraph from "../components/ForceGraph";
+import ForceGraph from "../components/ForceGraph/ForceGraph";
 import { GraphNameContext, DbNameContext } from "../components/Contexts";
 
 const SchemaPage = () => {
