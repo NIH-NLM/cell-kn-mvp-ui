@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import BrowseBox from "../components/BrowseBox";
-import ListDocuments from "../components/ListDocuments";
+import BrowseBox from "../../components/BrowseBox/BrowseBox";
+import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
 
-const DocumentList = () => {
+const DocumentListPage = () => {
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
 
@@ -61,4 +61,4 @@ const DocumentList = () => {
   );
 };
 
-export default DocumentList;
+export default DocumentListPage;

@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
-import ForceGraphConstructor from "../ForceGraphConstructor";
+import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { DbNameContext, GraphNameContext, PrunedCollections } from "../Contexts";
-import { fetchCollections, parseCollections } from "../Utils";
+import { DbNameContext, GraphNameContext, PrunedCollections } from "../Contexts/Contexts";
+import { fetchCollections, parseCollections } from "../Utils/Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
 const ForceGraph = ({

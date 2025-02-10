@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchCollections, parseCollections } from "./Utils";
+import { fetchCollections, parseCollections } from "../Utils/Utils";
 
 const BrowseBox = ({ currentCollection }) => {
   const [collections, setCollections] = useState([]);

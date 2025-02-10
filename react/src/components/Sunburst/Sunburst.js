@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import SunburstConstructor from "./SunburstConstructor";
-import { GraphNameContext } from "./Contexts";
+import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
+import { GraphNameContext } from "../Contexts/Contexts";
 
 const Sunburst = ({ addSelectedItem }) => {
   const [graphData, setGraphData] = useState({});

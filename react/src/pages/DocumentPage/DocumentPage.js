@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useContext} from "react";
-import CellCard from "../components/CellCard";
-import ForceGraph from "../components/ForceGraph/ForceGraph";
-import { PrunedCollections } from "../components/Contexts";
+import CellCard from "../../components/CellCard/CellCard";
+import ForceGraph from "../../components/ForceGraph/ForceGraph";
+import { PrunedCollections } from "../../components/Contexts/Contexts";
 import {useParams} from "react-router-dom";
 
 // Document as described in ArangoDB documentation
