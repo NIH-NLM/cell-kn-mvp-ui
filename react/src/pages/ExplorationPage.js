@@ -1,7 +1,7 @@
 import SearchPage from "./SearchPage";
 import Sunburst from "../components/Sunburst";
 import { useState } from "react";
-import ForceGraph from "../components/ForceGraph";
+import ForceGraph from "../components/ForceGraph/ForceGraph";
 
 const ExplorationPage = () => {
   const [nodeIds, setNodeIds] = useState([]); // nodeIds will be used in the graph, separate from currently selected items

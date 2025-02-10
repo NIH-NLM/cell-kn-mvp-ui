@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
-import ForceGraphConstructor from "./ForceGraphConstructor";
-import collectionsMapData from "../assets/collectionsMap.json";
-import { DbNameContext, GraphNameContext, PrunedCollections } from "./Contexts";
-import { fetchCollections, parseCollections } from "./Utils";
+import ForceGraphConstructor from "../ForceGraphConstructor";
+import collectionsMapData from "../../assets/collectionsMap.json";
+import { DbNameContext, GraphNameContext, PrunedCollections } from "../Contexts";
+import { fetchCollections, parseCollections } from "../Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
 const ForceGraph = ({
@@ -528,6 +528,7 @@ const ForceGraph = ({
       </button>
       <div
         className="graph-options"
+        data-testid="graph-options"
         style={optionsVisible ? { display: "flex" } : { display: "none" }}
       >
         <div className="depth-picker">
