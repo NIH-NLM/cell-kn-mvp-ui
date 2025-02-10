@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import SelectedItemsTable from "../components/SelectedItemsTable";
-import SearchResultsTable from "../components/SearchResultsTable";
+import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
+import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 
-const SearchPage = ({
+const SearchBar = ({
   generateGraph,
   selectedItems,
   removeSelectedItem,
@@ -121,4 +121,4 @@ const SearchPage = ({
   );
 };
 
-export default SearchPage;
+export default SearchBar;

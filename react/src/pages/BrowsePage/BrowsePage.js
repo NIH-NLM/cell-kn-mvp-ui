@@ -1,4 +1,4 @@
-import BrowseBox from "../components/BrowseBox";
+import BrowseBox from "../../components/BrowseBox/BrowseBox";
 
 const BrowsePage = () => {
   return <BrowseBox />;

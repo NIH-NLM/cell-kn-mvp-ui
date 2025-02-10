@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import ForceGraph from './ForceGraph';
 
-describe('ForceGraph Component', () => {
+describe('ForceGraph', () => {
   it("Should toggle options when toggle options button is clicked", () => {
     render(<ForceGraph />);
 
