@@ -23,7 +23,7 @@ describe("BrowseBox", () => {
     );
   });
   it("should render collections", async () => {
-    // Wait for collections to load
+    // Check collections are rendered
     await waitFor(() => {
       expect(screen.getByText("Collection 1")).toBeInTheDocument();
       expect(screen.getByText("Collection 2")).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe("BrowseBox", () => {
     });
   });
   it("should highlight the active collection", async () => {
-    // Check
+    // Check appropriate collection is highlighted
     await waitFor(() => {
       expect(screen.getByText("Collection 1").closest("a")).not.toHaveClass(
         "active",
@@ -46,7 +46,7 @@ describe("BrowseBox", () => {
   });
 
   it("should render links to each collection with correct href", async () => {
-    // Check the href attribute for each link
+    // Check hrefs are populated correctly
     await waitFor(() => {
       expect(screen.getByText("Collection 1").closest("a")).toHaveAttribute(
         "href",
