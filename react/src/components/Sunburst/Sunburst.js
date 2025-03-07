@@ -68,21 +68,20 @@ const Sunburst = ({ addSelectedItem }) => {
 
   /* TODO: optimize lazy loading of sunburst to allow for the entire dataset to be in sunburst */
   let getGraphData = async (graphName) => {
-    let response = await fetch("/arango_api/sunburst/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        graph_name: graphName,
-      }),
-    });
+      let response = await fetch("/arango_api/sunburst/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          graph_name: graphName,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
 
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
-    return response.json();
+      return response.json();
   };
 
   // Handle right click on node
@@ -114,7 +113,7 @@ const Sunburst = ({ addSelectedItem }) => {
 
   return (
     <div>
-      <div id="sunburst-container" />
+      <div data-testid="sunburst-container" id="sunburst-container" />
       <div
         ref={popupRef}
         className="node-popup"
@@ -130,6 +129,7 @@ const Sunburst = ({ addSelectedItem }) => {
       >
         <a
           className="popup-button"
+          data-testid="popup-button"
           href={`/#/browse/${clickedItem ? clickedItem["_id"] : ""}`}
           target="_blank"
           rel="noopener noreferrer"
