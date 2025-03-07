@@ -77,7 +77,6 @@ const Sunburst = ({ addSelectedItem }) => {
         graph_name: graphName,
       }),
     });
-
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -114,7 +113,7 @@ const Sunburst = ({ addSelectedItem }) => {
 
   return (
     <div>
-      <div id="sunburst-container" />
+      <div data-testid="sunburst-container" id="sunburst-container" />
       <div
         ref={popupRef}
         className="node-popup"
@@ -130,6 +129,7 @@ const Sunburst = ({ addSelectedItem }) => {
       >
         <a
           className="popup-button"
+          data-testid="popup-button"
           href={`/#/browse/${clickedItem ? clickedItem["_id"] : ""}`}
           target="_blank"
           rel="noopener noreferrer"
