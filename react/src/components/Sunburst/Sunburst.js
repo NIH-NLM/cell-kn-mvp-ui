@@ -68,20 +68,20 @@ const Sunburst = ({ addSelectedItem }) => {
 
   /* TODO: optimize lazy loading of sunburst to allow for the entire dataset to be in sunburst */
   let getGraphData = async (graphName) => {
-      let response = await fetch("/arango_api/sunburst/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          graph_name: graphName,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+    let response = await fetch("/arango_api/sunburst/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        graph_name: graphName,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
 
-      return response.json();
+    return response.json();
   };
 
   // Handle right click on node
