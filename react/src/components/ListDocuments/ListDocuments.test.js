@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { BrowserRouter as Router } from "react-router-dom";
-import ListDocuments from "./ListDocuments";  // Adjust the import path if necessary
+import ListDocuments from "./ListDocuments"; // Adjust the import path if necessary
 
 describe("ListDocuments Component", () => {
   it("renders a single label correctly", () => {
@@ -9,7 +9,7 @@ describe("ListDocuments Component", () => {
     render(
       <Router>
         <ListDocuments document={document} />
-      </Router>
+      </Router>,
     );
 
     // Check if the label is rendered correctly
@@ -26,7 +26,7 @@ describe("ListDocuments Component", () => {
     render(
       <Router>
         <ListDocuments document={document} />
-      </Router>
+      </Router>,
     );
 
     // Check if the labels are joined by '+'
@@ -42,7 +42,7 @@ describe("ListDocuments Component", () => {
     render(
       <Router>
         <ListDocuments document={document} />
-      </Router>
+      </Router>,
     );
 
     // Check if the term is displayed correctly
@@ -58,7 +58,7 @@ describe("ListDocuments Component", () => {
     render(
       <Router>
         <ListDocuments document={document} />
-      </Router>
+      </Router>,
     );
 
     // Check if the _id is rendered as the label
