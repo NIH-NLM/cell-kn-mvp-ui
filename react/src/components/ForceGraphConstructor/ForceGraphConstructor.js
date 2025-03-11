@@ -30,11 +30,15 @@ function ForceGraphConstructor(
     heightRatio = 0.5, // outer height, multiplied by width. I.E., .5 height ratio will result in height half of the width
     nodeForceStrength = -2500,
     centerForceStrength = 1,
+    defaultLabelStates,
     invalidation, // when this promise resolves, stop the simulation
   } = {},
 ) {
   // Construct the scales.
   const color = nodeGroup == null ? null : d3.scaleOrdinal(nodeGroups, colors);
+
+  // Construct label states
+  let labelStates = defaultLabelStates;
 
   // Create containers for nodes and links
   let nodes = []; // All nodes
@@ -210,7 +214,7 @@ function ForceGraphConstructor(
 
   function drag(simulation) {
     function dragstarted(event) {
-      if (!event.active) simulation.alphaTarget(0.2).restart();
+      if (!event.active) simulation.alphaTarget(0.1).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
       interactionCallback();
@@ -288,9 +292,9 @@ function ForceGraphConstructor(
 
   /* TODO: Remember current label states and turn labels on automatically after simulation alpha reaches 0.
         Also call simulation.stop and set forces to 0 by default when alpha reaches 0*/
-  function toggleSimulation(isSimActive) {
-    if (isSimActive) {
-      simulation.alpha(0.5).restart();
+  function toggleSimulation(on) {
+    if (on) {
+      simulation.alpha(1).restart();
       forceNode.strength(nodeForceStrength);
       forceCenter.strength(centerForceStrength);
       forceLink.links(links);
@@ -302,7 +306,7 @@ function ForceGraphConstructor(
     }
   }
 
-  function toggleLabels(areLabelsOn, labelClass) {
+  function toggleLabels(show, labelClass, frozenState = false) {
     let container;
 
     if (labelClass.includes("link")) {
@@ -310,12 +314,18 @@ function ForceGraphConstructor(
     } else {
       container = nodeContainer;
     }
-    if (areLabelsOn) {
+    if (show) {
       // Display Labels
       container.selectAll(labelClass).style("display", "block");
+      if (!frozenState) {
+        labelStates[labelClass] = true;
+      }
     } else {
       // Hide Labels
       container.selectAll(labelClass).style("display", "none");
+      if (!frozenState) {
+        labelStates[labelClass] = false;
+      }
     }
   }
 
@@ -361,6 +371,12 @@ function ForceGraphConstructor(
     removeLinks = [],
     centerNode: centerNodeId = null,
   }) {
+    // Turn on simulation and turn off labels
+    toggleSimulation(true);
+    Object.keys(labelStates).forEach((key) => {
+      toggleLabels(false, key, true);
+    });
+
     // Add new nodes and links to the simulation
     if (newNodes.length > 0) {
       // Filter out nodes that already exist based on the id property
@@ -424,6 +440,7 @@ function ForceGraphConstructor(
         .text((d) => d.nodeLabel)
         .style("font-size", nodeFontSize + "px")
         .style("fill", "black")
+        .style("display", "none")
         .attr("text-anchor", "middle")
         .attr("y", nodeRadius + nodeFontSize)
         .attr("class", "node-label")
@@ -439,6 +456,7 @@ function ForceGraphConstructor(
         )
         .style("font-size", nodeFontSize + "px")
         .style("fill", "black")
+        .style("display", "none")
         .attr("text-anchor", "middle")
         .attr("y", -(nodeRadius + nodeFontSize))
         .attr("class", "collection-label")
@@ -502,6 +520,7 @@ function ForceGraphConstructor(
         .text((d) => (d.name ? d.name : d.label))
         .style("font-size", linkFontSize + "px")
         .style("fill", "black")
+        .style("display", "none")
         .attr("text-anchor", "middle")
         .attr("class", "link-label")
         .call(wrap, 25);
@@ -528,6 +547,7 @@ function ForceGraphConstructor(
         .text((d) => (d.name ? d.name : d.label))
         .style("font-size", linkFontSize + "px")
         .style("fill", "black")
+        .style("display", "none")
         .attr("text-anchor", "middle")
         .attr("class", "link-label")
         .attr("y", nodeRadius * 1.5 * 2) // Offset label by self-link path size
@@ -574,13 +594,20 @@ function ForceGraphConstructor(
     // Restart the simulation to apply the changes
     simulation.alpha(1).restart();
 
-    // If a centerNode is provided, update the zoom transform to center it.
-    if (centerNodeId) {
-      // Wait for graph simulation to settle before finding position of node
-      waitForAlpha(simulation, 0.1).then(() => {
+    // Wait for graph simulation to settle - threshold for settling inverse of number of nodes, with floor
+    let threshold = Math.max(1 / nodes.length, 0.002);
+    waitForAlpha(simulation, threshold).then(() => {
+      // If a centerNode is provided, update the zoom transform to center it.
+      if (centerNodeId) {
         centerOnNode(centerNodeId);
+      }
+      // Turn off simulation and turn on labels, if toggled on
+      toggleSimulation(false);
+      Object.keys(labelStates).forEach((key) => {
+        const value = labelStates[key];
+        toggleLabels(value, key);
       });
-    }
+    });
   }
 
   // Return the SVG node and the updateGraph method to interact with the graph

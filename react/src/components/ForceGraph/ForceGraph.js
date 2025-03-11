@@ -2,7 +2,11 @@ import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { DbNameContext, GraphNameContext, PrunedCollections } from "../Contexts/Contexts";
+import {
+  DbNameContext,
+  GraphNameContext,
+  PrunedCollections,
+} from "../Contexts/Contexts";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
@@ -22,7 +26,7 @@ const ForceGraph = ({
   const [setOperation, setSetOperation] = useState(
     settings["setOperation"] || "Union",
   );
-  const prunedCollectionsContext = useContext(PrunedCollections)
+  const prunedCollectionsContext = useContext(PrunedCollections);
   const [collectionsToPrune, setCollectionsToPrune] = useState(
     settings["collectionsToPrune"] || prunedCollectionsContext,
   );
@@ -38,8 +42,8 @@ const ForceGraph = ({
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] || {
       ".collection-label": false,
-      ".link-label": false,
-      ".node-label": false,
+      ".link-label": true,
+      ".node-label": true,
     },
   );
   const [useFocusNodes, setUseFocusNodes] = useState(
@@ -68,17 +72,17 @@ const ForceGraph = ({
   useEffect(() => {
     fetchCollections().then((data) => {
       // Set collections state
-      let tempCollections = parseCollections(data)
+      let tempCollections = parseCollections(data);
       setCollections(tempCollections);
       // Check if "collectionsToAllow" exists in settings and only allow that collection
       if (settings["collectionsToAllow"]) {
         const collectionsToAllow = settings["collectionsToAllow"];
-        const collectionsToPruneFiltered = tempCollections.filter(collection =>
-          !collectionsToAllow.includes(collection)
+        const collectionsToPruneFiltered = tempCollections.filter(
+          (collection) => !collectionsToAllow.includes(collection),
         );
         setCollectionsToPrune(collectionsToPruneFiltered);
       }
-  });
+    });
 
     document.addEventListener("click", closePopupOnInteraction);
     return () => {
@@ -137,8 +141,8 @@ const ForceGraph = ({
       // Check if data is empty after processing
       if (
         !processedData ||
-        (processedData.nodes == null || processedData.nodes.length === 0) &&
-        (processedData.links == null || processedData.links.length === 0)
+        ((processedData.nodes == null || processedData.nodes.length === 0) &&
+          (processedData.links == null || processedData.links.length === 0))
       ) {
         setGraphData(processedData);
         setShowNoDataPopup(true);
@@ -169,16 +173,17 @@ const ForceGraph = ({
               nodeStrength: -100,
               width: "2560",
               heightRatio: heightRatio,
+              defaultLabelStates: labelStates,
             });
             resolve(graphInstance);
           }, 0);
         });
 
         setGraph(g);
-        setIsLoading(false)
+        setIsLoading(false);
       } else {
         setGraph(null);
-        setIsLoading(false)
+        setIsLoading(false);
       }
     };
     updateGraph();
@@ -201,13 +206,8 @@ const ForceGraph = ({
       for (let labelClass in labelStates) {
         graph.toggleLabels(labelStates[labelClass], labelClass);
       }
-      // Turn off simulation when labels turn on
-      if (Object.values(labelStates).some((value) => value === true)) {
-        graph.toggleSimulation(false);
-        setIsSimOn(false);
-      }
     }
-  }, [labelStates, graph]);
+  }, [labelStates]);
 
   let getGraphData = async (
     nodeIds,
@@ -254,23 +254,25 @@ const ForceGraph = ({
       // Intersection returns the intersecting nodes and their connections of any two origin nodes
       if (operation === "Intersection") {
         const overlap = new Set();
-        const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) =>
-            new Set(originGroup.map((item) => item.node._id))
+        const nodeIdsPerOrigin = Object.values(nodes).map(
+          (originGroup) => new Set(originGroup.map((item) => item.node._id)),
         );
 
         // Iterate over all pairs of origin groups
         for (let i = 0; i < nodeIdsPerOrigin.length; i++) {
           for (let j = i + 1; j < nodeIdsPerOrigin.length; j++) {
             // Find the intersection between origin group i and j
-            const intersection = [...nodeIdsPerOrigin[i]].filter(id => nodeIdsPerOrigin[j].has(id));
+            const intersection = [...nodeIdsPerOrigin[i]].filter((id) =>
+              nodeIdsPerOrigin[j].has(id),
+            );
 
             // Add the intersection to the overlap set
-            intersection.forEach(id => overlap.add(id));
+            intersection.forEach((id) => overlap.add(id));
           }
         }
 
         return overlap;
-    }
+      }
 
       // Union returns the union of all node sets
       if (operation === "Union") {
@@ -637,24 +639,24 @@ const ForceGraph = ({
           <div className="checkboxes-container">
             <div className="checkbox-container">
               <button
-                  onClick={() => handleAllOn()}
-                  className={
-                    collectionsToPrune.length === 0
-                        ? "background-color-bg"
-                        : "background-color-light"
-                  }
+                onClick={() => handleAllOn()}
+                className={
+                  collectionsToPrune.length === 0
+                    ? "background-color-bg"
+                    : "background-color-light"
+                }
               >
                 All On
               </button>
             </div>
             <div className="checkbox-container">
               <button
-                  onClick={() => handleAllOff()}
-                  className={
-                    collectionsToPrune === collections
-                        ? "background-color-bg"
-                        : "background-color-light"
-                  }
+                onClick={() => handleAllOff()}
+                className={
+                  collectionsToPrune === collections
+                    ? "background-color-bg"
+                    : "background-color-light"
+                }
               >
                 All Off
               </button>
@@ -699,7 +701,8 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
-        <div className="simulation-toggle">
+        {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
+        <div className="simulation-toggle" style={{ display: "none" }}>
           Toggle Simulation
           <label className="switch">
             <input
@@ -715,16 +718,19 @@ const ForceGraph = ({
         </div>
       </div>
       {isLoading && (
-          <div className="loading-bar">
-            <div className="progress"></div>
-            Loading, please wait...
-          </div>
+        <div className="loading-bar">
+          <div className="progress"></div>
+          Loading, please wait...
+        </div>
       )}
       <div id="chart-container" ref={chartContainerRef}></div>
       {showNoDataPopup && (
-          <div className="popup">
-            <p>No data meets these criteria. Please adjust your options or refine your search.</p>
-          </div>
+        <div className="popup">
+          <p>
+            No data meets these criteria. Please adjust your options or refine
+            your search.
+          </p>
+        </div>
       )}
       <div
         className="node-popup"
