@@ -129,7 +129,7 @@ function ForceGraphConstructor(
     .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
     .style("display", legendDisplay);
 
-  const legendSize = 45 * heightRatio
+  const legendSize = 45 * heightRatio;
   const legendItem = legend
     .selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
@@ -148,9 +148,9 @@ function ForceGraphConstructor(
   legendItem
     .append("text")
     .attr("x", legendSize * 1.5) // Horizontal offset
-    .attr("y", legendSize/2) // Vertical offset
-    .attr("dy", (legendSize/2)+"px")
-      .style("font-size", legendSize+"px")
+    .attr("y", legendSize / 2) // Vertical offset
+    .attr("dy", legendSize / 2 + "px")
+    .style("font-size", legendSize + "px")
     .text((collection) =>
       collectionsMap.has(collection)
         ? collectionsMap.get(collection)["abbreviated_name"]
@@ -319,11 +319,47 @@ function ForceGraphConstructor(
     }
   }
 
+  // Function to center on a given node id, with adjustable pan transition
+  function centerOnNode(nodeId, transitionDuration = 1000) {
+    let node = simulation.nodes().find((node) => node._id === nodeId);
+    // Get the current zoom transform
+    const currentTransform = d3.zoomTransform(svg.node());
+    const k = currentTransform.k;
+    // Calculate a new transform so that centerNode.x, centerNode.y are moved to (0,0), center of viewbox
+    const newTransform = d3.zoomIdentity
+      .translate(-node.x * k, -node.y * k)
+      .scale(k);
+    // Update the zoom transform on the svg element
+    svg
+      .transition()
+      .duration(transitionDuration)
+      .call(zoomHandler.transform, newTransform);
+  }
+
+  // Function to wait for the simulation alpha (intensity) to be below a given threshold
+  function waitForAlpha(simulation, threshold) {
+    return new Promise((resolve) => {
+      // If already below threshold, resolve immediately.
+      if (simulation.alpha() < threshold) {
+        resolve();
+      } else {
+        simulation.on("tick.alphaCheck", () => {
+          if (simulation.alpha() < threshold) {
+            // Remove this tick listener to avoid repeated resolves.
+            simulation.on("tick.alphaCheck", null);
+            resolve();
+          }
+        });
+      }
+    });
+  }
+
   function updateGraph({
     newNodes = [],
     newLinks = [],
     removeNodes = [],
     removeLinks = [],
+    centerNode: centerNodeId = null,
   }) {
     // Add new nodes and links to the simulation
     if (newNodes.length > 0) {
@@ -537,6 +573,14 @@ function ForceGraphConstructor(
 
     // Restart the simulation to apply the changes
     simulation.alpha(1).restart();
+
+    // If a centerNode is provided, update the zoom transform to center it.
+    if (centerNodeId) {
+      // Wait for graph simulation to settle before finding position of node
+      waitForAlpha(simulation, 0.1).then(() => {
+        centerOnNode(centerNodeId);
+      });
+    }
   }
 
   // Return the SVG node and the updateGraph method to interact with the graph
