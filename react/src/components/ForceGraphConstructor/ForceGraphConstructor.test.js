@@ -1,7 +1,7 @@
-import ForceGraphConstructor from './ForceGraphConstructor';
+import ForceGraphConstructor from "./ForceGraphConstructor";
 
-describe('ForceGraphConstructor', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("ForceGraphConstructor", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });

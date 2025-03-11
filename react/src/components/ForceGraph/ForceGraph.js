@@ -392,6 +392,7 @@ const ForceGraph = ({
       graph.updateGraph({
         newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
         newLinks: data["links"],
+        centerNode: clickedNodeId,
       });
     });
   };
