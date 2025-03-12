@@ -262,8 +262,8 @@ def get_sunburst():
         "GO/0008150",
         "GO/0003674",
         "GO/0005575",
-        "NCBITaxon/131567",
         "PATO/0000001",
+        "MONDO/0000001",
         "PR/000000001",
         "UBERON/0000000",
     ]
@@ -272,8 +272,8 @@ def get_sunburst():
     edge_collections = {
         "CL": "CL-CL",
         "GO": "GO-GO",
-        "NCBITaxon": "NCBITaxon-NCBITaxon",
         "PATO": "PATO-PATO",
+        "MONDO": "MONDO-MONDO",
         "PR": "PR-PR",
         "UBERON": "UBERON-UBERON",
     }
