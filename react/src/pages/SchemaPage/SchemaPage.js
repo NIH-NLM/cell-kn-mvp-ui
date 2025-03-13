@@ -1,20 +1,29 @@
 import React from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import { GraphNameContext, DbNameContext } from "../../components/Contexts/Contexts";
+import {
+  GraphNameContext,
+  DbNameContext,
+} from "../../components/Contexts/Contexts";
 
 const SchemaPage = () => {
   // Set contexts
-  const schemaDbName = "schema";
-  const schemaGraphName = "Cell-KN-BX";
+  // dbName string matches in arango_api/utils
+  const dbName = "schema";
+  // schemaGraphName must match with graph name in arangoDB
+  const schemaGraphName = "KN-Schema-v0.7";
 
   // Props for ForceGraph
-  const nodeIds = ["Cell_type/Cell_type1"];
-  const settings = { defaultDepth: 4, useFocusNodes: false, collectionsToPrune: []};
+  const nodeIds = ["CL/0000000"];
+  const settings = {
+    defaultDepth: 4,
+    useFocusNodes: false,
+    collectionsToPrune: [],
+  };
 
   return (
     // Wrapping ForceGraph with the overridden context providers
     <GraphNameContext.Provider value={schemaGraphName}>
-      <DbNameContext.Provider value={schemaDbName}>
+      <DbNameContext.Provider value={dbName}>
         <ForceGraph nodeIds={nodeIds} settings={settings} />
       </DbNameContext.Provider>
     </GraphNameContext.Provider>
