@@ -264,7 +264,6 @@ def get_sunburst():
         "GO/0005575",
         "PATO/0000001",
         "MONDO/0000001",
-        "PR/000000001",
         "UBERON/0000000",
     ]
 
@@ -274,7 +273,6 @@ def get_sunburst():
         "GO": "GO-GO",
         "PATO": "PATO-PATO",
         "MONDO": "MONDO-MONDO",
-        "PR": "PR-PR",
         "UBERON": "UBERON-UBERON",
     }
 
