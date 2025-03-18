@@ -1,7 +1,7 @@
-import SchemaPage from './SchemaPage';
+import SchemaPage from "./SchemaPage";
 
-describe('SchemaPage', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("SchemaPage", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });
