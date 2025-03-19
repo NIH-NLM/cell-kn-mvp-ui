@@ -382,36 +382,8 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
   let processedNodes = [];
   let processedLinks = [];
 
-  processedNodes = processGraphData(processedNodes, initialNodes, nodeId, label, color, nodeHover);
-  processedLinks = processGraphLinks(processedLinks, initialLinks, processedNodes, linkSource, linkTarget, label);
-
-  // Initial render
-  renderGraph(simulation, processedNodes, processedLinks, d3, { nodeContainer, linkContainer }, {
-    forceLink,
-    nodeRadius,
-    nodeFontSize,
-    linkStroke,
-    linkStrokeOpacity,
-    linkStrokeWidth,
-    linkStrokeLinecap,
-    linkFontSize,
-    color,
-    onNodeClick,
-    drag,
-    originNodeIds,
-    collectionsMap
-  });
-
-  // Once simulation alpha falls below threshold, stop simulation and reveal labels
-  const newThreshold = Math.max(1 / processedNodes.length, 0.002);
-  waitForAlpha(simulation, newThreshold).then(() => {
-    toggleSimulation(false, simulation, forceNode, forceCenter, forceLink, processedLinks, nodeForceStrength, centerForceStrength);
-    // Revert labels to correct state
-    Object.keys(labelStates).forEach((key) => {
-      const value = labelStates[key];
-      toggleLabels(value, key);
-    });
-  });
+  // Call update graph for initial render
+  updateGraph({newNodes: initialNodes, newLinks: initialLinks})
 
   // Handle movement
   function ticked() {
