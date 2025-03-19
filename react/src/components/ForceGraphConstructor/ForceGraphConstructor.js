@@ -2,13 +2,21 @@ import * as d3 from "d3";
 
 /* Pure Functions */
 
-export function processGraphData(existingNodes, newNodes, nodeId = d => d._id, labelFn = d => d.label, color, nodeHover) {
+export function processGraphData(
+  existingNodes,
+  newNodes,
+  nodeId = (d) => d._id,
+  labelFn = (d) => d.label,
+  color,
+  nodeHover,
+) {
   const filteredNewNodes = newNodes.filter(
-    newNode => !existingNodes.some(existing => existing.id === nodeId(newNode))
+    (newNode) =>
+      !existingNodes.some((existing) => existing._id === nodeId(newNode)),
   );
-  filteredNewNodes.forEach(newNode => {
+  filteredNewNodes.forEach((newNode) => {
     newNode.id = nodeId(newNode);
-    let collection =  newNode.id.split("/")[0]
+    let collection = newNode.id.split("/")[0];
     newNode.nodeHover = nodeHover(newNode);
     newNode.color = color ? color(collection) : null;
     newNode.nodeLabel = labelFn(newNode);
@@ -16,19 +24,25 @@ export function processGraphData(existingNodes, newNodes, nodeId = d => d._id, l
   return existingNodes.concat(filteredNewNodes);
 }
 
-export function processGraphLinks(existingLinks, newLinks, nodes,
+export function processGraphLinks(
+  existingLinks,
+  newLinks,
+  nodes,
   linkSource = ({ _from }) => _from,
   linkTarget = ({ _to }) => _to,
-  labelFn = d => d.label) {
+  labelFn = (d) => d.label,
+) {
   const filteredNewLinks = newLinks.filter(
-    newLink => !existingLinks.some(existing =>
-      existing.source.id === linkSource(newLink) &&
-      existing.target.id === linkTarget(newLink)
-    )
+    (newLink) =>
+      !existingLinks.some(
+        (existing) =>
+          existing.source.id === linkSource(newLink) &&
+          existing.target.id === linkTarget(newLink),
+      ),
   );
-  filteredNewLinks.forEach(link => {
-    link.source = nodes.find(node => node.id === linkSource(link));
-    link.target = nodes.find(node => node.id === linkTarget(link));
+  filteredNewLinks.forEach((link) => {
+    link.source = nodes.find((node) => node.id === linkSource(link));
+    link.target = nodes.find((node) => node.id === linkTarget(link));
     link.label = labelFn(link);
   });
   return existingLinks.concat(filteredNewLinks);
@@ -44,67 +58,73 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   // Render nodes
   const nodeSelection = containers.nodeContainer
     .selectAll("g.node")
-    .data(nodes, d => d.id);
+    .data(nodes, (d) => d.id);
 
-  const nodeEnter = nodeSelection.enter().append("g")
+  const nodeEnter = nodeSelection
+    .enter()
+    .append("g")
     .attr("class", "node")
     .call(options.drag);
 
   // For each new node, decide whether to render it as a donut
-  nodeEnter.each(function(d) {
+  nodeEnter.each(function (d) {
     const nodeG = d3.select(this);
     if (options.originNodeIds && options.originNodeIds.includes(d.id)) {
       // Outer circle
-      nodeG.append("circle")
+      nodeG
+        .append("circle")
         .attr("r", options.nodeRadius)
-        .attr("fill", d.color? d.color : "#ccc")
-        .on("contextmenu", function(event, d) {
+        .attr("fill", d.color ? d.color : "#ccc")
+        .on("contextmenu", function (event, d) {
           event.preventDefault();
           options.onNodeClick(event, d);
         });
       // Inner circle for donut effect
-      nodeG.append("circle")
+      nodeG
+        .append("circle")
         .attr("r", options.nodeRadius * 0.7)
         .attr("fill", "white")
-        .on("contextmenu", function(event, d) {
+        .on("contextmenu", function (event, d) {
           event.preventDefault();
           options.onNodeClick(event, d);
         });
     } else {
       // Regular single circle
-      nodeG.append("circle")
+      nodeG
+        .append("circle")
         .attr("r", options.nodeRadius)
-        .attr("fill", d.color? d.color : "#ccc")
-        .on("contextmenu", function(event, d) {
+        .attr("fill", d.color ? d.color : "#ccc")
+        .on("contextmenu", function (event, d) {
           event.preventDefault();
           options.onNodeClick(event, d);
         });
     }
     // Append title for hover and hidden text for the label
-    nodeG.append("title")
-      .text(d => d.nodeHover);
-    nodeG.append("text")
+    nodeG.append("title").text((d) => d.nodeHover);
+    nodeG
+      .append("text")
       .attr("class", "node-label")
       .attr("text-anchor", "middle")
       .attr("y", options.nodeRadius + options.nodeFontSize)
       .style("font-size", options.nodeFontSize + "px")
       .style("display", "none")
-      .text(d => d.nodeLabel)
+      .text((d) => d.nodeLabel)
       .call(wrap, 25);
 
     // Append collection text
-    nodeG.append("text")
-        .attr("class", "collection-label")
-        .attr("text-anchor", "middle")
-        .attr("y", -(options.nodeRadius + options.nodeFontSize))
-        .style("font-size", options.nodeFontSize + "px")
-        .style("display", "none")
-        .text((d) =>
-            options.collectionsMap.has(d._id.split("/")[0])
-                ? options.collectionsMap.get(d._id.split("/")[0])["abbreviated_name"]
-                : d._id.split("/")[0],
-        )
-        .call(wrap, 25);
+    nodeG
+      .append("text")
+      .attr("class", "collection-label")
+      .attr("text-anchor", "middle")
+      .attr("y", -(options.nodeRadius + options.nodeFontSize))
+      .style("font-size", options.nodeFontSize + "px")
+      .style("display", "none")
+      .text((d) =>
+        options.collectionsMap.has(d._id.split("/")[0])
+          ? options.collectionsMap.get(d._id.split("/")[0])["abbreviated_name"]
+          : d._id.split("/")[0],
+      )
+      .call(wrap, 25);
   });
 
   // Render links
@@ -112,38 +132,55 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .selectAll("g.link")
     .data(links);
 
-  const linkEnter = linkSelection.enter().append("g")
-    .attr("class", "link");
+  const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
   // For non self-links, add a line element
-  linkEnter.filter(d => d.source.id !== d.target.id)
+  linkEnter
+    .filter((d) => d.source.id !== d.target.id)
     .append("line")
-    .attr("stroke", typeof options.linkStroke !== "function" ? options.linkStroke : null)
+    .attr(
+      "stroke",
+      typeof options.linkStroke !== "function" ? options.linkStroke : null,
+    )
     .attr("stroke-opacity", options.linkStrokeOpacity)
-    .attr("stroke-width", typeof options.linkStrokeWidth !== "function" ? options.linkStrokeWidth : null)
+    .attr(
+      "stroke-width",
+      typeof options.linkStrokeWidth !== "function"
+        ? options.linkStrokeWidth
+        : null,
+    )
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-end", "url(#arrow)");
 
-    // Append text to each line for non self-links
-    linkEnter
-      .filter((d) => d.source.id !== d.target.id)
-      .append("text")
-      .text((d) => (d.name ? d.name : d.label))
-      .style("font-size", options.linkFontSize + "px")
-      .style("fill", "black")
-      .style("display", "none")
-      .attr("text-anchor", "middle")
-      .attr("class", "link-label")
-      .call(wrap, 25);
+  // Append text to each line for non self-links
+  linkEnter
+    .filter((d) => d.source.id !== d.target.id)
+    .append("text")
+    .text((d) => (d.name ? d.name : d.label))
+    .style("font-size", options.linkFontSize + "px")
+    .style("fill", "black")
+    .style("display", "none")
+    .attr("text-anchor", "middle")
+    .attr("class", "link-label")
+    .call(wrap, 25);
 
   // For self-links, add a path element
-  linkEnter.filter(d => d.source.id === d.target.id)
+  linkEnter
+    .filter((d) => d.source.id === d.target.id)
     .append("path")
     .attr("class", "self-link")
     .attr("fill", "none")
-    .attr("stroke", typeof options.linkStroke !== "function" ? options.linkStroke : null)
+    .attr(
+      "stroke",
+      typeof options.linkStroke !== "function" ? options.linkStroke : null,
+    )
     .attr("stroke-opacity", options.linkStrokeOpacity)
-    .attr("stroke-width", typeof options.linkStrokeWidth !== "function" ? options.linkStrokeWidth : null)
+    .attr(
+      "stroke-width",
+      typeof options.linkStrokeWidth !== "function"
+        ? options.linkStrokeWidth
+        : null,
+    )
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-mid", "url(#self-arrow)");
 
@@ -166,7 +203,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
 /* Utility Functions */
 
 function waitForAlpha(simulation, threshold) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     if (simulation.alpha() < threshold) {
       resolve();
     } else {
@@ -180,7 +217,16 @@ function waitForAlpha(simulation, threshold) {
   });
 }
 
-function toggleSimulation(on, simulation, forceNode, forceCenter, forceLink, links, nodeForceStrength, centerForceStrength) {
+function toggleSimulation(
+  on,
+  simulation,
+  forceNode,
+  forceCenter,
+  forceLink,
+  links,
+  nodeForceStrength,
+  centerForceStrength,
+) {
   if (on) {
     simulation.alpha(1).restart();
     forceNode.strength(nodeForceStrength);
@@ -234,20 +280,23 @@ function wrap(text, maxChars) {
 
 /* ForceGraphConstructor */
 
-function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, options = {}, render = false) {
+function ForceGraphConstructor(
+  { nodes: initialNodes, links: initialLinks },
+  options = {},
+) {
   // Create a unique colors array from the combined schemes to avoid duplicate colors.
   const combinedColors = [...d3.schemePaired, ...d3.schemeDark2];
   const uniqueColors = Array.from(new Set(combinedColors));
 
   // Set up options with defaults
   const {
-    nodeId = d => d._id,
-    label = d => d.label,
+    nodeId = (d) => d._id,
+    label = (d) => d.label,
     nodeGroup,
     nodeGroups = [],
     collectionsMap = new Map(), // Map of collection key to object with property abbreviated_name
     originNodeIds = [],
-    nodeHover = d => `hover-${d._id}`,
+    nodeHover = (d) => `hover-${d._id}`,
     nodeFontSize = 10,
     linkFontSize = 10,
     onNodeClick = () => {},
@@ -265,31 +314,33 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
     nodeForceStrength = -2500,
     centerForceStrength = 1,
     labelStates = {},
-    drag = d3.drag()
-      .on("start", function(event, d) {
+    drag = d3
+      .drag()
+      .on("start", function (event, d) {
         if (!event.active) simulation.alphaTarget(0.1).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
         interactionCallback();
       })
-      .on("drag", function(event, d) {
+      .on("drag", function (event, d) {
         event.subject.fx = event.x;
         event.subject.fy = event.y;
       })
-      .on("end", function(event, d) {
+      .on("end", function (event, d) {
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
       }),
-    color = nodeGroup ? d3.scaleOrdinal(nodeGroups, uniqueColors) : null
+    color = nodeGroup ? d3.scaleOrdinal(nodeGroups, uniqueColors) : null,
   } = options;
 
   // Create D3 simulation and forces
   const forceNode = d3.forceManyBody().strength(nodeForceStrength);
   const forceCenter = d3.forceCenter().strength(centerForceStrength);
-  const forceLink = d3.forceLink().id(d => d.id);
+  const forceLink = d3.forceLink().id((d) => d.id);
 
-  const simulation = d3.forceSimulation()
+  const simulation = d3
+    .forceSimulation()
     .force("link", forceLink)
     .force("charge", forceNode)
     .force("center", forceCenter)
@@ -298,7 +349,8 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
   // Create main SVG element
   let height = width * heightRatio;
 
-  const svg = d3.create("svg")
+  const svg = d3
+    .create("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("viewBox", [-width / 2, -height / 2, width, height])
@@ -307,13 +359,17 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
   const g = svg.append("g");
 
   // Setup zoom behavior
-  const zoomHandler = d3.zoom()
-    .on("zoom", event => {
+  const zoomHandler = d3
+    .zoom()
+    .on("zoom", (event) => {
       g.attr("transform", event.transform);
     })
     .on("start", interactionCallback);
   svg.call(zoomHandler);
-  svg.call(zoomHandler.transform, d3.zoomIdentity.translate(100, 100).scale(initialScale));
+  svg.call(
+    zoomHandler.transform,
+    d3.zoomIdentity.translate(100, 100).scale(initialScale),
+  );
 
   // Create containers for links and nodes
   const linkContainer = g.append("g").attr("class", "link-container");
@@ -321,7 +377,8 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
 
   // Create defs for arrow markers
   const defs = g.append("defs");
-  defs.append("marker")
+  defs
+    .append("marker")
     .attr("id", "arrow")
     .attr("viewBox", "0 0 10 10")
     .attr("refX", 11)
@@ -333,7 +390,8 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
     .attr("points", "0,3.5 6,5 0,6.5 1,5")
     .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
 
-  defs.append("marker")
+  defs
+    .append("marker")
     .attr("id", "self-arrow")
     .attr("viewBox", "0 0 10 10")
     .attr("refX", 3)
@@ -346,36 +404,40 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
     .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
 
   // Create Legend
-  const legend = svg.append("g")
+  const legend = svg
+    .append("g")
     .attr("class", "legend")
     .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
     .style("display", "block");
 
   const legendSize = 45 * heightRatio;
-  legend.selectAll(".legend-item")
+  legend
+    .selectAll(".legend-item")
     .data([...new Set(nodeGroups)])
     .enter()
     .append("g")
     .attr("class", "legend-item")
     .attr("transform", (d, i) => `translate(0, ${i * legendSize})`)
-    .each(function(d) {
+    .each(function (d) {
       const groupKey = d;
       const gLegend = d3.select(this);
-      gLegend.append("rect")
+      gLegend
+        .append("rect")
         .attr("x", 0)
         .attr("width", legendSize)
         .attr("height", legendSize)
         .style("fill", color ? color(groupKey) : "#ccc");
-      gLegend.append("text")
+      gLegend
+        .append("text")
         .attr("x", legendSize * 1.5)
         .attr("y", legendSize / 2)
         .attr("dy", legendSize / 2 + "px")
         .style("font-size", legendSize + "px")
         .text((collection) =>
-                collectionsMap.has(collection)
-              ? collectionsMap.get(collection)["abbreviated_name"]
-              : collection,
-          );
+          collectionsMap.has(collection)
+            ? collectionsMap.get(collection)["abbreviated_name"]
+            : collection,
+        );
     });
 
   // Internal Data Storage
@@ -383,7 +445,7 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
   let processedLinks = [];
 
   // Call update graph for initial render
-  updateGraph({newNodes: initialNodes, newLinks: initialLinks})
+  updateGraph({ newNodes: initialNodes, newLinks: initialLinks });
 
   // Handle movement
   function ticked() {
@@ -483,20 +545,52 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
   }
 
   // Public update: process new data and re-render.
-  function updateGraph({ newNodes = [], newLinks = [], centerNodeId = null } = {}) {
-
+  function updateGraph({
+    newNodes = [],
+    newLinks = [],
+    centerNodeId = null,
+  } = {}) {
     // Toggle off labels
     Object.keys(labelStates).forEach((key) => {
       toggleLabels(false, key, true);
     });
 
     // Toggle on simulation
-    toggleSimulation(true, simulation, forceNode, forceCenter, forceLink, processedLinks, nodeForceStrength, centerForceStrength);
+    toggleSimulation(
+      true,
+      simulation,
+      forceNode,
+      forceCenter,
+      forceLink,
+      processedLinks,
+      nodeForceStrength,
+      centerForceStrength,
+    );
 
     // Add nodes and links
-    processedNodes = processGraphData(processedNodes, newNodes, nodeId, label, color, nodeHover);
-    processedLinks = processGraphLinks(processedLinks, newLinks, processedNodes, linkSource, linkTarget, label);
-      renderGraph(simulation, processedNodes, processedLinks, d3, { nodeContainer, linkContainer }, {
+    processedNodes = processGraphData(
+      processedNodes,
+      newNodes,
+      nodeId,
+      label,
+      color,
+      nodeHover,
+    );
+    processedLinks = processGraphLinks(
+      processedLinks,
+      newLinks,
+      processedNodes,
+      linkSource,
+      linkTarget,
+      label,
+    );
+    renderGraph(
+      simulation,
+      processedNodes,
+      processedLinks,
+      d3,
+      { nodeContainer, linkContainer },
+      {
         forceLink,
         nodeRadius,
         nodeFontSize,
@@ -509,20 +603,30 @@ function ForceGraphConstructor({ nodes: initialNodes, links: initialLinks }, opt
         onNodeClick,
         drag,
         originNodeIds,
-        collectionsMap
+        collectionsMap,
+      },
+    );
+    const newThreshold = Math.max(1 / processedNodes.length, 0.002);
+    waitForAlpha(simulation, newThreshold).then(() => {
+      if (centerNodeId) {
+        centerOnNode(centerNodeId);
+      }
+      toggleSimulation(
+        false,
+        simulation,
+        forceNode,
+        forceCenter,
+        forceLink,
+        processedLinks,
+        nodeForceStrength,
+        centerForceStrength,
+      );
+      // Revert labels to correct state
+      Object.keys(labelStates).forEach((key) => {
+        const value = labelStates[key];
+        toggleLabels(value, key);
       });
-      const newThreshold = Math.max(1 / processedNodes.length, 0.002);
-      waitForAlpha(simulation, newThreshold).then(() => {
-        if (centerNodeId) {
-          centerOnNode(centerNodeId);
-        }
-        toggleSimulation(false, simulation, forceNode, forceCenter, forceLink, processedLinks, nodeForceStrength, centerForceStrength);
-        // Revert labels to correct state
-        Object.keys(labelStates).forEach((key) => {
-          const value = labelStates[key];
-          toggleLabels(value, key);
-        });
-      });
+    });
   }
 
   return Object.assign(svg.node(), {
