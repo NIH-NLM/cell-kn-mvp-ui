@@ -26,7 +26,7 @@ describe("ForceGraphConstructor data tests", () => {
         dummyColor,
         nodeHover,
       );
-      // We expect 3 nodes: the original "A" plus new "B" and "C"
+      // Expect 3 nodes: the original "A" plus new "B" and "C"
       expect(result).toHaveLength(3);
 
       // Check that node "B" has been augmented properly:
@@ -49,7 +49,6 @@ describe("ForceGraphConstructor data tests", () => {
         _from: "A",
         _to: "B",
         name: "link1",
-        // Pretend these were already processed:
         source: { id: "A" },
         target: { id: "B" },
       },
