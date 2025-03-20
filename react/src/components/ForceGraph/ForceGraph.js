@@ -173,7 +173,7 @@ const ForceGraph = ({
               nodeStrength: -100,
               width: "2560",
               heightRatio: heightRatio,
-              defaultLabelStates: labelStates,
+              labelStates: labelStates,
             });
             resolve(graphInstance);
           }, 0);
@@ -394,7 +394,7 @@ const ForceGraph = ({
       graph.updateGraph({
         newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
         newLinks: data["links"],
-        centerNode: clickedNodeId,
+        centerNodeId: clickedNodeId,
       });
     });
   };
