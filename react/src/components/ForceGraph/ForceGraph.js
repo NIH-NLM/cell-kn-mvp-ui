@@ -736,7 +736,7 @@ const ForceGraph = ({
         </div>
         {graphNodeIds.length >= 2 && (
         <div className="shortest-path-toggle multi-node">
-          Shortest Path
+          Shortest Path (Currently only works with first two nodes selected)
           <label className="switch">
             <input
                 type="checkbox"
