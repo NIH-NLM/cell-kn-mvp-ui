@@ -164,6 +164,64 @@ def get_graph(
 
     return results
 
+def get_shortest_paths(
+        node_ids,
+        graph_name,
+        edge_direction,
+):
+    # Assume only two nodes
+    start_node = node_ids[0]
+    target_node = node_ids[1]
+    # TODO: add ability to get shortest path for more nodes
+    query = f"""
+        LET paths = (
+          FOR p IN {edge_direction} ALL_SHORTEST_PATHS @start_node TO @target_node
+            GRAPH @graph_name
+            RETURN p
+        )
+
+        LET nodesArray = UNIQUE(
+          FOR p IN paths
+            FOR v IN p.vertices
+              RETURN v
+        )
+
+        LET linksArray = UNIQUE(
+          FOR p IN paths
+            FOR e IN p.edges
+              RETURN e
+        )
+
+        RETURN {{
+          nodes: {{
+            [@start_node]: (
+              FOR v IN nodesArray 
+                RETURN {{ node: v }}
+            )
+          }},
+          links: linksArray
+        }}
+            """
+
+    # Depth is increased by one to find all edges that connect to final nodes
+    bind_vars = {
+        "start_node": start_node,
+        "target_node": target_node,
+        "graph_name": graph_name,
+    }
+
+    # Execute the query
+    try:
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
+
+        results = list(cursor)[0]  # Collect the results
+
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        results = []
+
+    return results
+
 
 def get_all():
     collections = get_document_collections()
