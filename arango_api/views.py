@@ -63,6 +63,19 @@ def get_graph(request):
     )
     return JsonResponse(search_results, safe=False)
 
+@api_view(["POST"])
+def get_shortest_paths(request):
+    node_ids = request.data.get("node_ids")
+    graph_name = request.data.get("graph_name")
+    edge_direction = request.data.get("edge_direction")
+
+    search_results = utils.get_shortest_paths(
+        node_ids,
+        graph_name,
+        edge_direction,
+    )
+    return JsonResponse(search_results, safe=False)
+
 
 @api_view(["GET"])
 def get_all(request):

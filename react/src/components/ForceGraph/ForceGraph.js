@@ -46,6 +46,9 @@ const ForceGraph = ({
       ".node-label": true,
     },
   );
+  const [findShortestPaths, setFindShortestPaths] = useState(
+      "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
+  );
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
@@ -106,6 +109,7 @@ const ForceGraph = ({
     setTimeout(() => {
       getGraphData(
         graphNodeIds,
+        findShortestPaths,
         depth,
         graphName,
         edgeDirection,
@@ -131,6 +135,7 @@ const ForceGraph = ({
     edgeDirection,
     collectionsToPrune,
     nodesToPrune,
+    findShortestPaths,
   ]);
 
   // Parse set operation on change
@@ -211,6 +216,7 @@ const ForceGraph = ({
 
   let getGraphData = async (
     nodeIds,
+    shortestPaths,
     depth,
     graphName,
     edgeDirection,
@@ -218,27 +224,46 @@ const ForceGraph = ({
     nodesToPrune,
     dbName,
   ) => {
-    let response = await fetch("/arango_api/graph/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        node_ids: nodeIds,
-        depth: depth,
-        graph_name: graphName,
-        edge_direction: edgeDirection,
-        collections_to_prune: collectionsToPrune,
-        nodes_to_prune: nodesToPrune,
-        db_name: dbName,
-      }),
-    });
 
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
+    if (shortestPaths){
+      let response = await fetch("/arango_api/shortest_paths/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          node_ids: nodeIds,
+          graph_name: graphName,
+          edge_direction: edgeDirection,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    } else {
+      let response = await fetch("/arango_api/graph/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          node_ids: nodeIds,
+          depth: depth,
+          graph_name: graphName,
+          edge_direction: edgeDirection,
+          collections_to_prune: collectionsToPrune,
+          nodes_to_prune: nodesToPrune,
+          db_name: dbName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
     }
-
-    return response.json();
   };
 
   function performSetOperation(data, operation) {
@@ -324,7 +349,9 @@ const ForceGraph = ({
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
     // Add nodes from paths
-    addNodesFromPathsToSet(nodeIds);
+    if (!findShortestPaths){
+      addNodesFromPathsToSet(nodeIds);
+    }
 
     // Set to track unique link pairs (_from, _to)
     const seenLinks = new Set();
@@ -390,7 +417,7 @@ const ForceGraph = ({
   // Handle expanding the graph from a specific node
   const handleExpand = () => {
     // Fetch graph data for new node
-    getGraphData([clickedNodeId], 1, graphName, "ANY", [], []).then((data) => {
+    getGraphData([clickedNodeId], false, 1, graphName, "ANY", [], []).then((data) => {
       graph.updateGraph({
         newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
         newLinks: data["links"],
@@ -423,7 +450,7 @@ const ForceGraph = ({
 
   // Handle changing the set operation
   const handleOperationChange = (event) => {
-    setSetOperation(event.target.value);
+      setSetOperation(event.target.value);
   };
 
   const handleNodeFontSizeChange = (event) => {
@@ -467,6 +494,10 @@ const ForceGraph = ({
       return newStates;
     });
   };
+
+  const handleShortestPathToggle= () => {
+    setFindShortestPaths(!findShortestPaths)
+  }
 
   const handleSimulationToggle = () => {
     // Turn off labels if turning on simulation
@@ -535,7 +566,7 @@ const ForceGraph = ({
         style={optionsVisible ? { display: "flex" } : { display: "none" }}
       >
         <div className="depth-picker">
-          <label htmlFor="depth-select">Select depth of edge traversal:</label>
+          <label htmlFor="depth-select">Depth:</label>
           <select id="depth-select" value={depth} onChange={handleDepthChange}>
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
               <option key={value} value={value}>
@@ -546,7 +577,7 @@ const ForceGraph = ({
         </div>
         <div className="edge-direction-picker">
           <label htmlFor="edge-direction-select">
-            Select direction of edge traversal from origin:
+            Edge traversal direction
           </label>
           <select
             id="edge-direction-select"
@@ -560,9 +591,10 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
-        <div className="edge-direction-picker">
+        {graphNodeIds.length >= 2 && (
+        <div className="edge-direction-picker multi-node">
           <label htmlFor="edge-direction-select">
-            Select set operation for shown nodes (multi-origin graphs only)
+            Graph operation
           </label>
           <select
             id="edge-direction-select"
@@ -576,10 +608,11 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
+        )}
         <div className="font-size-picker">
           <div className="node-font-size-picker">
             <label htmlFor="node-font-size-select">
-              Select node font size:
+              Node font size:
             </label>
             <select
               id="node-font-size-select"
@@ -597,7 +630,7 @@ const ForceGraph = ({
           </div>
           <div className="edge-font-size-picker">
             <label htmlFor="edge-font-size-select">
-              Select edge font size:
+              Edge font size:
             </label>
             <select
               id="edge-font-size-select"
@@ -701,6 +734,19 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
+        {graphNodeIds.length >= 2 && (
+        <div className="shortest-path-toggle multi-node" >
+          Shortest Path (Currently only works with first two nodes selected)
+          <label className="switch" style={{ margin: "auto" }}>
+            <input
+                type="checkbox"
+                checked={findShortestPaths}
+                onChange={handleShortestPathToggle}
+            />
+            <span className="slider round"></span>
+          </label>
+        </div>
+        )}
         {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
         <div className="simulation-toggle" style={{ display: "none" }}>
           Toggle Simulation
