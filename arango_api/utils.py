@@ -203,7 +203,6 @@ def get_shortest_paths(
         }}
             """
 
-    # Depth is increased by one to find all edges that connect to final nodes
     bind_vars = {
         "start_node": start_node,
         "target_node": target_node,
