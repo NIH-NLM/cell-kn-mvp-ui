@@ -28,9 +28,10 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
         onClick={() => handleSelectItem(searchResults[key][rowIndex])}
         onMouseDown={(e) => e.preventDefault()}
       >
-        {searchResults[key][rowIndex].label
-          ? searchResults[key][rowIndex].label
-          : searchResults[key][rowIndex].term}
+        {searchResults[key][rowIndex].label ||
+          searchResults[key][rowIndex].Label ||
+          searchResults[key][rowIndex].term ||
+          searchResults[key][rowIndex]._id}
       </td>
     ) : (
       <td key={rowIndex}></td> // Empty cell if no item exists
