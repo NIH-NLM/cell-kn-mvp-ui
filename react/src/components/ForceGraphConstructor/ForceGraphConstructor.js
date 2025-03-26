@@ -32,19 +32,28 @@ export function processGraphLinks(
   linkTarget = ({ _to }) => _to,
   labelFn = (d) => d.label,
 ) {
-  const filteredNewLinks = newLinks.filter(
-    (newLink) =>
-      !existingLinks.some(
-        (existing) =>
-          existing.source.id === linkSource(newLink) &&
-          existing.target.id === linkTarget(newLink),
-      ),
-  );
+  const filteredNewLinks = newLinks.filter((newLink) => {
+    // Find corresponding source and target nodes
+    const sourceNode = nodes.find((node) => node.id === linkSource(newLink));
+    const targetNode = nodes.find((node) => node.id === linkTarget(newLink));
+
+    // Only keep the link if both nodes exist
+    if (!sourceNode || !targetNode) return false;
+
+    // Also ensure the link doesn't already exist
+    return !existingLinks.some(
+      (existing) =>
+        existing.source.id === linkSource(newLink) &&
+        existing.target.id === linkTarget(newLink),
+    );
+  });
+
   filteredNewLinks.forEach((link) => {
     link.source = nodes.find((node) => node.id === linkSource(link));
     link.target = nodes.find((node) => node.id === linkTarget(link));
     link.label = labelFn(link);
   });
+
   return existingLinks.concat(filteredNewLinks);
 }
 

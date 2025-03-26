@@ -39,6 +39,7 @@ const ForceGraph = ({
   const [edgeFontSize, setEdgeFontSize] = useState(
     settings["edgeFontSize"] || 8,
   );
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 100);
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] || {
       ".collection-label": false,
@@ -47,7 +48,7 @@ const ForceGraph = ({
     },
   );
   const [findShortestPaths, setFindShortestPaths] = useState(
-      "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
+    "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
   );
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
@@ -116,6 +117,7 @@ const ForceGraph = ({
         collectionsToPrune,
         nodesToPrune,
         dbName,
+        nodeLimit,
       ).then((data) => {
         if (isMounted) {
           setRawData(data);
@@ -136,6 +138,7 @@ const ForceGraph = ({
     collectionsToPrune,
     nodesToPrune,
     findShortestPaths,
+    nodeLimit,
   ]);
 
   // Parse set operation on change
@@ -224,8 +227,7 @@ const ForceGraph = ({
     nodesToPrune,
     dbName,
   ) => {
-
-    if (shortestPaths){
+    if (shortestPaths) {
       let response = await fetch("/arango_api/shortest_paths/", {
         method: "POST",
         headers: {
@@ -256,6 +258,7 @@ const ForceGraph = ({
           collections_to_prune: collectionsToPrune,
           nodes_to_prune: nodesToPrune,
           db_name: dbName,
+          node_limit: nodeLimit,
         }),
       });
 
@@ -349,7 +352,7 @@ const ForceGraph = ({
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
     // Add nodes from paths
-    if (!findShortestPaths){
+    if (!findShortestPaths) {
       addNodesFromPathsToSet(nodeIds);
     }
 
@@ -417,13 +420,15 @@ const ForceGraph = ({
   // Handle expanding the graph from a specific node
   const handleExpand = () => {
     // Fetch graph data for new node
-    getGraphData([clickedNodeId], false, 1, graphName, "ANY", [], []).then((data) => {
-      graph.updateGraph({
-        newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
-        newLinks: data["links"],
-        centerNodeId: clickedNodeId,
-      });
-    });
+    getGraphData([clickedNodeId], false, 1, graphName, "ANY", [], []).then(
+      (data) => {
+        graph.updateGraph({
+          newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
+          newLinks: data["links"],
+          centerNodeId: clickedNodeId,
+        });
+      },
+    );
   };
 
   // Handle collapsing part of the graph based on a specific node
@@ -443,6 +448,11 @@ const ForceGraph = ({
     setDepth(Number(event.target.value));
   };
 
+  // Handle changing the limit of nodes to be shown
+  const handleNodeLimitChange = (event) => {
+    setNodeLimit(Number(event.target.value));
+  };
+
   // Handle changing the search direction of edges
   const handleEdgeDirectionChange = (event) => {
     setEdgeDirection(event.target.value);
@@ -450,7 +460,7 @@ const ForceGraph = ({
 
   // Handle changing the set operation
   const handleOperationChange = (event) => {
-      setSetOperation(event.target.value);
+    setSetOperation(event.target.value);
   };
 
   const handleNodeFontSizeChange = (event) => {
@@ -495,9 +505,9 @@ const ForceGraph = ({
     });
   };
 
-  const handleShortestPathToggle= () => {
-    setFindShortestPaths(!findShortestPaths)
-  }
+  const handleShortestPathToggle = () => {
+    setFindShortestPaths(!findShortestPaths);
+  };
 
   const handleSimulationToggle = () => {
     // Turn off labels if turning on simulation
@@ -584,7 +594,23 @@ const ForceGraph = ({
             value={edgeDirection}
             onChange={handleEdgeDirectionChange}
           >
-            {["OUTBOUND", "INBOUND", "ANY", "DUAL"].map((value) => (
+            {["OUTBOUND", "INBOUND", "ANY"].map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="depth-picker">
+          <label htmlFor="depth-select">Node Limit:</label>
+          <select
+            id="depth-select"
+            value={nodeLimit}
+            onChange={handleNodeLimitChange}
+          >
+            {[
+              10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150,
+            ].map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>
@@ -592,28 +618,26 @@ const ForceGraph = ({
           </select>
         </div>
         {graphNodeIds.length >= 2 && (
-        <div className="edge-direction-picker multi-node">
-          <label htmlFor="edge-direction-select">
-            Graph operation
-          </label>
-          <select
-            id="edge-direction-select"
-            value={setOperation}
-            onChange={handleOperationChange}
-          >
-            {["Intersection", "Union", "Symmetric Difference"].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className="edge-direction-picker multi-node">
+            <label htmlFor="edge-direction-select">Graph operation</label>
+            <select
+              id="edge-direction-select"
+              value={setOperation}
+              onChange={handleOperationChange}
+            >
+              {["Intersection", "Union", "Symmetric Difference"].map(
+                (value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ),
+              )}
+            </select>
+          </div>
         )}
         <div className="font-size-picker">
           <div className="node-font-size-picker">
-            <label htmlFor="node-font-size-select">
-              Node font size:
-            </label>
+            <label htmlFor="node-font-size-select">Node font size:</label>
             <select
               id="node-font-size-select"
               value={nodeFontSize}
@@ -629,9 +653,7 @@ const ForceGraph = ({
             </select>
           </div>
           <div className="edge-font-size-picker">
-            <label htmlFor="edge-font-size-select">
-              Edge font size:
-            </label>
+            <label htmlFor="edge-font-size-select">Edge font size:</label>
             <select
               id="edge-font-size-select"
               value={edgeFontSize}
@@ -735,17 +757,17 @@ const ForceGraph = ({
           </div>
         </div>
         {graphNodeIds.length >= 2 && (
-        <div className="shortest-path-toggle multi-node" >
-          Shortest Path (Currently only works with first two nodes selected)
-          <label className="switch" style={{ margin: "auto" }}>
-            <input
+          <div className="shortest-path-toggle multi-node">
+            Shortest Path (Currently only works with first two nodes selected)
+            <label className="switch" style={{ margin: "auto" }}>
+              <input
                 type="checkbox"
                 checked={findShortestPaths}
                 onChange={handleShortestPathToggle}
-            />
-            <span className="slider round"></span>
-          </label>
-        </div>
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
         )}
         {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
         <div className="simulation-toggle" style={{ display: "none" }}>
