@@ -43,9 +43,12 @@ def get_graph(
     traversal_limit = node_limit * 100
 
     query = f"""
+        // Create temp variable for paths for each origin node
         LET temp = (
           FOR node_id IN @node_ids
             FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+            
+              // Remove unwanted nodes and collections from traversal
               PRUNE (
                 CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1))) OR 
                 CONTAINS_ARRAY(@nodes_to_prune, v._id)
@@ -53,6 +56,7 @@ def get_graph(
               FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1)))
               FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
             
+              // Limit traversals to avoid slow processing on graph explosion
               LIMIT @traversal_limit
               RETURN {{
                 node: v,
@@ -63,6 +67,7 @@ def get_graph(
               }}
         )
 
+        // Filter nodes to ensure uniqueness
         LET filteredNodes = UNIQUE(
           FOR obj IN temp
             FILTER obj.depth != (@depth + 1)
@@ -70,12 +75,14 @@ def get_graph(
             RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
         )
 
+        // Filter links to ensure uniqueness
         LET uniqueLinks = UNIQUE(
           FOR t IN temp
             FILTER t.link != null
             RETURN t.link
         )
 
+        // Organize nodes in object, sorting by origin node id
         LET nodesGrouped = MERGE(
           FOR node_id IN @node_ids
             RETURN {{
