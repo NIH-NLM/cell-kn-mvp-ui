@@ -1,68 +1,49 @@
-import React from "react";
+import React, { useState } from "react";
 
-const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
-  // Filter out keys that have no items in their arrays
+const SearchResultsTable = ({
+  searchResults,
+  handleSelectItem,
+  handleScroll,
+}) => {
+  // Get only the headers that have results
   const filteredHeaders = Object.keys(searchResults).filter(
     (key) => searchResults[key].length > 0,
   );
 
-  // Function to split headers into groups of 3
-  const splitHeadersIntoChunks = (arr, chunkSize) => {
-    const result = [];
-    for (let i = 0; i < arr.length; i += chunkSize) {
-      result.push(arr.slice(i, i + chunkSize));
-    }
-    return result;
-  };
+  // Use state to track which headers are expanded
+  const [expandedHeaders, setExpandedHeaders] = useState({});
 
-  // Split filtered headers into groups of 3
-  const headerChunks = splitHeadersIntoChunks(filteredHeaders, 3);
-
-  /* TODO: Add link to ListCells component on table headers */
-  // Helper function to create a table cell
-  const createTableCell = (key, rowIndex) => {
-    // Check if the rowIndex is within the bounds of the list for this key
-    return searchResults[key] && searchResults[key][rowIndex] ? (
-      <td
-        key={rowIndex}
-        onClick={() => handleSelectItem(searchResults[key][rowIndex])}
-        onMouseDown={(e) => e.preventDefault()}
-      >
-        {searchResults[key][rowIndex].label ||
-          searchResults[key][rowIndex].Label ||
-          searchResults[key][rowIndex].term ||
-          searchResults[key][rowIndex]._id}
-      </td>
-    ) : (
-      <td key={rowIndex}></td> // Empty cell if no item exists
-    );
+  const toggleExpand = (header) => {
+    setExpandedHeaders((prev) => ({
+      ...prev,
+      [header]: !prev[header],
+    }));
   };
 
   return (
-    <div>
-      {/* Render each table chunk */}
-      {headerChunks.map((headerGroup, chunkIndex) => (
-        <table className="search-results-table" key={chunkIndex}>
-          <thead>
-            <tr>
-              {headerGroup.map((header) => (
-                <th key={header}>{header}</th>
+    <div className="search-results-wrapper">
+      {filteredHeaders.map((header) => (
+        <div className="result-list-column" key={header}>
+          <h3
+            className="result-list-header"
+            onClick={() => toggleExpand(header)}
+          >
+            {header}
+          </h3>
+          {expandedHeaders[header] && (
+            <div className="result-list" onScroll={handleScroll}>
+              {searchResults[header].map((item, index) => (
+                <div
+                  key={index}
+                  className="result-list-item"
+                  onClick={() => handleSelectItem(item)}
+                >
+                  {item.label || item.Label || item.term || item._id}
+                </div>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {/* Create rows dynamically based on the number of items in the longest list */}
-            {Array.from({
-              length: Math.max(
-                ...headerGroup.map((key) => searchResults[key].length),
-              ),
-            }).map((_, rowIndex) => (
-              <tr key={rowIndex}>
-                {headerGroup.map((key) => createTableCell(key, rowIndex))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </div>
+          )}
+        </div>
       ))}
     </div>
   );
