@@ -37,70 +37,68 @@ def get_graph(
     collections_to_prune,
     nodes_to_prune,
     db_name,
+    node_limit,
 ):
-    # Construct the appropriate AQL query based on edge_direction
-    if edge_direction == "DUAL":
-        # Combine inbound and outbound traversals
-        query = f"""
-                    LET tempIn = (
-                        FOR node_id IN @node_ids
-                            FOR v, e, p IN 0..@depth INBOUND node_id GRAPH @graph_name
-                                PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
-                                    CONTAINS_ARRAY(@nodes_to_prune, v._id))
-                                FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
-                                FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                                RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
-                    )
+    # Arbitrary limit to ensure fasting loading
+    traversal_limit = node_limit * 100
 
-                    LET tempOut = (
-                        FOR node_id IN @node_ids
-                            FOR v, e, p IN 0..@depth OUTBOUND node_id GRAPH @graph_name
-                                PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
-                                    CONTAINS_ARRAY(@nodes_to_prune, v._id))
-                                FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
-                                FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                                RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
-                    )
+    query = f"""
+        // Create temp variable for paths for each origin node
+        LET temp = (
+          FOR node_id IN @node_ids
+            FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+            
+              // Remove unwanted nodes and collections from traversal
+              PRUNE (
+                CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1))) OR 
+                CONTAINS_ARRAY(@nodes_to_prune, v._id)
+              )
+              FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1)))
+              FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
+            
+              // Limit traversals to avoid slow processing on graph explosion
+              LIMIT @traversal_limit
+              RETURN {{
+                node: v,
+                link: e,
+                path: p,
+                depth: LENGTH(p.vertices),
+                origin: node_id
+              }}
+        )
 
-                    LET combined = UNION(tempIn, tempOut)
+        // Filter nodes to ensure uniqueness
+        LET filteredNodes = UNIQUE(
+          FOR obj IN temp
+            FILTER obj.depth != (@depth + 1)
+            LIMIT @node_limit
+            RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
+        )
 
-                    LET uniqueNodes = UNIQUE(combined[*].node)
-                    LET filteredNodes = UNIQUE(
-                        FOR object in combined
-                            FILTER object.depth != (@depth + 1)
-                            RETURN {{node: object.node, path: object.path, origin: object.origin}}
-                    ) 
+        // Filter links to ensure uniqueness
+        LET uniqueLinks = UNIQUE(
+          FOR t IN temp
+            FILTER t.link != null
+            RETURN t.link
+        )
 
-                    RETURN {{
-                        nodes: filteredNodes,
-                        links: combined[*].link,
-                    }}
-                """
-
-    else:
-        query = f"""
-            LET temp = (
-                FOR node_id IN @node_ids
-                    FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-                        PRUNE (CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 ))) OR 
-                            CONTAINS_ARRAY(@nodes_to_prune, v._id))
-                        FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1 )))
-                        FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-                        RETURN {{node: v, link: e, path: p, depth: LENGTH(p.vertices), origin: node_id}}
-            )
-
-            LET uniqueNodes = UNIQUE(temp[*].node)
-            LET filteredNodes = UNIQUE(
-                FOR object in temp
-                    FILTER object.depth != (@depth + 1)
-                    RETURN {{node: object.node, path: object.path, origin: object.origin}}
-            ) 
-
+        // Organize nodes in object, sorting by origin node id
+        LET nodesGrouped = MERGE(
+          FOR node_id IN @node_ids
             RETURN {{
-                nodes: filteredNodes,
-                links: temp[*].link,
+              [node_id]: (
+                FOR obj IN filteredNodes
+                  FILTER obj.origin == node_id
+                  RETURN {{ node: obj.node, path: obj.path }}
+              )
             }}
-        """
+        )
+
+        RETURN {{
+          nodes: nodesGrouped,
+          links: uniqueLinks
+        }}
+    """
 
     # Depth is increased by one to find all edges that connect to final nodes
     bind_vars = {
@@ -109,6 +107,8 @@ def get_graph(
         "depth": int(depth) + 1,
         "collections_to_prune": collections_to_prune,
         "nodes_to_prune": nodes_to_prune,
+        "node_limit": node_limit,
+        "traversal_limit": traversal_limit,
     }
 
     # Execute the query
@@ -124,50 +124,17 @@ def get_graph(
             0
         ]  # Collect the results - one element should be guaranteed
 
-        # Extract the list of _id values from the nodes
-        node_ids = [node["node"]["_id"] for node in results["nodes"]]
-
-        # Filter links where _to or _from is not in the list of node_ids
-        results["links"] = [
-            link
-            for link in results["links"]
-            if link is not None
-            and (link["_to"] in node_ids and link["_from"] in node_ids)
-        ]
-
-        # Group results by origin node
-        grouped_nodes = {}
-
-        # Iterate through each object in the data
-        for item in results["nodes"]:
-            if isinstance(item, dict) and all(
-                k in item for k in ["node", "path", "origin"]
-            ):
-                origin = item["origin"]
-
-                # If the origin is not in the dictionary, initialize an empty list
-                if origin not in grouped_nodes:
-                    grouped_nodes[origin] = []
-
-                # Append the node and path to the corresponding origin
-                grouped_nodes[origin].append(
-                    {"node": item["node"], "path": item["path"]}
-                )
-            else:
-                print(f"Warning: The item {item} is not in the expected format.")
-
-        results["nodes"] = grouped_nodes
-
     except Exception as e:
         print(f"Error executing query: {e}")
         results = []
 
     return results
 
+
 def get_shortest_paths(
-        node_ids,
-        graph_name,
-        edge_direction,
+    node_ids,
+    graph_name,
+    edge_direction,
 ):
     # Assume only two nodes
     start_node = node_ids[0]

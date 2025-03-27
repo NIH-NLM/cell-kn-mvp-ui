@@ -51,6 +51,7 @@ def get_graph(request):
     collections_to_prune = request.data.get("collections_to_prune")
     nodes_to_prune = request.data.get("nodes_to_prune")
     db_name = request.data.get("db_name", "base")
+    node_limit = request.data.get("node_limit", 100)
 
     search_results = utils.get_graph(
         node_ids,
@@ -60,8 +61,10 @@ def get_graph(request):
         collections_to_prune,
         nodes_to_prune,
         db_name,
+        node_limit,
     )
     return JsonResponse(search_results, safe=False)
+
 
 @api_view(["POST"])
 def get_shortest_paths(request):
