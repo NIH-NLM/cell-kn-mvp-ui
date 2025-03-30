@@ -33,7 +33,7 @@ describe("SearchResultsTable", () => {
     expect(screen.getByText("dairy")).toBeInTheDocument();
     expect(screen.queryByText("empty")).not.toBeInTheDocument();
 
-    // Initially, items should not be visible (collapsed)
+    // Initially, items should not be visible
     expect(screen.queryByText("Apple")).not.toBeInTheDocument();
     expect(screen.queryByText("Carrot")).not.toBeInTheDocument();
     expect(screen.queryByText("milk")).not.toBeInTheDocument();
