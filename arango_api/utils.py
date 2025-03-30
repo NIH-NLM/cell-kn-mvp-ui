@@ -220,46 +220,41 @@ def get_all():
 
 
 def search_by_term(search_term):
-    collections = get_document_collections()
 
-    # Create the base query
-    union_queries = []
-
-    for collection in collections:
-        union_queries.append(
-            f"""
-            LET results = (
-                FOR doc IN {collection["name"]}
-                FILTER CONTAINS(LOWER(doc.label), LOWER(@search_term)) 
-                    OR CONTAINS(LOWER(doc.term), LOWER(@search_term)) 
-                    OR CONTAINS(LOWER(doc._id), LOWER(@search_term)) 
-                LIMIT 100
-                RETURN doc
-                )
-            RETURN {{{collection["name"]}: results}}
+    query = f"""
+            // Group results by collection
+            LET groupedResults = (
+              FOR doc IN indexed
+                SEARCH ANALYZER(
+                  BOOST(doc._id == @search_term, 5.0) OR
+                  BOOST(doc.label == @search_term, 3.0) OR
+                  BOOST(doc.Name == @search_term, 3.0) OR
+                  BOOST(doc.Label == @search_term, 3.0)
+                  OR
+                  LIKE(doc.label, CONCAT('%', @search_term, '%')) OR
+                  LIKE(doc.Name, CONCAT('%', @search_term, '%')) OR
+                  LIKE(doc.Label, CONCAT('%', @search_term, '%'))
+                , "text_en")
+                SORT BM25(doc) DESC
+                // Extract the collection name from the _id field:
+                COLLECT coll = SPLIT(doc._id, "/")[0] INTO docs = doc
+                RETURN {{ [coll]: docs }}
+            )
+            
+            // Merge collection results
+            RETURN MERGE(groupedResults)
         """
-        )
-
-    # Combine all queries into a single AQL statement
-    final_query = "RETURN UNION(" + ", ".join(union_queries) + ")"
 
     bind_vars = {"search_term": search_term}
     # Execute the query
     try:
-        cursor = db.aql.execute(final_query, bind_vars=bind_vars)
-        results = list(cursor)  # Collect the results
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        results = list(cursor)[0]  # Collect the results
     except Exception as e:
         print(f"Error executing query: {e}")
         results = []
 
-    # Flatten and reformat results into one dictionary
-    flat_results = list(chain.from_iterable(results))
-    merged_dict = {}
-
-    for d in flat_results:
-        merged_dict.update(d)
-
-    return merged_dict
+    return results
 
 
 def run_aql_query(query):
