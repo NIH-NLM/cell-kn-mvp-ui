@@ -245,7 +245,7 @@ def search_by_term(search_term):
             RETURN MERGE(groupedResults)
         """
 
-    bind_vars = {"search_term": search_term}
+    bind_vars = {"search_term": search_term.lower()}
     # Execute the query
     try:
         cursor = db.aql.execute(query, bind_vars=bind_vars)
