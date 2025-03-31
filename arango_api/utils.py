@@ -226,14 +226,16 @@ def search_by_term(search_term):
             LET groupedResults = (
               FOR doc IN indexed
                 SEARCH ANALYZER(
-                  BOOST(doc._id == @search_term, 5.0) OR
-                  BOOST(doc.label == @search_term, 3.0) OR
-                  BOOST(doc.Name == @search_term, 3.0) OR
-                  BOOST(doc.Label == @search_term, 3.0)
+                  // Search exact match - tokenize to match
+                  BOOST(doc.label == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.Name == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0)
+                  // Search by n-gram similarity
                   OR
-                  LIKE(doc.label, CONCAT('%', @search_term, '%')) OR
-                  LIKE(doc.Name, CONCAT('%', @search_term, '%')) OR
-                  LIKE(doc.Label, CONCAT('%', @search_term, '%'))
+                  NGRAM_MATCH(doc._id, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram")
                 , "text_en")
                 SORT BM25(doc) DESC
                 // Extract the collection name from the _id field:
@@ -245,7 +247,7 @@ def search_by_term(search_term):
             RETURN MERGE(groupedResults)
         """
 
-    bind_vars = {"search_term": search_term.lower()}
+    bind_vars = {"search_term": search_term}
     # Execute the query
     try:
         cursor = db.aql.execute(query, bind_vars=bind_vars)
