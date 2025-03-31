@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const SearchResultsTable = ({
   searchResults,
@@ -31,17 +32,28 @@ const SearchResultsTable = ({
             <span className="arrow-icon">
               {expandedHeaders[header] ? "▼ " : "▶ "}
             </span>
-            {header}
+            {header} ({searchResults[header].length})
           </h3>
           {expandedHeaders[header] && (
             <div className="result-list" onScroll={handleScroll}>
               {searchResults[header].map((item, index) => (
-                <div
-                  key={index}
-                  className="result-list-item"
-                  onClick={() => handleSelectItem(item)}
-                >
-                  {item.label || item.Label || item.term || item._id}
+                <div key={index} className="result-list-item">
+                  <Link
+                    to={`/browse/${item._id}`}
+                    target="_blank"
+                    className="item-link"
+                  >
+                    {item.label || item.Label || item.term || item._id}
+                  </Link>
+                  <span
+                    className="plus-icon"
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent the Link from triggering
+                      handleSelectItem(item);
+                    }}
+                  >
+                    +
+                  </span>
                 </div>
               ))}
             </div>

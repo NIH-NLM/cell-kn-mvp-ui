@@ -382,6 +382,35 @@ tr:nth-of-type(odd) {
   padding: 0;
 }
 
+.result-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-light-bg);
+}
+
+.item-link {
+  flex: 1;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.plus-icon {
+  font-size: 18px;
+  color: var(--color-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.plus-icon:hover {
+  background-color: var(--color-light-bg);
+  color: var(--color-main);
+}
+
 /*Hover color changes*/
 
 .app-header a:hover,
