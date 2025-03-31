@@ -28,6 +28,9 @@ const SearchResultsTable = ({
             className="result-list-header"
             onClick={() => toggleExpand(header)}
           >
+            <span className="arrow-icon">
+              {expandedHeaders[header] ? "▼ " : "▶ "}
+            </span>
             {header}
           </h3>
           {expandedHeaders[header] && (
