@@ -831,6 +831,20 @@ input:checked + .slider:before {
   color: var(--color-focus);
 }
 
+button.active {
+  color: var(--color-text-on-dark);
+  background-color: var(--color-focus);
+}
+
+.pagination {
+  justify-content: center;
+    display: flex;
+}
+
+.pagination button {
+  padding: 0.5rem;
+}
+
 /* Footer */
 .footer {
   font-size: 16px;
