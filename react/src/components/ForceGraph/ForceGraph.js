@@ -8,6 +8,7 @@ import {
   PrunedCollections,
 } from "../Contexts/Contexts";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
+import * as Utils from "../Utils/Utils";
 
 /* TODO: Decide if default settings should be loaded from contexts */
 const ForceGraph = ({
@@ -175,7 +176,7 @@ const ForceGraph = ({
               nodeFontSize: nodeFontSize,
               linkFontSize: edgeFontSize,
               nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
-              label: (d) => (d.label ? d.label : d._id),
+              label: Utils.getLabel,
               onNodeClick: handleNodeClick,
               interactionCallback: closePopupOnInteraction,
               nodeStrength: -100,

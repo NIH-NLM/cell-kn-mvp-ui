@@ -19,7 +19,7 @@ describe("SearchResultsTable", () => {
     handleSelectItem.mockClear();
   });
 
-  test("renders a table with correct headers and rows", () => {
+  test("renders headers and toggles expansion to show items", () => {
     render(
       <SearchResultsTable
         searchResults={sampleResults}
@@ -33,28 +33,26 @@ describe("SearchResultsTable", () => {
     expect(screen.getByText("dairy")).toBeInTheDocument();
     expect(screen.queryByText("empty")).not.toBeInTheDocument();
 
-    // With three headers, they all fall into one table chunk.
-    const tables = screen.getAllByRole("table");
-    expect(tables.length).toBe(1);
+    // Initially, items should not be visible
+    expect(screen.queryByText("Apple")).not.toBeInTheDocument();
+    expect(screen.queryByText("Carrot")).not.toBeInTheDocument();
+    expect(screen.queryByText("milk")).not.toBeInTheDocument();
 
-    // The maximum length among the lists is 2 (fruits has 2 items).
-    const rows = tables[0].querySelectorAll("tbody tr");
-    expect(rows.length).toBe(2);
+    // Click on the "fruits" header to expand it
+    fireEvent.click(screen.getByText("fruits"));
+    expect(screen.getByText("Apple")).toBeInTheDocument();
+    expect(screen.getByText("Banana")).toBeInTheDocument();
 
-    // First row should render: Apple, Carrot, milk.
-    const firstRowCells = rows[0].querySelectorAll("td");
-    expect(firstRowCells[0].textContent).toBe("Apple");
-    expect(firstRowCells[1].textContent).toBe("Carrot");
-    expect(firstRowCells[2].textContent).toBe("milk");
+    // Expand "vegetables" header
+    fireEvent.click(screen.getByText("vegetables"));
+    expect(screen.getByText("Carrot")).toBeInTheDocument();
 
-    // Second row: Banana and two empty cells.
-    const secondRowCells = rows[1].querySelectorAll("td");
-    expect(secondRowCells[0].textContent).toBe("Banana");
-    expect(secondRowCells[1].textContent).toBe("");
-    expect(secondRowCells[2].textContent).toBe("");
+    // Expand "dairy" header
+    fireEvent.click(screen.getByText("dairy"));
+    expect(screen.getByText("milk")).toBeInTheDocument();
   });
 
-  test("calls handleSelectItem when a table cell is clicked", () => {
+  test("calls handleSelectItem when an item is clicked", () => {
     render(
       <SearchResultsTable
         searchResults={sampleResults}
@@ -62,14 +60,18 @@ describe("SearchResultsTable", () => {
       />,
     );
 
-    // Click on the cell with "Apple"
+    // Expand the "fruits" header first so that its items are visible.
+    fireEvent.click(screen.getByText("fruits"));
+
+    // Click on "Apple"
     fireEvent.click(screen.getByText("Apple"));
     expect(handleSelectItem).toHaveBeenCalledWith({
       label: "Apple",
       term: "apple",
     });
 
-    // Click on the cell with "Carrot"
+    // Expand the "vegetables" header and click on "Carrot"
+    fireEvent.click(screen.getByText("vegetables"));
     fireEvent.click(screen.getByText("Carrot"));
     expect(handleSelectItem).toHaveBeenCalledWith({
       label: "Carrot",

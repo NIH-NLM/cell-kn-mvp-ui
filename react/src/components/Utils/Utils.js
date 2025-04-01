@@ -13,3 +13,7 @@ export const parseCollections = (collections) => {
     a.toLowerCase().localeCompare(b.toLowerCase()),
   );
 };
+
+export const getLabel = (item) => {
+  return item.label || item.Name || item.term || item.Symbol|| item.Label || item._id
+}
