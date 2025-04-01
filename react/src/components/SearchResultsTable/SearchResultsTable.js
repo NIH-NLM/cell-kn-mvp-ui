@@ -1,68 +1,106 @@
-import React from "react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import * as Utils from "../Utils/Utils";
 
-const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
-  // Filter out keys that have no items in their arrays
+const SearchResultsTable = ({
+  searchResults,
+  handleSelectItem,
+}) => {
+  // Get only the headers that have results
   const filteredHeaders = Object.keys(searchResults).filter(
-    (key) => searchResults[key].length > 0,
+    (key) => searchResults[key].length > 0
   );
 
-  // Function to split headers into groups of 3
-  const splitHeadersIntoChunks = (arr, chunkSize) => {
-    const result = [];
-    for (let i = 0; i < arr.length; i += chunkSize) {
-      result.push(arr.slice(i, i + chunkSize));
+  // State for which headers are expanded
+  const [expandedHeaders, setExpandedHeaders] = useState({});
+  // State for how many items are currently shown per header
+  const [displayLimits, setDisplayLimits] = useState({});
+
+  const expandAmount = 50;
+
+  // Toggle header expansion; when expanding, set initial display limit to expandAmount or the total if less.
+  const toggleExpand = (header) => {
+    setExpandedHeaders((prev) => {
+      const newExpanded = { ...prev, [header]: !prev[header] };
+      // When expanding, initialize the display limit
+      if (newExpanded[header] && !displayLimits[header]) {
+        setDisplayLimits((prevLimits) => ({
+          ...prevLimits,
+          [header]:
+            searchResults[header].length > expandAmount
+              ? expandAmount
+              : searchResults[header].length,
+        }));
+      }
+      return newExpanded;
+    });
+  };
+
+  // Function to check if the user scrolled to the bottom
+    const handleScroll = (e, header) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const threshold = 5;
+    // User scrolled to bottom of list
+    if (scrollHeight - scrollTop - clientHeight < threshold) {
+      // Increase the limit by expandAmount, up to the total number of results
+      const currentLimit = displayLimits[header] || expandAmount;
+      const newLimit = Math.min(
+        currentLimit + expandAmount,
+        searchResults[header].length
+      );
+      if (newLimit > currentLimit) {
+        setDisplayLimits((prevLimits) => ({
+          ...prevLimits,
+          [header]: newLimit,
+        }));
+      }
     }
-    return result;
   };
 
-  // Split filtered headers into groups of 3
-  const headerChunks = splitHeadersIntoChunks(filteredHeaders, 3);
-
-  /* TODO: Add link to ListCells component on table headers */
-  // Helper function to create a table cell
-  const createTableCell = (key, rowIndex) => {
-    // Check if the rowIndex is within the bounds of the list for this key
-    return searchResults[key] && searchResults[key][rowIndex] ? (
-      <td
-        key={rowIndex}
-        onClick={() => handleSelectItem(searchResults[key][rowIndex])}
-        onMouseDown={(e) => e.preventDefault()}
-      >
-        {searchResults[key][rowIndex].label ||
-          searchResults[key][rowIndex].Label ||
-          searchResults[key][rowIndex].term ||
-          searchResults[key][rowIndex]._id}
-      </td>
-    ) : (
-      <td key={rowIndex}></td> // Empty cell if no item exists
-    );
-  };
 
   return (
-    <div>
-      {/* Render each table chunk */}
-      {headerChunks.map((headerGroup, chunkIndex) => (
-        <table className="search-results-table" key={chunkIndex}>
-          <thead>
-            <tr>
-              {headerGroup.map((header) => (
-                <th key={header}>{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {/* Create rows dynamically based on the number of items in the longest list */}
-            {Array.from({
-              length: Math.max(
-                ...headerGroup.map((key) => searchResults[key].length),
-              ),
-            }).map((_, rowIndex) => (
-              <tr key={rowIndex}>
-                {headerGroup.map((key) => createTableCell(key, rowIndex))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="search-results-wrapper">
+      {filteredHeaders.map((header) => (
+        <div className="result-list-column" key={header}>
+          <h3
+            className="result-list-header"
+            onClick={() => toggleExpand(header)}
+          >
+            <span className="arrow-icon">
+              {expandedHeaders[header] ? "▼ " : "▶ "}
+            </span>
+            {header} ({searchResults[header].length})
+          </h3>
+          {expandedHeaders[header] && (
+            <div
+              className="result-list"
+              onScroll={(e) => handleScroll(e, header)}
+            >
+              {searchResults[header]
+                .slice(0, displayLimits[header] || expandAmount)
+                .map((item, index) => (
+                  <div key={index} className="result-list-item">
+                    <Link
+                      to={`/browse/${item._id}`}
+                      target="_blank"
+                      className="item-link"
+                    >
+                      {Utils.getLabel(item)}
+                    </Link>
+                    <span
+                      className="plus-icon"
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent the Link from triggering
+                        handleSelectItem(item);
+                      }}
+                    >
+                      +
+                    </span>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
       ))}
     </div>
   );

@@ -89,7 +89,7 @@ describe("SearchBar Component", () => {
     );
   });
 
-  it("shows search results on focus and hides them on blur", async () => {
+  it("shows search results on focus and hides them on mouse leave", async () => {
     render(
       <SearchBar
         generateGraph={mockGenerateGraph}
@@ -111,54 +111,12 @@ describe("SearchBar Component", () => {
     fireEvent.focus(input);
     expect(resultsContainer).toHaveClass("show");
 
-    // Blur the input: after 100ms the "show" class should be removed
-    fireEvent.blur(input);
+    // Mouse leave the input: after 100ms the "show" class should be removed
+    fireEvent.mouseLeave(input);
     act(() => {
       jest.advanceTimersByTime(101);
     });
     expect(resultsContainer).not.toHaveClass("show");
-  });
-
-  it("handles infinite scroll by increasing the results limit", async () => {
-    render(
-      <SearchBar
-        generateGraph={mockGenerateGraph}
-        selectedItems={dummySelectedItems}
-        removeSelectedItem={mockRemoveSelectedItem}
-        addSelectedItem={mockAddSelectedItem}
-      />,
-    );
-
-    // Trigger a search by entering text
-    const input = screen.getByPlaceholderText("Search...");
-    fireEvent.change(input, { target: { value: "test" } });
-    jest.advanceTimersByTime(150);
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-
-    // The scroll event is attached to the container div that wraps SearchResultsTable.
-    const resultsContainer = screen.getByTestId(
-      "search-results-table",
-    ).parentElement;
-    Object.defineProperty(resultsContainer, "scrollHeight", {
-      configurable: true,
-      value: 1000,
-    });
-    Object.defineProperty(resultsContainer, "clientHeight", {
-      configurable: true,
-      value: 500,
-    });
-    Object.defineProperty(resultsContainer, "scrollTop", {
-      configurable: true,
-      value: 500,
-    });
-    fireEvent.scroll(resultsContainer);
-
-    // The infinite scroll should trigger a fetch with an increased limit
-    await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/arango_api/search/test?limit=200",
-      ),
-    );
   });
 
   it("calls addSelectedItem when a search result is clicked", async () => {
