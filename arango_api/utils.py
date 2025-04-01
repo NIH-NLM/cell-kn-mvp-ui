@@ -224,18 +224,20 @@ def search_by_term(search_term):
     query = f"""
             // Group results by collection
             LET groupedResults = (
-              FOR doc IN indexed
+                FOR doc IN indexed
                 SEARCH ANALYZER(
                   // Search exact match - tokenize to match
                   BOOST(doc.label == TOKENS(@search_term, "text_en")[0], 10.0) OR
                   BOOST(doc.Name == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.Symbol == TOKENS(@search_term, "text_en")[0], 10.0) OR
                   BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0)
                   // Search by n-gram similarity
                   OR
                   NGRAM_MATCH(doc._id, @search_term, 0.7, "bigram") OR
                   NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
                   NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram")
+                  NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram")
                 , "text_en")
                 SORT BM25(doc) DESC
                 // Extract the collection name from the _id field:
