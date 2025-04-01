@@ -7,12 +7,12 @@ def create_predefined_queries(apps, schema_editor):
     PredefinedQuery.objects.create(
         name="Find gene-drug-disease triangles by publication",
         query="""
-            LET node1 = DOCUMENT('publication', 'HLCA_2023_Sikkema')
-            LET node2 = DOCUMENT('publication', 'cellRef_2023_Guo')
+            LET node1 = DOCUMENT('PUB', 'doi.org-10.1038-s41467-023-40173-5')
+            LET node2 = DOCUMENT('PUB', 'doi.org-10.1038-s41591-023-02327-2')
             RETURN { nodes: [node1, node2] }
         """,
-        placeholder_1="HLCA_2023_Sikkema",
-        placeholder_2="cellRef_2023_Guo",
+        placeholder_1="doi.org-10.1038-s41467-023-40173-5",
+        placeholder_2="doi.org-10.1038-s41591-023-02327-2",
         settings={
             "defaultDepth": 3,
             "setOperation": "Union",
