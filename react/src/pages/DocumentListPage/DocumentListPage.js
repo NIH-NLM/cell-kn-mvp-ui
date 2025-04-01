@@ -61,9 +61,9 @@ const DocumentListPage = () => {
       <div className="page-container">
         <div className="document-container">
           <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              paginate={paginate}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            paginate={paginate}
           />
           <header className="document-header">
             <p className="document-count">{documentList.length} results</p>
