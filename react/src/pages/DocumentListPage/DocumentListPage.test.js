@@ -1,7 +1,7 @@
-import DocumentListPage from './DocumentListPage';
+import DocumentListPage from "./DocumentListPage";
 
-describe('DocumentListPage', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("DocumentListPage", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });

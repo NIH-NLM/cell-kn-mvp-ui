@@ -8,6 +8,7 @@ const SearchBar = ({
   removeSelectedItem,
   addSelectedItem,
 }) => {
+  const containerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [input, setInput] = useState("");
@@ -16,7 +17,7 @@ const SearchBar = ({
 
   const getSearchTerms = async (searchTerm, limit = 100) => {
     let response = await fetch(
-      `/arango_api/search/${searchTerm}?limit=${limit}`,
+      `/arango_api/search/${searchTerm}?limit=${limit}`
     );
     return response.json();
   };
@@ -24,11 +25,11 @@ const SearchBar = ({
   useEffect(() => {
     const fetchSearchResults = async () => {
       const data = await getSearchTerms(searchTerm);
-      return data;
+      setSearchResults(data);
     };
 
     if (searchTerm !== "") {
-      fetchSearchResults().then((data) => setSearchResults(data));
+      fetchSearchResults();
     } else {
       setSearchResults([]);
     }
@@ -54,20 +55,32 @@ const SearchBar = ({
     setShowResults(true);
   };
 
-  const hideR = () => {
-    setTimeout(() => {
-      setShowResults(false);
-    }, 100);
-  };
-
   function handleSelectItem(item) {
     addSelectedItem(item);
     setShowResults(false);
     setInput("");
   }
 
+  // Add listeners for clicking outside of search area
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="search-container" onFocus={showR} onMouseLeave={hideR}>
+    <div className="search-container" ref={containerRef}>
       <div className="search-bar-container">
         <div className="search-bar">
           <input
@@ -84,7 +97,6 @@ const SearchBar = ({
           <SearchResultsTable
             searchResults={searchResults}
             handleSelectItem={handleSelectItem}
-            onBlur={hideR}
           />
         </div>
       </div>

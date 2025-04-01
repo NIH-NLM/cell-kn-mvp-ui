@@ -2,13 +2,10 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import * as Utils from "../Utils/Utils";
 
-const SearchResultsTable = ({
-  searchResults,
-  handleSelectItem,
-}) => {
+const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
   // Get only the headers that have results
   const filteredHeaders = Object.keys(searchResults).filter(
-    (key) => searchResults[key].length > 0
+    (key) => searchResults[key].length > 0,
   );
 
   // State for which headers are expanded
@@ -37,7 +34,7 @@ const SearchResultsTable = ({
   };
 
   // Function to check if the user scrolled to the bottom
-    const handleScroll = (e, header) => {
+  const handleScroll = (e, header) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     const threshold = 5;
     // User scrolled to bottom of list
@@ -46,7 +43,7 @@ const SearchResultsTable = ({
       const currentLimit = displayLimits[header] || expandAmount;
       const newLimit = Math.min(
         currentLimit + expandAmount,
-        searchResults[header].length
+        searchResults[header].length,
       );
       if (newLimit > currentLimit) {
         setDisplayLimits((prevLimits) => ({
@@ -56,7 +53,6 @@ const SearchResultsTable = ({
       }
     }
   };
-
 
   return (
     <div className="search-results-wrapper">
