@@ -175,7 +175,7 @@ const ForceGraph = ({
               nodeFontSize: nodeFontSize,
               linkFontSize: edgeFontSize,
               nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
-              label: (d) => (d.label ? d.label : d._id),
+              label: (d) => (d.label || d.Name || d.Symbol || d._id),
               onNodeClick: handleNodeClick,
               interactionCallback: closePopupOnInteraction,
               nodeStrength: -100,
