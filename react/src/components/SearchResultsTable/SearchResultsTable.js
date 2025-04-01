@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import * as Utils from "../Utils/Utils";
 
 const SearchResultsTable = ({
   searchResults,
@@ -43,7 +44,7 @@ const SearchResultsTable = ({
                     target="_blank"
                     className="item-link"
                   >
-                    {item.label || item.Label || item.term || item._id}
+                    {Utils.getLabel(item)}
                   </Link>
                   <span
                     className="plus-icon"
