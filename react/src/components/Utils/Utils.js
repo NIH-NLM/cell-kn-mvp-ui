@@ -15,5 +15,5 @@ export const parseCollections = (collections) => {
 };
 
 export const getLabel = (item) => {
-  return item.label || item.Name || item.term || item.Symbol|| item.Label || item._id
+  return item.label || item.Name || item.term || item.Symbol|| item.Author_cell_term || item.Label || item._id
 }

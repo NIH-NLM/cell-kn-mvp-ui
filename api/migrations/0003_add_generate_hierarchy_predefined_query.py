@@ -13,18 +13,18 @@ def create_additional_predefined_queries(apps, schema_editor):
             RETURN { nodes: [node] }
         """,
         placeholder_1="Enter collection (CL, etc.)...",
-        placeholder_2="Enter id (0002062)...",
+        placeholder_2="Enter id (0000077)...",
         settings={
-            "defaultDepth": 6,
+            "defaultDepth": 5,
             "collectionsToAllow": [
                 '@value1'
             ],
             "labelStates": {
                 ".collection-label": False,
-                ".link-label": False,
-                ".node-label": False,
+                ".link-label": True,
+                ".node-label": True,
             },
-            "edgeDirection": "DUAL"
+            "edgeDirection": "INBOUND"
         },
     )
 
