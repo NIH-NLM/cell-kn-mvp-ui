@@ -230,14 +230,20 @@ def search_by_term(search_term):
                   BOOST(doc.label == TOKENS(@search_term, "text_en")[0], 10.0) OR
                   BOOST(doc.Name == TOKENS(@search_term, "text_en")[0], 10.0) OR
                   BOOST(doc.Symbol == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0)
+                  BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.PMID == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.Phase == TOKENS(@search_term, "text_en")[0], 10.0) OR
+                  BOOST(doc.Genotype_annotation == TOKENS(@search_term, "text_en")[0], 10.0)
                   // Search by n-gram similarity
                   OR
                   NGRAM_MATCH(doc._id, @search_term, 0.7, "bigram") OR
                   NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
                   NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
                   NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram")
+                  NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR
+                  NGRAM_MATCH(doc.Genotype_annotation, @search_term, 0.7, "bigram")
                 , "text_en")
                 SORT BM25(doc) DESC
                 // Extract the collection name from the _id field:
