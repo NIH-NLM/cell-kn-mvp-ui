@@ -289,16 +289,16 @@ tr:nth-of-type(odd) {
 }
 
 .result-list {
-  overflowY: auto;
-  maxHeight: 400px;
+  overflow: auto;
+  max-height: 400px;
   border: 1px solid var(--color-light);
-  borderTop: none;
 }
 
-.result-list-item {
-  padding: 8px;
-  cursor: pointer;
-  borderBottom: 1px solid var(--color-white);
+.result-list-column {
+  max-height: 450px;
+  box-shadow: 2px 10px 20px 0px;
+  background: var(--color-white);
+  overflow: hidden;
 }
 
 .search-bar-container {
@@ -327,12 +327,6 @@ tr:nth-of-type(odd) {
 
 .search-results-container.show {
   display: flex;
-}
-
-.search-results-container div {
-  box-shadow: 2px 10px 20px 0px;
-  background: var(--color-white);
-  overflow: auto;
 }
 
 .search-results-table {
@@ -388,6 +382,8 @@ tr:nth-of-type(odd) {
   align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-light-bg);
+  cursor: pointer;
+  borderBottom: 1px solid var(--color-white);
 }
 
 .item-link {
