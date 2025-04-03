@@ -30,7 +30,7 @@ describe("ListDocuments Component", () => {
     );
 
     // Check if the labels are joined by '+'
-    expect(screen.getByText("Label1+Label2")).toBeInTheDocument();
+    expect(screen.getByText("Label1 + Label2")).toBeInTheDocument();
 
     const linkElement = screen.getByRole("link");
     expect(linkElement).toHaveAttribute("href", "/browse/123");
@@ -46,7 +46,7 @@ describe("ListDocuments Component", () => {
     );
 
     // Check if the term is displayed correctly
-    expect(screen.getByText("Term1+Term2")).toBeInTheDocument();
+    expect(screen.getByText("Term1 + Term2")).toBeInTheDocument();
 
     const linkElement = screen.getByRole("link");
     expect(linkElement).toHaveAttribute("href", "/browse/123");

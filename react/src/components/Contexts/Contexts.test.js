@@ -25,8 +25,8 @@ describe("Contexts", () => {
     render(<ConsumerComponent />);
 
     // Test default values from contexts
-    expect(screen.getByText("Graph: CL-Full")).toBeInTheDocument();
-    expect(screen.getByText("DB: CL-Full")).toBeInTheDocument();
+    expect(screen.getByText("Graph: KN-v2.0")).toBeInTheDocument();
+    expect(screen.getByText("DB: Cell-KN")).toBeInTheDocument();
     expect(screen.getByText("Pruned: NCBITaxon")).toBeInTheDocument();
   });
 

@@ -17,7 +17,7 @@ const SearchBar = ({
 
   const getSearchTerms = async (searchTerm, limit = 100) => {
     let response = await fetch(
-      `/arango_api/search/${searchTerm}?limit=${limit}`
+      `/arango_api/search/${searchTerm}?limit=${limit}`,
     );
     return response.json();
   };

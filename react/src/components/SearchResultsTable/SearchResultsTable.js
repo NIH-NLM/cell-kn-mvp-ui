@@ -65,7 +65,11 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
             <span className="arrow-icon">
               {expandedHeaders[header] ? "▼ " : "▶ "}
             </span>
-            {header} ({searchResults[header].length})
+            <span data-testid={`header-${header}`}>{header}</span>
+            <span className="item-count">
+              {" "}
+              ({searchResults[header].length})
+            </span>
           </h3>
           {expandedHeaders[header] && (
             <div
