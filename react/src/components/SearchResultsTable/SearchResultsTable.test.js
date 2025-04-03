@@ -1,6 +1,7 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import SearchResultsTable from "./SearchResultsTable";
+import { MemoryRouter } from "react-router-dom";
 
 describe("SearchResultsTable", () => {
   const sampleResults = {
@@ -21,10 +22,12 @@ describe("SearchResultsTable", () => {
 
   test("renders headers and toggles expansion to show items", () => {
     render(
-      <SearchResultsTable
-        searchResults={sampleResults}
-        handleSelectItem={handleSelectItem}
-      />,
+      <MemoryRouter>
+        <SearchResultsTable
+          searchResults={sampleResults}
+          handleSelectItem={handleSelectItem}
+        />
+      </MemoryRouter>,
     );
 
     // Only non-empty keys should be rendered as headers.
@@ -52,27 +55,33 @@ describe("SearchResultsTable", () => {
     expect(screen.getByText("milk")).toBeInTheDocument();
   });
 
-  test("calls handleSelectItem when an item is clicked", () => {
+  test("calls handleSelectItem when plus sign is clicked", () => {
     render(
-      <SearchResultsTable
-        searchResults={sampleResults}
-        handleSelectItem={handleSelectItem}
-      />,
+      <MemoryRouter>
+        <SearchResultsTable
+          searchResults={sampleResults}
+          handleSelectItem={handleSelectItem}
+        />
+      </MemoryRouter>,
     );
 
-    // Expand the "fruits" header first so that its items are visible.
-    fireEvent.click(screen.getByText("fruits"));
+    // Expand the "fruits" header so that its items are visible.
+    fireEvent.click(screen.getByTestId("header-fruits"));
 
-    // Click on "Apple"
-    fireEvent.click(screen.getByText("Apple"));
+    // Locate the container for "Apple" and click its plus icon.
+    const appleItem = screen.getByText("Apple").closest(".result-list-item");
+    const applePlus = within(appleItem).getByText("+");
+    fireEvent.click(applePlus);
     expect(handleSelectItem).toHaveBeenCalledWith({
       label: "Apple",
       term: "apple",
     });
 
-    // Expand the "vegetables" header and click on "Carrot"
-    fireEvent.click(screen.getByText("vegetables"));
-    fireEvent.click(screen.getByText("Carrot"));
+    // Expand the "vegetables" header and locate the "Carrot" container.
+    fireEvent.click(screen.getByTestId("header-vegetables"));
+    const carrotItem = screen.getByText("Carrot").closest(".result-list-item");
+    const carrotPlus = within(carrotItem).getByText("+");
+    fireEvent.click(carrotPlus);
     expect(handleSelectItem).toHaveBeenCalledWith({
       label: "Carrot",
       term: "carrot",
