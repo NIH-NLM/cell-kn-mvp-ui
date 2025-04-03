@@ -50,18 +50,17 @@ def get_graph(request):
     edge_direction = request.data.get("edge_direction")
     collections_to_prune = request.data.get("collections_to_prune")
     nodes_to_prune = request.data.get("nodes_to_prune")
-    db_name = request.data.get("db_name", "base")
+    use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
 
     search_results = utils.get_graph(
         node_ids,
         depth,
-        graph_name,
         edge_direction,
         collections_to_prune,
         nodes_to_prune,
-        db_name,
         node_limit,
+        use_schema_graph,
     )
     return JsonResponse(search_results, safe=False)
 
@@ -69,12 +68,10 @@ def get_graph(request):
 @api_view(["POST"])
 def get_shortest_paths(request):
     node_ids = request.data.get("node_ids")
-    graph_name = request.data.get("graph_name")
     edge_direction = request.data.get("edge_direction")
 
     search_results = utils.get_shortest_paths(
         node_ids,
-        graph_name,
         edge_direction,
     )
     return JsonResponse(search_results, safe=False)
