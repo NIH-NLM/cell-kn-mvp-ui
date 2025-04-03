@@ -230,7 +230,6 @@ tr {
   word-wrap: break-word;
 }
 
-
 .cell-item-list {
   max-width: 40%;
 }
@@ -277,12 +276,12 @@ tr:nth-of-type(odd) {
 
 .search-results-wrapper {
   width: 100%;
-  marginBottom: 10px;
+  marginbottom: 10px;
 }
 
 .result-list-header {
   cursor: pointer;
-  userSelect: none;
+  userselect: none;
   margin: 0;
   padding: 8px;
   background: var(--color-light-bg);
@@ -383,7 +382,7 @@ tr:nth-of-type(odd) {
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-light-bg);
   cursor: pointer;
-  borderBottom: 1px solid var(--color-white);
+  borderbottom: 1px solid var(--color-white);
 }
 
 .item-link {
@@ -399,7 +398,9 @@ tr:nth-of-type(odd) {
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .plus-icon:hover {
@@ -838,7 +839,7 @@ button.active {
 
 .pagination {
   justify-content: center;
-    display: flex;
+  display: flex;
 }
 
 .pagination button {
@@ -893,11 +894,22 @@ button.active {
 }
 
 @keyframes loadingAnimation {
-  0% { width: 0%; }
-  10% { width: 10%; }
-  25% { width: 25%; }
-  60% { width: 60%; }
-  80% { width: 80%; }
-  95% { width: 95%; }
+  0% {
+    width: 0%;
+  }
+  10% {
+    width: 10%;
+  }
+  25% {
+    width: 25%;
+  }
+  60% {
+    width: 60%;
+  }
+  80% {
+    width: 80%;
+  }
+  95% {
+    width: 95%;
+  }
 }
-

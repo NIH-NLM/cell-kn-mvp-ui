@@ -1,18 +1,18 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import CellCard from "../../components/CellCard/CellCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
-import {useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 // Document as described in ArangoDB documentation
-const DocumentPage = ({ }) => {
+const DocumentPage = ({}) => {
   const { coll, id } = useParams();
   let [document, setDocument] = useState(null);
 
   // Modify the PrunedCollections context if this collection is part of that list
   const prunedCollections = useContext(PrunedCollections);
   const filteredPrunedCollections = prunedCollections.includes(coll)
-    ? prunedCollections.filter(item => item !== coll)
+    ? prunedCollections.filter((item) => item !== coll)
     : prunedCollections;
 
   useEffect(() => {
@@ -20,25 +20,30 @@ const DocumentPage = ({ }) => {
   }, [id, coll]);
 
   let getDocument = async () => {
-    let response = await fetch(
-      `/arango_api/collection/${coll}/${id}/`,
-    );
+    let response = await fetch(`/arango_api/collection/${coll}/${id}/`);
     return response.json();
   };
 
-//TODO: Move helper functions such as this to isolated helper function 'utils'? */
+  //TODO: Move helper functions such as this to isolated helper function 'utils'? */
   function capitalCase(input) {
     if (Array.isArray(input)) {
       // If the input is an array, map over each element and capitalize each word
-      return input.map(str =>
-          typeof str === 'string'
-              ? str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-              : str
-      )
-      .join('+');
-    } else if (typeof input === 'string') {
+      return input
+        .map((str) =>
+          typeof str === "string"
+            ? str
+                .split(" ")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ")
+            : str,
+        )
+        .join("+");
+    } else if (typeof input === "string") {
       // If the input is a single string, capitalize each word
-      return input.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      return input
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
     } else {
       // If the input is neither a string nor an array of strings, return as is
       return input;
@@ -54,7 +59,11 @@ const DocumentPage = ({ }) => {
         </div>
         <div className="document-item-container">
           <CellCard cell={document} />
-          <ForceGraph nodeIds={[document._id]} heightRatio={1} settings={{collectionsToPrune: filteredPrunedCollections}} />
+          <ForceGraph
+            nodeIds={[document._id]}
+            heightRatio={1}
+            settings={{ collectionsToPrune: filteredPrunedCollections }}
+          />
         </div>
       </div>
     );

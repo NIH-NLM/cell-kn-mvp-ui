@@ -36,10 +36,10 @@ const AQLQueryPage = () => {
   };
 
   function replaceAll(obj, replacements) {
-    if (typeof obj === 'string') {
+    if (typeof obj === "string") {
       // Replace placeholders in strings
-      Object.keys(replacements).forEach(key => {
-        const regex = new RegExp(`@${key}`, 'g');
+      Object.keys(replacements).forEach((key) => {
+        const regex = new RegExp(`@${key}`, "g");
         obj = obj.replace(regex, replacements[key]);
       });
       return obj;
@@ -47,13 +47,13 @@ const AQLQueryPage = () => {
 
     if (Array.isArray(obj)) {
       // Recurse through each item in the array
-      return obj.map(item => replaceAll(item, replacements));
+      return obj.map((item) => replaceAll(item, replacements));
     }
 
-    if (typeof obj === 'object' && obj !== null) {
+    if (typeof obj === "object" && obj !== null) {
       // Recurse through each key in the object
       const newObj = {};
-      Object.keys(obj).forEach(key => {
+      Object.keys(obj).forEach((key) => {
         newObj[key] = replaceAll(obj[key], replacements);
       });
       return newObj;
@@ -85,11 +85,11 @@ const AQLQueryPage = () => {
       const data = await response.json();
 
       // Check if response has information
-      if (data && data["nodes"] && data["nodes"][0]){
+      if (data && data["nodes"] && data["nodes"][0]) {
         //TODO: avoid hard-coding expected results?
         setNodeIds(data["nodes"].map((obj) => obj._id));
       } else {
-        setError("Nothing found. Please refine your search and try again")
+        setError("Nothing found. Please refine your search and try again");
       }
     } catch (err) {
       // TODO: Fix error logic. Currently error will almost always be about mapping over null, given a blank return
@@ -128,7 +128,13 @@ const AQLQueryPage = () => {
       </div>
       {error && <div className="error-message">{error}</div>}
       {Object.keys(nodeIds).length > 0 && (
-        <ForceGraph nodeIds={nodeIds} settings={replaceAll(selectedQuery.settings, {"value1": value1, "value2": value2})} />
+        <ForceGraph
+          nodeIds={nodeIds}
+          settings={replaceAll(selectedQuery.settings, {
+            value1: value1,
+            value2: value2,
+          })}
+        />
       )}
     </div>
   );

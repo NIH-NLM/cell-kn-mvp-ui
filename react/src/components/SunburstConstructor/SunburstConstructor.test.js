@@ -1,7 +1,7 @@
-import SunburstConstructor from './SunburstConstructor';
+import SunburstConstructor from "./SunburstConstructor";
 
-describe('SunburstConstructor', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("SunburstConstructor", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });
