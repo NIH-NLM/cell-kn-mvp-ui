@@ -62,6 +62,7 @@ const ForceGraph = ({
   const [collections, setCollections] = useState([]);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [clickedNodeId, setClickedNodeId] = useState(null);
+  const [clickedNodeLabel, setClickedNodeLabel] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
@@ -399,6 +400,7 @@ const ForceGraph = ({
   // Handle right click on node
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData.id);
+    setClickedNodeLabel(Utils.getLabel(nodeData));
 
     // Get the mouse position and current scroll state
     const { clientX, clientY } = e;
@@ -435,7 +437,15 @@ const ForceGraph = ({
   // Handle collapsing part of the graph based on a specific node
   const handleCollapse = () => {
     graph.updateGraph({
-      removeNodes: [clickedNodeId],
+      collapseNodes: [clickedNodeId],
+    });
+  };
+
+  // Handle removing node
+  const handleRemove = () => {
+    graph.updateGraph({
+      collapseNodes: [clickedNodeId],
+      removeNode: true,
     });
   };
 
@@ -618,7 +628,7 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
-        {graphNodeIds.length >= 2 && (
+        {graphNodeIds ? graphNodeIds.length >= 2 && (
           <div className="edge-direction-picker multi-node">
             <label htmlFor="edge-direction-select">Graph operation</label>
             <select
@@ -635,7 +645,7 @@ const ForceGraph = ({
               )}
             </select>
           </div>
-        )}
+        ) : <div/>}
         <div className="font-size-picker">
           <div className="node-font-size-picker">
             <label htmlFor="node-font-size-select">Node font size:</label>
@@ -757,7 +767,7 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
-        {graphNodeIds.length >= 2 && (
+        {graphNodeIds ? graphNodeIds.length >= 2 && (
           <div className="shortest-path-toggle multi-node">
             Shortest Path (Currently only works with first two nodes selected)
             <label className="switch" style={{ margin: "auto" }}>
@@ -769,7 +779,7 @@ const ForceGraph = ({
               <span className="slider round"></span>
             </label>
           </div>
-        )}
+        ) : <div/>}
         {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
         <div className="simulation-toggle" style={{ display: "none" }}>
           Toggle Simulation
@@ -819,13 +829,16 @@ const ForceGraph = ({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Go To Page
+          Go To "{clickedNodeLabel}"
         </a>
         <button className="popup-button" onClick={handleExpand}>
-          Expand
+          Expand from "{clickedNodeLabel}"
         </button>
         <button className="popup-button" onClick={handleCollapse}>
-          Collapse
+          Collapse Satellite Nodes
+        </button>
+        <button className="popup-button" onClick={handleRemove}>
+          Collapse and Remove
         </button>
         <button className="x-button" onClick={handlePopupClose}>
           X
