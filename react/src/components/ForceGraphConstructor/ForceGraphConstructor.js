@@ -245,16 +245,19 @@ function toggleSimulation(
   links,
   nodeForceStrength,
   centerForceStrength,
+  linkForceStrength,
 ) {
   if (on) {
     simulation.alpha(1).restart();
     forceNode.strength(nodeForceStrength);
     forceCenter.strength(centerForceStrength);
+    forceLink.strength(linkForceStrength);
     forceLink.links(links);
   } else {
     simulation.stop();
     forceNode.strength(0);
     forceCenter.strength(0);
+    forceLink.strength(0);
     forceLink.links([]);
   }
 }
@@ -357,6 +360,7 @@ function ForceGraphConstructor(
   const forceNode = d3.forceManyBody().strength(nodeForceStrength);
   const forceCenter = d3.forceCenter().strength(centerForceStrength);
   const forceLink = d3.forceLink().id((d) => d.id);
+  const linkForceStrength = forceLink.strength();
 
   const simulation = d3
     .forceSimulation()
@@ -567,50 +571,83 @@ function ForceGraphConstructor(
   function updateGraph({
     newNodes = [],
     newLinks = [],
-    removeNodes = [],
+    collapseNodes = [],
+    removeNode = false, // if true, then collapseNodes themselves are removed
     centerNodeId = null,
   } = {}) {
-    // Toggle off labels
-    Object.keys(labelStates).forEach((key) => {
-      toggleLabels(false, key, true);
-    });
+    // Determine whether we're adding new data.
+    const hasNewData = newNodes.length > 0 || newLinks.length > 0;
 
-    // Toggle on simulation
-    toggleSimulation(
-      true,
-      simulation,
-      forceNode,
-      forceCenter,
-      forceLink,
-      processedLinks,
-      nodeForceStrength,
-      centerForceStrength,
-    );
+    // If there is new data, toggle on simulation and turn off labels so nodes can reposition
+    if (hasNewData) {
+      // Toggle off labels.
+      Object.keys(labelStates).forEach((key) => {
+        toggleLabels(false, key, true);
+      });
 
-    // Check for nodes to remove
-    if (removeNodes.length) {
-      // Remove nodes whose id is in removeNodes
-      processedNodes = processedNodes.filter(
-        (node) => !removeNodes.includes(node.id),
+      toggleSimulation(
+        true,
+        simulation,
+        forceNode,
+        forceCenter,
+        forceLink,
+        processedLinks,
+        nodeForceStrength,
+        centerForceStrength,
+        linkForceStrength,
       );
+    }
 
-      // Remove any links where either endpoint is in removeNodes
+    if (collapseNodes.length) {
+      // Identify nodes that are connected only to a collapse node
+      const nodesToRemove = [];
+      processedNodes.forEach((node) => {
+        // Skip nodes that are in collapseNodes or are origin nodes
+        if (
+          collapseNodes.includes(node.id) ||
+          originNodeIds.includes(node.id)
+        ) {
+          return;
+        }
+        // Get all links associated with this node
+        const nodeLinks = processedLinks.filter(
+          (link) => link.source.id === node.id || link.target.id === node.id,
+        );
+        // Remove node if all links connect to collapse node
+        if (nodeLinks.length > 0) {
+          const allLinksToCollapseNodes = nodeLinks.every((link) => {
+            const otherId =
+              link.source.id === node.id ? link.target.id : link.source.id;
+            return collapseNodes.includes(otherId);
+          });
+          if (allLinksToCollapseNodes) {
+            nodesToRemove.push(node.id);
+          }
+        }
+      });
+
+      // Remove the nodes that were marked
+      processedNodes = processedNodes.filter(
+        (node) => !nodesToRemove.includes(node.id),
+      );
+      // Also remove any links associated with the nodes we just removed
       processedLinks = processedLinks.filter(
         (link) =>
-          !removeNodes.includes(link.source.id) &&
-          !removeNodes.includes(link.target.id),
+          !nodesToRemove.includes(link.source.id) &&
+          !nodesToRemove.includes(link.target.id),
       );
 
-      // After removals, remove stranded nodes (nodes not referenced in any link)
-      const linkedNodeIds = new Set();
-      processedLinks.forEach((link) => {
-        linkedNodeIds.add(link.source.id);
-        linkedNodeIds.add(link.target.id);
-      });
-      // Keep origin nodes
-      processedNodes = processedNodes.filter(
-        (node) => linkedNodeIds.has(node.id) || originNodeIds.includes(node.id),
-      );
+      // If removeNode is true, remove the collapseNodes themselves
+      if (removeNode) {
+        processedNodes = processedNodes.filter(
+          (node) => !collapseNodes.includes(node.id),
+        );
+        processedLinks = processedLinks.filter(
+          (link) =>
+            !collapseNodes.includes(link.source.id) &&
+            !collapseNodes.includes(link.target.id),
+        );
+      }
     }
 
     // Add nodes and links
@@ -653,6 +690,7 @@ function ForceGraphConstructor(
         collectionsMap,
       },
     );
+    // Wait for simulation to settle then disable it
     const newThreshold = Math.max(1 / processedNodes.length, 0.002);
     waitForAlpha(simulation, newThreshold).then(() => {
       if (centerNodeId) {
@@ -668,7 +706,6 @@ function ForceGraphConstructor(
         nodeForceStrength,
         centerForceStrength,
       );
-      // Revert labels to correct state
       Object.keys(labelStates).forEach((key) => {
         const value = labelStates[key];
         toggleLabels(value, key);

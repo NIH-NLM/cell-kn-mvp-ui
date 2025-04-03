@@ -62,6 +62,7 @@ const ForceGraph = ({
   const [collections, setCollections] = useState([]);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [clickedNodeId, setClickedNodeId] = useState(null);
+  const [clickedNodeLabel, setClickedNodeLabel] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
@@ -399,6 +400,7 @@ const ForceGraph = ({
   // Handle right click on node
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData.id);
+    setClickedNodeLabel(Utils.getLabel(nodeData));
 
     // Get the mouse position and current scroll state
     const { clientX, clientY } = e;
@@ -435,7 +437,15 @@ const ForceGraph = ({
   // Handle collapsing part of the graph based on a specific node
   const handleCollapse = () => {
     graph.updateGraph({
-      removeNodes: [clickedNodeId],
+      collapseNodes: [clickedNodeId],
+    });
+  };
+
+  // Handle removing node
+  const handleRemove = () => {
+    graph.updateGraph({
+      collapseNodes: [clickedNodeId],
+      removeNode: true,
     });
   };
 
@@ -819,13 +829,16 @@ const ForceGraph = ({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Go To Page
+          Go To "{clickedNodeLabel}"
         </a>
         <button className="popup-button" onClick={handleExpand}>
-          Expand
+          Expand from "{clickedNodeLabel}"
         </button>
         <button className="popup-button" onClick={handleCollapse}>
-          Collapse
+          Collapse Satellite Nodes
+        </button>
+        <button className="popup-button" onClick={handleRemove}>
+          Collapse and Remove
         </button>
         <button className="x-button" onClick={handlePopupClose}>
           X
