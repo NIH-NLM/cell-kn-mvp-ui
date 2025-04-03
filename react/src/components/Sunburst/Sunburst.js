@@ -1,7 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import { GraphNameContext } from "../Contexts/Contexts";
 
 const Sunburst = ({ addSelectedItem }) => {
   const [graphData, setGraphData] = useState({});
@@ -12,13 +11,11 @@ const Sunburst = ({ addSelectedItem }) => {
 
   const popupRef = useRef(null);
 
-  const graphName = useContext(GraphNameContext);
-
   // Fetch new graph data
   useEffect(() => {
     // Ensure graph only renders once at a time
     let isMounted = true;
-    getGraphData(graphName).then((data) => {
+    getGraphData().then((data) => {
       if (isMounted) {
         setGraphData(data);
       }
@@ -67,15 +64,13 @@ const Sunburst = ({ addSelectedItem }) => {
   }, []);
 
   /* TODO: optimize lazy loading of sunburst to allow for the entire dataset to be in sunburst */
-  let getGraphData = async (graphName) => {
+  let getGraphData = async () => {
     let response = await fetch("/arango_api/sunburst/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        graph_name: graphName,
-      }),
+      body: JSON.stringify({}),
     });
     if (!response.ok) {
       throw new Error("Network response was not ok");

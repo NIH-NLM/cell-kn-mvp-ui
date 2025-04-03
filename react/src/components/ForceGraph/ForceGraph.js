@@ -2,11 +2,7 @@ import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import {
-  DbNameContext,
-  GraphNameContext,
-  PrunedCollections,
-} from "../Contexts/Contexts";
+import { PrunedCollections } from "../Contexts/Contexts";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
 
@@ -54,6 +50,9 @@ const ForceGraph = ({
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
+  const [useSchemaGraph, setUseSchemaGraph] = useState(
+    "useSchemaGraph" in settings ? settings["useSchemaGraph"] : false,
+  );
 
   // Init other states
   const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
@@ -70,10 +69,6 @@ const ForceGraph = ({
   const collectionsMap = new Map(collectionsMapData);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Init contexts
-  const graphName = useContext(GraphNameContext);
-  const dbName = useContext(DbNameContext);
 
   useEffect(() => {
     fetchCollections().then((data) => {
@@ -114,11 +109,9 @@ const ForceGraph = ({
         graphNodeIds,
         findShortestPaths,
         depth,
-        graphName,
         edgeDirection,
         collectionsToPrune,
         nodesToPrune,
-        dbName,
         nodeLimit,
       ).then((data) => {
         if (isMounted) {
@@ -135,7 +128,6 @@ const ForceGraph = ({
     originNodeIds,
     graphNodeIds,
     depth,
-    graphName,
     edgeDirection,
     collectionsToPrune,
     nodesToPrune,
@@ -223,11 +215,9 @@ const ForceGraph = ({
     nodeIds,
     shortestPaths,
     depth,
-    graphName,
     edgeDirection,
     collectionsToPrune,
     nodesToPrune,
-    dbName,
   ) => {
     if (shortestPaths) {
       let response = await fetch("/arango_api/shortest_paths/", {
@@ -237,7 +227,6 @@ const ForceGraph = ({
         },
         body: JSON.stringify({
           node_ids: nodeIds,
-          graph_name: graphName,
           edge_direction: edgeDirection,
         }),
       });
@@ -255,12 +244,11 @@ const ForceGraph = ({
         body: JSON.stringify({
           node_ids: nodeIds,
           depth: depth,
-          graph_name: graphName,
           edge_direction: edgeDirection,
           collections_to_prune: collectionsToPrune,
           nodes_to_prune: nodesToPrune,
-          db_name: dbName,
           node_limit: nodeLimit,
+          use_schema_graph: useSchemaGraph,
         }),
       });
 
@@ -423,15 +411,13 @@ const ForceGraph = ({
   // Handle expanding the graph from a specific node
   const handleExpand = () => {
     // Fetch graph data for new node
-    getGraphData([clickedNodeId], false, 1, graphName, "ANY", [], []).then(
-      (data) => {
-        graph.updateGraph({
-          newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
-          newLinks: data["links"],
-          centerNodeId: clickedNodeId,
-        });
-      },
-    );
+    getGraphData([clickedNodeId], false, 1, "ANY", [], []).then((data) => {
+      graph.updateGraph({
+        newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
+        newLinks: data["links"],
+        centerNodeId: clickedNodeId,
+      });
+    });
   };
 
   // Handle collapsing part of the graph based on a specific node
