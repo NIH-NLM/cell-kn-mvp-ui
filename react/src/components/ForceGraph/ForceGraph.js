@@ -628,7 +628,7 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
-        {graphNodeIds.length >= 2 && (
+        {graphNodeIds ? graphNodeIds.length >= 2 && (
           <div className="edge-direction-picker multi-node">
             <label htmlFor="edge-direction-select">Graph operation</label>
             <select
@@ -645,7 +645,7 @@ const ForceGraph = ({
               )}
             </select>
           </div>
-        )}
+        ) : <div/>}
         <div className="font-size-picker">
           <div className="node-font-size-picker">
             <label htmlFor="node-font-size-select">Node font size:</label>
@@ -767,7 +767,7 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
-        {graphNodeIds.length >= 2 && (
+        {graphNodeIds ? graphNodeIds.length >= 2 && (
           <div className="shortest-path-toggle multi-node">
             Shortest Path (Currently only works with first two nodes selected)
             <label className="switch" style={{ margin: "auto" }}>
@@ -779,7 +779,7 @@ const ForceGraph = ({
               <span className="slider round"></span>
             </label>
           </div>
-        )}
+        ) : <div/>}
         {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
         <div className="simulation-toggle" style={{ display: "none" }}>
           Toggle Simulation
