@@ -1,7 +1,7 @@
-import AQLQueryPage from './AQLQueryPage';
+import AQLQueryPage from "./AQLQueryPage";
 
-describe('AQLQueryPage', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("AQLQueryPage", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });

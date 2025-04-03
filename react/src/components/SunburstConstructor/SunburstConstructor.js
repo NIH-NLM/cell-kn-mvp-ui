@@ -111,7 +111,7 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     .style("font-weight", "bold")
     .text(data.label)
     .style("cursor", "default")
-    .on("click", function(event) {
+    .on("click", function (event) {
       event.preventDefault();
       clicked(event, root);
     });

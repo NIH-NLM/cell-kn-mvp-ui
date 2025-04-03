@@ -1,7 +1,7 @@
-import { ActiveNavProvider } from './ActiveNavContext';
+import { ActiveNavProvider } from "./ActiveNavContext";
 
-describe('ActiveNavProvider', () => {
-    it("Should have tests", () => {
-        // TODO: Finish testing
-    });;
+describe("ActiveNavProvider", () => {
+  it("Should have tests", () => {
+    // TODO: Finish testing
+  });
 });

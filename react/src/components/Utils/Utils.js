@@ -15,10 +15,18 @@ export const parseCollections = (collections) => {
 };
 
 export const getLabel = (item) => {
-  return [item.label, item.Name, item.term, item.Symbol, item.Author_cell_term, item.Label, item._id]
-    .find(value => value !== undefined) // Find the first non-undefined value
+  return [
+    item.label,
+    item.Name,
+    item.term,
+    item.Symbol,
+    item.Author_cell_term,
+    item.Label,
+    item._id,
+  ]
+    .find((value) => value !== undefined) // Find the first non-undefined value
     ?.toString()
-    .split(',')
-    .flatMap(value => Array.isArray(value) ? value : [value])
-    .join(' + ');
+    .split(",")
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .join(" + ");
 };
