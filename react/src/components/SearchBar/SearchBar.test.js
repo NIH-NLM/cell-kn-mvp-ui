@@ -89,7 +89,7 @@ describe("SearchBar Component", () => {
     );
   });
 
-  it("shows search results on focus and hides them on mouse leave", async () => {
+  it("shows search results on mouse enter and hides them when clicking outside", async () => {
     render(
       <SearchBar
         generateGraph={mockGenerateGraph}
@@ -104,18 +104,16 @@ describe("SearchBar Component", () => {
     const resultsContainer = screen.getByTestId(
       "search-results-table",
     ).parentElement;
-    // Initially the container should not have the "show" class
+
+    // Initially, the container should not have the "show" class
     expect(resultsContainer).not.toHaveClass("show");
 
-    // Focus on the input: should add the "show" class
-    fireEvent.focus(input);
+    // Simulate mouse enter on the input to show results
+    fireEvent.mouseEnter(input);
     expect(resultsContainer).toHaveClass("show");
 
-    // Mouse leave the input: after 100ms the "show" class should be removed
-    fireEvent.mouseLeave(input);
-    act(() => {
-      jest.advanceTimersByTime(101);
-    });
+    // Simulate a mousedown event on the document to mimic clicking outside
+    fireEvent.mouseDown(document);
     expect(resultsContainer).not.toHaveClass("show");
   });
 
@@ -133,7 +131,7 @@ describe("SearchBar Component", () => {
     jest.advanceTimersByTime(150);
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
 
-    // Wait for the search result to be rendered and simulate a click on it
+    // Wait for the search result to be rendered and simulate a click
     const searchResultItem = await screen.findByTestId("search-result-item");
     fireEvent.click(searchResultItem);
     expect(mockAddSelectedItem).toHaveBeenCalledWith({
