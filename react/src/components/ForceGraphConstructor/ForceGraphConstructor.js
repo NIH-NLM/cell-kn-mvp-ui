@@ -69,6 +69,9 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .selectAll("g.node")
     .data(nodes, (d) => d.id);
 
+  // Remove nodes not in the new data
+  nodeSelection.exit().remove();
+
   const nodeEnter = nodeSelection
     .enter()
     .append("g")
@@ -139,8 +142,12 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   // Render links
   const linkSelection = containers.linkContainer
     .selectAll("g.link")
-    .data(links);
+    .data(links, (d) => `${d.source.id}-${d.target.id}`);
 
+  // Exit: Remove links that are no longer in the data
+  linkSelection.exit().remove();
+
+  // Enter: Create new link elements
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
   // For non self-links, add a line element
@@ -161,7 +168,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-end", "url(#arrow)");
 
-  // Append text to each line for non self-links
+  // Append text for non self-links
   linkEnter
     .filter((d) => d.source.id !== d.target.id)
     .append("text")
@@ -193,7 +200,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-mid", "url(#self-arrow)");
 
-  // Append text to each line for self-links
+  // Append text for self-links
   linkEnter
     .filter((d) => d.source.id === d.target.id)
     .append("text")
@@ -205,6 +212,9 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("class", "link-label")
     .attr("y", options.nodeRadius * 1.5 * 2) // Offset label by self-link path size
     .call(wrap, 25);
+
+  // Merge enter selection with the update selection
+  linkSelection.merge(linkEnter);
 
   simulation.alpha(1).restart();
 }
@@ -557,6 +567,7 @@ function ForceGraphConstructor(
   function updateGraph({
     newNodes = [],
     newLinks = [],
+    removeNodes = [],
     centerNodeId = null,
   } = {}) {
     // Toggle off labels
@@ -576,6 +587,32 @@ function ForceGraphConstructor(
       centerForceStrength,
     );
 
+    // Check for nodes to remove
+    if (removeNodes.length) {
+      // Remove nodes whose id is in removeNodes
+      processedNodes = processedNodes.filter(
+        (node) => !removeNodes.includes(node.id),
+      );
+
+      // Remove any links where either endpoint is in removeNodes
+      processedLinks = processedLinks.filter(
+        (link) =>
+          !removeNodes.includes(link.source.id) &&
+          !removeNodes.includes(link.target.id),
+      );
+
+      // After removals, remove stranded nodes (nodes not referenced in any link)
+      const linkedNodeIds = new Set();
+      processedLinks.forEach((link) => {
+        linkedNodeIds.add(link.source.id);
+        linkedNodeIds.add(link.target.id);
+      });
+      // Keep origin nodes
+      processedNodes = processedNodes.filter(
+        (node) => linkedNodeIds.has(node.id) || originNodeIds.includes(node.id),
+      );
+    }
+
     // Add nodes and links
     processedNodes = processGraphData(
       processedNodes,
@@ -593,6 +630,7 @@ function ForceGraphConstructor(
       linkTarget,
       label,
     );
+
     renderGraph(
       simulation,
       processedNodes,
