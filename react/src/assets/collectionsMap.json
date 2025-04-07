@@ -3,120 +3,120 @@
     "BMC",
     {
       "display_name": "Biomarker Combination",
-      "abbreviated_name": "Biomarker Combination",
-      "more_info": "A curated grouping of biomarkers that may work together to indicate a biological state."
+      "abbreviated_name": "BMC",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "CHEBI",
     {
-      "display_name": "Chemical Entities",
-      "abbreviated_name": "Chemicals",
-      "more_info": "Chemical Entities of Biological Interest (ChEBI) provides a database of small molecular entities."
+      "display_name": "Molecular Entities",
+      "abbreviated_name": "CHEBI",
+      "more_info": "A structured classification of molecular entities of biological interest focusing on 'small' chemical compounds."
     }
   ],
   [
     "CHEMBL",
     {
-      "display_name": "Drugs",
-      "abbreviated_name": "Drugs",
-      "more_info": "ChEMBL is a manually curated database of bioactive molecules with drug-like properties."
+      "display_name": "Bioactive Molecules",
+      "abbreviated_name": "CHEMBL",
+      "more_info": "A manually curated database of bioactive molecules with drug-like properties."
     }
   ],
   [
     "CL",
     {
       "display_name": "Cell Ontology",
-      "abbreviated_name": "Cells",
-      "more_info": "A structured vocabulary for cell types across species, used to standardize cell information."
+      "abbreviated_name": "CL",
+      "more_info": "Cell Ontology provides a structured controlled vocabulary for cell types in animals."
     }
   ],
   [
     "CS",
     {
       "display_name": "Cell Set",
-      "abbreviated_name": "Cell Set",
-      "more_info": "A defined group of cells curated together based on shared properties or experimental criteria."
+      "abbreviated_name": "CS",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "CSD",
     {
       "display_name": "Cell Set Dataset",
-      "abbreviated_name": "Cell Data",
-      "more_info": "A dataset providing detailed descriptions or measurements of various cell sets."
+      "abbreviated_name": "CSD",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "DOID",
     {
       "display_name": "Disease Ontology",
-      "abbreviated_name": "Diseases",
-      "more_info": "A standardized ontology for human diseases, providing consistent definitions and relationships."
+      "abbreviated_name": "DOID",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "DS",
     {
-      "display_name": "Dataset",
-      "abbreviated_name": "Dataset",
-      "more_info": "A collection of organized data points relevant to the biological studies."
+      "display_name": "Dataset Source",
+      "abbreviated_name": "DS",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "ENSG",
     {
-      "display_name": "Ensembl Gene",
-      "abbreviated_name": "Ensembl Gene",
-      "more_info": "Identifiers from the Ensembl database, which provides genome-related information including gene annotations."
+      "display_name": "Ensembl Gene ID",
+      "abbreviated_name": "ENSG",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "GO",
     {
       "display_name": "Gene Ontology",
-      "abbreviated_name": "Gene Ontology",
-      "more_info": "A comprehensive framework for representing gene and gene product attributes across species."
+      "abbreviated_name": "GO",
+      "more_info": "Gene Ontology describes the function of genes and gene products."
     }
   ],
   [
     "GS",
     {
       "display_name": "Gene Symbol",
-      "abbreviated_name": "Gene Symbol",
-      "more_info": "The official symbols assigned to genes by recognized nomenclature authorities."
+      "abbreviated_name": "GS",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "HP",
     {
       "display_name": "Human Phenotypes",
-      "abbreviated_name": "Human Phenotypes",
-      "more_info": "Based on the Human Phenotype Ontology, this collection describes abnormal human phenotypic features."
+      "abbreviated_name": "HP",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "HsapDv",
     {
       "display_name": "Human Development Stage",
-      "abbreviated_name": "Human Dev",
-      "more_info": "Data reflecting the developmental stages of human samples."
+      "abbreviated_name": "HsapDv",
+      "more_info": "Human Developmental Stages describes life cycle stages for Human."
     }
   ],
   [
     "MmusDv",
     {
       "display_name": "Mouse Development Stage",
-      "abbreviated_name": "Mouse Dev",
-      "more_info": "Data reflecting the developmental stages of mouse samples."
+      "abbreviated_name": "MmusDv",
+      "more_info": "Mouse Developmental Stages describes life cycle stages for Mus Musculus."
     }
   ],
   [
     "MONDO",
     {
       "display_name": "Diseases",
-      "abbreviated_name": "Diseases",
-      "more_info": "MONDO merges multiple disease resources into a unified ontology for diseases."
+      "abbreviated_name": "MONDO",
+      "more_info": "Mondo Disease Ontology harmonizes multiple disease resources to yield a coherent merged ontology."
     }
   ],
   [
@@ -124,7 +124,7 @@
     {
       "display_name": "MP",
       "abbreviated_name": "MP",
-      "more_info": "MP"
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
@@ -132,23 +132,23 @@
     {
       "display_name": "NCBI Taxonomy",
       "abbreviated_name": "Taxonomy",
-      "more_info": "A classification system for organisms using taxonomic identifiers from the NCBI database."
+      "more_info": "An ontology representation of the NCBI organismal taxonomy"
     }
   ],
   [
     "NCT",
     {
-      "display_name": "Clinical Trials",
-      "abbreviated_name": "Clinical Trials",
-      "more_info": "Identifiers and information from ClinicalTrials.gov, representing clinical study data."
+      "display_name": "Clinical Trials (NCT)",
+      "abbreviated_name": "NCT",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "Orphanet",
     {
       "display_name": "Rare Diseases",
-      "abbreviated_name": "Rare Diseases",
-      "more_info": "A curated resource on rare diseases, primarily provided by the Orphanet database."
+      "abbreviated_name": "Orphanet",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
@@ -156,63 +156,63 @@
     {
       "display_name": "Phenotypic Qualities",
       "abbreviated_name": "PATO",
-      "more_info": "An ontology describing the qualities of phenotypes observed in biological organisms."
+      "more_info": "Phenotype And Trait Ontology describes phenotypic qualities (properties, attributes or characteristics)."
     }
   ],
   [
     "PCL",
     {
-      "display_name": "Cell Types",
-      "abbreviated_name": "Cell Types",
-      "more_info": "Based on a provisional cell ontology, this collection classifies different cell types."
+      "display_name": "Provisional Cell Ontology",
+      "abbreviated_name": "PCL",
+      "more_info": "Provisional Cell Ontology describes cell types that are provisionally defined by experimental techniques such as single cell or single nucleus transcriptomics rather than a straightforward & coherent set of properties."
     }
   ],
   [
     "PCLCS",
     {
-      "display_name": "Cell Set",
-      "abbreviated_name": "Cell Set",
-      "more_info": "A cell set defined within the provisional cell ontology framework."
+      "display_name": "PCL Cell Set",
+      "abbreviated_name": "PCLCS",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "PR",
     {
       "display_name": "Proteins",
-      "abbreviated_name": "Proteins",
-      "more_info": "A structured vocabulary and identifiers for protein entities based on the Protein Ontology."
+      "abbreviated_name": "PR",
+      "more_info": "An ontological representation of protein-related entities."
     }
   ],
   [
     "PUB",
     {
       "display_name": "Publications",
-      "abbreviated_name": "Publications",
-      "more_info": "Scientific articles and publications relevant to the biological data."
+      "abbreviated_name": "PUB",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "RS",
     {
-      "display_name": "Reference Sequences",
-      "abbreviated_name": "Ref Seqs",
-      "more_info": "Standardized biological sequences, such as those from the NCBI RefSeq database."
+      "display_name": "SNP ID",
+      "abbreviated_name": "RS",
+      "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
   ],
   [
     "SO",
     {
       "display_name": "Sequence Ontology",
-      "abbreviated_name": "Sequence Ontology",
-      "more_info": "A controlled vocabulary for the parts and properties of biological sequences."
+      "abbreviated_name": "SO",
+      "more_info": "A structured controlled vocabulary for sequence annotation, for the exchange of annotation data and for the description of sequence objects in databases."
     }
   ],
   [
     "UBERON",
     {
       "display_name": "Anatomical Structures",
-      "abbreviated_name": "Anatomy",
-      "more_info": "A cross-species ontology that provides a unified representation of anatomical structures."
+      "abbreviated_name": "UBERON",
+      "more_info": "An integrated cross-species anatomy ontology covering animals and bridging multiple species-specific ontologies."
     }
   ]
 ]

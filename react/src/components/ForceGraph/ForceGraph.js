@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useRef } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { PrunedCollections } from "../Contexts/Contexts";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
 
@@ -22,9 +21,7 @@ const ForceGraph = ({
   const [setOperation, setSetOperation] = useState(
     settings["setOperation"] || "Union",
   );
-  const [allowedCollections, setAllowedCollections] = useState(
-    [],
-  );
+  const [allowedCollections, setAllowedCollections] = useState([]);
   const [nodeFontSize, setNodeFontSize] = useState(
     settings["nodeFontSize"] || 12,
   );
@@ -60,7 +57,6 @@ const ForceGraph = ({
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
-  const [isSimOn, setIsSimOn] = useState(true);
   const collectionsMap = new Map(collectionsMapData);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -207,7 +203,7 @@ const ForceGraph = ({
     allowedCollections,
     nodeLimit,
   ) => {
-    if (shortestPaths) {
+    if (shortestPaths && nodeIds.length > 1) {
       let response = await fetch("/arango_api/shortest_paths/", {
         method: "POST",
         headers: {
@@ -373,13 +369,15 @@ const ForceGraph = ({
   };
 
   const handleExpand = () => {
-    getGraphData([clickedNodeId], false, 1, "ANY", [], nodeLimit).then((data) => {
-      graph.updateGraph({
-        newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
-        newLinks: data["links"],
-        centerNodeId: clickedNodeId,
-      });
-    });
+    getGraphData([clickedNodeId], false, 1, "ANY", [], nodeLimit).then(
+      (data) => {
+        graph.updateGraph({
+          newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
+          newLinks: data["links"],
+          centerNodeId: clickedNodeId,
+        });
+      },
+    );
   };
 
   const handleCollapse = () => {
@@ -458,16 +456,10 @@ const ForceGraph = ({
     setFindShortestPaths(!findShortestPaths);
   };
 
-  const handleSimulationToggle = () => {
-    if (!isSimOn) {
-      setLabelStates({
-        ".collection-label": false,
-        ".link-label": false,
-        ".node-label": false,
-      });
-    }
-    graph.toggleSimulation(!isSimOn);
-    setIsSimOn(!isSimOn);
+  const handleSimulationRestart = () => {
+    graph.updateGraph({
+      simulate: true,
+    });
   };
 
   const exportGraph = (format) => {
@@ -569,11 +561,13 @@ const ForceGraph = ({
               value={setOperation}
               onChange={handleOperationChange}
             >
-              {["Intersection", "Union", "Symmetric Difference"].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
+              {["Intersection", "Union", "Symmetric Difference"].map(
+                (value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ),
+              )}
             </select>
           </div>
         )}
@@ -640,8 +634,8 @@ const ForceGraph = ({
                 onClick={handleAllOn}
                 className={
                   allowedCollections.length === collections.length
-                      ? "background-color-bg"
-                      : "background-color-light"
+                    ? "background-color-bg"
+                    : "background-color-light"
                 }
               >
                 All On
@@ -652,8 +646,8 @@ const ForceGraph = ({
                 onClick={handleAllOff}
                 className={
                   allowedCollections.length === 0
-                      ? "background-color-bg"
-                      : "background-color-light"
+                    ? "background-color-bg"
+                    : "background-color-light"
                 }
               >
                 All Off
@@ -712,17 +706,9 @@ const ForceGraph = ({
             </label>
           </div>
         )}
-        <div className="simulation-toggle" style={{ display: "none" }}>
-          Toggle Simulation
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={isSimOn}
-              onChange={handleSimulationToggle}
-            />
-            <span className="slider round"></span>
-          </label>
-        </div>
+        <button className="simulation-toggle" onClick={handleSimulationRestart}>
+          Restart Simulation
+        </button>
         <div className="export-buttons">
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
         </div>

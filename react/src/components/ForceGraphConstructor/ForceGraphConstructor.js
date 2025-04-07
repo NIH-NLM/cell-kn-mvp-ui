@@ -574,12 +574,13 @@ function ForceGraphConstructor(
     collapseNodes = [],
     removeNode = false, // if true, then collapseNodes themselves are removed
     centerNodeId = null,
+    simulate = false,
   } = {}) {
     // Determine whether new data is being added
     const hasNewData = newNodes.length > 0 || newLinks.length > 0;
 
     // If there is new data, toggle on simulation and turn off labels so nodes can reposition
-    if (hasNewData) {
+    if (hasNewData || simulate) {
       // Toggle off labels
       Object.keys(labelStates).forEach((key) => {
         toggleLabels(false, key, true);

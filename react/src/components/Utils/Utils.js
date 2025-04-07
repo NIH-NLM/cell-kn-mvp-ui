@@ -7,11 +7,25 @@ export const fetchCollections = async () => {
   return response.json();
 };
 
-export const parseCollections = (collections) => {
-  // Sort collections alphabetically
-  return collections.sort((a, b) =>
-    a.toLowerCase().localeCompare(b.toLowerCase()),
-  );
+export const parseCollections = (collections, collectionsMap = null) => {
+  if (collectionsMap) {
+    return collections.sort((a, b) => {
+      const aDisplay =
+        collectionsMap.get(a) && collectionsMap.get(a)["display_name"]
+          ? collectionsMap.get(a)["display_name"]
+          : a;
+      const bDisplay =
+        collectionsMap.get(b) && collectionsMap.get(b)["display_name"]
+          ? collectionsMap.get(b)["display_name"]
+          : b;
+
+      return aDisplay.toLowerCase().localeCompare(bDisplay.toLowerCase());
+    });
+  } else {
+    return collections.sort((a, b) => {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+  }
 };
 
 export const getLabel = (item) => {

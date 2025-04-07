@@ -10,7 +10,7 @@ const BrowseBox = ({ currentCollection }) => {
   useEffect(() => {
     fetchCollections().then((data) => {
       // Set collections state
-      setCollections(parseCollections(data));
+      setCollections(parseCollections(data, collectionsMap));
     });
   }, []);
 
@@ -22,12 +22,16 @@ const BrowseBox = ({ currentCollection }) => {
             <Link
               to={`/browse/${coll}`}
               className={coll === currentCollection ? "active" : ""}
-              title={collectionsMap.has(coll) ? collectionsMap.get(coll)["more_info"] : ""}
+              title={
+                collectionsMap.has(coll)
+                  ? collectionsMap.get(coll)["more_info"]
+                  : ""
+              }
             >
               <h3>
                 {collectionsMap.has(coll)
-                    ? collectionsMap.get(coll)["display_name"]
-                    : coll}
+                  ? collectionsMap.get(coll)["display_name"]
+                  : coll}
               </h3>
             </Link>
           </li>

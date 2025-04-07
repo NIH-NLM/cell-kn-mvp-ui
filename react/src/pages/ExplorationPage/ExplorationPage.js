@@ -1,8 +1,8 @@
 import SearchPage from "../../components/SearchBar/SearchBar";
 import Sunburst from "../../components/Sunburst/Sunburst";
-import {useContext, useState} from "react";
+import { useContext, useState } from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import {PrunedCollections} from "../../components/Contexts/Contexts";
+import { PrunedCollections } from "../../components/Contexts/Contexts";
 
 const ExplorationPage = () => {
   const [nodeIds, setNodeIds] = useState([]); // nodeIds will be used in the graph, separate from currently selected items
@@ -40,7 +40,11 @@ const ExplorationPage = () => {
       {Object.keys(nodeIds).length > 0 && (
         <ForceGraph
           nodeIds={nodeIds}
-          settings={{ defaultDepth: 1, findShortestPaths: true, collectionsToPrune: prunedCollections}}
+          settings={{
+            defaultDepth: 1,
+            findShortestPaths: true,
+            collectionsToPrune: prunedCollections,
+          }}
         />
       )}
     </div>
