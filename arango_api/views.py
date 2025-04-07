@@ -51,8 +51,6 @@ def get_graph(request):
     use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
 
-    print(request.data)
-
     search_results = utils.get_graph(
         node_ids,
         depth,
