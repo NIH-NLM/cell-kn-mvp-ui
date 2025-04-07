@@ -2,7 +2,7 @@
   [
     "BMC",
     {
-      "display_name": "Biomarker Combination",
+      "display_name": "Biomarker Combination (BMC)",
       "abbreviated_name": "BMC",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -10,7 +10,7 @@
   [
     "CHEBI",
     {
-      "display_name": "Molecular Entities",
+      "display_name": "Molecular Entities (CHEBI)",
       "abbreviated_name": "CHEBI",
       "more_info": "A structured classification of molecular entities of biological interest focusing on 'small' chemical compounds."
     }
@@ -18,7 +18,7 @@
   [
     "CHEMBL",
     {
-      "display_name": "Bioactive Molecules",
+      "display_name": "Bioactive Molecules (CHEMBL)",
       "abbreviated_name": "CHEMBL",
       "more_info": "A manually curated database of bioactive molecules with drug-like properties."
     }
@@ -26,7 +26,7 @@
   [
     "CL",
     {
-      "display_name": "Cell Ontology",
+      "display_name": "Cell Ontology (CL)",
       "abbreviated_name": "CL",
       "more_info": "Cell Ontology provides a structured controlled vocabulary for cell types in animals."
     }
@@ -34,7 +34,7 @@
   [
     "CS",
     {
-      "display_name": "Cell Set",
+      "display_name": "Cell Set (CS)",
       "abbreviated_name": "CS",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -42,7 +42,7 @@
   [
     "CSD",
     {
-      "display_name": "Cell Set Dataset",
+      "display_name": "Cell Set Dataset (CSD)",
       "abbreviated_name": "CSD",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -50,7 +50,7 @@
   [
     "DOID",
     {
-      "display_name": "Disease Ontology",
+      "display_name": "Disease Ontology (DOID)",
       "abbreviated_name": "DOID",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -58,7 +58,7 @@
   [
     "DS",
     {
-      "display_name": "Dataset Source",
+      "display_name": "Dataset Source (DS)",
       "abbreviated_name": "DS",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -66,7 +66,7 @@
   [
     "ENSG",
     {
-      "display_name": "Ensembl Gene ID",
+      "display_name": "Ensembl Gene ID (ENSG)",
       "abbreviated_name": "ENSG",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -74,7 +74,7 @@
   [
     "GO",
     {
-      "display_name": "Gene Ontology",
+      "display_name": "Gene Ontology (GO)",
       "abbreviated_name": "GO",
       "more_info": "Gene Ontology describes the function of genes and gene products."
     }
@@ -82,7 +82,7 @@
   [
     "GS",
     {
-      "display_name": "Gene Symbol",
+      "display_name": "Gene Symbol (GS)",
       "abbreviated_name": "GS",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -90,7 +90,7 @@
   [
     "HP",
     {
-      "display_name": "Human Phenotypes",
+      "display_name": "Human Phenotypes (HP)",
       "abbreviated_name": "HP",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -98,7 +98,7 @@
   [
     "HsapDv",
     {
-      "display_name": "Human Development Stage",
+      "display_name": "Human Development Stage (HsapDv)",
       "abbreviated_name": "HsapDv",
       "more_info": "Human Developmental Stages describes life cycle stages for Human."
     }
@@ -106,7 +106,7 @@
   [
     "MmusDv",
     {
-      "display_name": "Mouse Development Stage",
+      "display_name": "Mouse Development Stage (MmusDv)",
       "abbreviated_name": "MmusDv",
       "more_info": "Mouse Developmental Stages describes life cycle stages for Mus Musculus."
     }
@@ -114,7 +114,7 @@
   [
     "MONDO",
     {
-      "display_name": "Diseases",
+      "display_name": "Diseases (MONDO)",
       "abbreviated_name": "MONDO",
       "more_info": "Mondo Disease Ontology harmonizes multiple disease resources to yield a coherent merged ontology."
     }
@@ -122,7 +122,7 @@
   [
     "MP",
     {
-      "display_name": "MP",
+      "display_name": "MP (MP)",
       "abbreviated_name": "MP",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -130,7 +130,7 @@
   [
     "NCBITaxon",
     {
-      "display_name": "NCBI Taxonomy",
+      "display_name": "NCBI Taxonomy (NCBITaxon)",
       "abbreviated_name": "Taxonomy",
       "more_info": "An ontology representation of the NCBI organismal taxonomy"
     }
@@ -146,7 +146,7 @@
   [
     "Orphanet",
     {
-      "display_name": "Rare Diseases",
+      "display_name": "Rare Diseases (Orphanet)",
       "abbreviated_name": "Orphanet",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -154,7 +154,7 @@
   [
     "PATO",
     {
-      "display_name": "Phenotypic Qualities",
+      "display_name": "Phenotypic Qualities (PATO)",
       "abbreviated_name": "PATO",
       "more_info": "Phenotype And Trait Ontology describes phenotypic qualities (properties, attributes or characteristics)."
     }
@@ -162,7 +162,7 @@
   [
     "PCL",
     {
-      "display_name": "Provisional Cell Ontology",
+      "display_name": "Provisional Cell Ontology (PCL)",
       "abbreviated_name": "PCL",
       "more_info": "Provisional Cell Ontology describes cell types that are provisionally defined by experimental techniques such as single cell or single nucleus transcriptomics rather than a straightforward & coherent set of properties."
     }
@@ -170,7 +170,7 @@
   [
     "PCLCS",
     {
-      "display_name": "PCL Cell Set",
+      "display_name": "PCL Cell Set (PCLCS)",
       "abbreviated_name": "PCLCS",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -178,7 +178,7 @@
   [
     "PR",
     {
-      "display_name": "Proteins",
+      "display_name": "Proteins (PR)",
       "abbreviated_name": "PR",
       "more_info": "An ontological representation of protein-related entities."
     }
@@ -186,7 +186,7 @@
   [
     "PUB",
     {
-      "display_name": "Publications",
+      "display_name": "Publications (PUB)",
       "abbreviated_name": "PUB",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -194,7 +194,7 @@
   [
     "RS",
     {
-      "display_name": "SNP ID",
+      "display_name": "SNP ID (RS)",
       "abbreviated_name": "RS",
       "more_info": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
     }
@@ -202,7 +202,7 @@
   [
     "SO",
     {
-      "display_name": "Sequence Ontology",
+      "display_name": "Sequence Ontology (SO)",
       "abbreviated_name": "SO",
       "more_info": "A structured controlled vocabulary for sequence annotation, for the exchange of annotation data and for the description of sequence objects in databases."
     }
@@ -210,7 +210,7 @@
   [
     "UBERON",
     {
-      "display_name": "Anatomical Structures",
+      "display_name": "Anatomical Structures (UBERON)",
       "abbreviated_name": "UBERON",
       "more_info": "An integrated cross-species anatomy ontology covering animals and bridging multiple species-specific ontologies."
     }

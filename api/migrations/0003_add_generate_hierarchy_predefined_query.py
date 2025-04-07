@@ -17,7 +17,7 @@ def create_additional_predefined_queries(apps, schema_editor):
         placeholder_2="Enter id (0000077)...",
         settings={
             "defaultDepth": 5,
-            "collectionsToAllow": ["@value1"],
+            "allowedCollections": ["@value1"],
             "labelStates": {
                 ".collection-label": False,
                 ".link-label": True,
