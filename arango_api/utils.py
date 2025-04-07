@@ -33,38 +33,41 @@ def get_graph(
     node_ids,
     depth,
     edge_direction,
-    collections_to_prune,
+    allowed_collections,
     node_limit,
     use_schema_graph,
 ):
-    # Arbitrary limit to ensure fasting loading
-    traversal_limit = node_limit * 1000
 
     query = f"""
-        // Create temp variable for paths for each origin node
-            LET temp = (
+            // Create temp variable for paths for each origin node
+            LET temp = FLATTEN(
               FOR node_id IN @node_ids
-                FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-                  // Restrict the traversal to only vertices from the allowed collections
-                  OPTIONS {{ vertexCollections: @collections_to_prune }}
-                  
-                  // Limit traversals to avoid slow processing on graph explosion
-                  LIMIT @traversal_limit
-                  
-                  RETURN {{
-                    node: v,
-                    link: e,
-                    path: p,
-                    depth: LENGTH(p.vertices),
-                    origin: node_id
-                  }}
+                // For each origin, collect up to @node_limit paths
+                LET paths = (
+                  FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+                    OPTIONS {{ 
+                      vertexCollections: @allowed_collections,
+                      order: "bfs"
+                    }}
+                    LIMIT @node_limit
+                    RETURN {{
+                      node: v,
+                      link: e,
+                      path: p,
+                      depth: LENGTH(p.vertices)
+                    }}
+                )
+                // Attach the origin node_id to each returned path
+                RETURN (
+                  FOR path IN paths
+                    RETURN MERGE(path, {{ origin: node_id }})
+                )
             )
 
             // Filter nodes to ensure uniqueness
             LET filteredNodes = UNIQUE(
               FOR obj IN temp
                 FILTER obj.depth != (@depth + 1)
-                LIMIT @node_limit
                 RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
             )
 
@@ -100,9 +103,8 @@ def get_graph(
         "node_ids": node_ids,
         "graph_name": graph_name,
         "depth": int(depth) + 1,
-        "collections_to_prune": collections_to_prune,
-        "node_limit": node_limit,
-        "traversal_limit": traversal_limit,
+        "allowed_collections": allowed_collections,
+        "node_limit": node_limit
     }
 
     # Execute the query

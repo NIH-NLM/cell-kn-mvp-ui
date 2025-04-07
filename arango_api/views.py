@@ -47,15 +47,17 @@ def get_graph(request):
     node_ids = request.data.get("node_ids")
     depth = request.data.get("depth")
     edge_direction = request.data.get("edge_direction")
-    collections_to_prune = request.data.get("collections_to_prune")
+    allowed_collections = request.data.get("allowed_collections")
     use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
+
+    print(request.data)
 
     search_results = utils.get_graph(
         node_ids,
         depth,
         edge_direction,
-        collections_to_prune,
+        allowed_collections,
         node_limit,
         use_schema_graph,
     )
