@@ -27,9 +27,6 @@ const ForceGraph = ({
   const [collectionsToPrune, setCollectionsToPrune] = useState(
     settings["collectionsToPrune"] || prunedCollectionsContext,
   );
-  const [nodesToPrune, setNodesToPrune] = useState(
-    settings["nodesToPrune"] || [],
-  );
   const [nodeFontSize, setNodeFontSize] = useState(
     settings["nodeFontSize"] || 12,
   );
@@ -93,7 +90,6 @@ const ForceGraph = ({
 
   // Reset expanding and pruning when creating a new graph
   useEffect(() => {
-    setNodesToPrune([]);
     setGraphNodeIds(originNodeIds);
   }, [originNodeIds]);
 
@@ -111,7 +107,6 @@ const ForceGraph = ({
         depth,
         edgeDirection,
         collectionsToPrune,
-        nodesToPrune,
         nodeLimit,
       ).then((data) => {
         if (isMounted) {
@@ -130,7 +125,6 @@ const ForceGraph = ({
     depth,
     edgeDirection,
     collectionsToPrune,
-    nodesToPrune,
     findShortestPaths,
     nodeLimit,
   ]);
@@ -217,7 +211,6 @@ const ForceGraph = ({
     depth,
     edgeDirection,
     collectionsToPrune,
-    nodesToPrune,
   ) => {
     if (shortestPaths) {
       let response = await fetch("/arango_api/shortest_paths/", {
@@ -246,7 +239,6 @@ const ForceGraph = ({
           depth: depth,
           edge_direction: edgeDirection,
           collections_to_prune: collectionsToPrune,
-          nodes_to_prune: nodesToPrune,
           node_limit: nodeLimit,
           use_schema_graph: useSchemaGraph,
         }),
@@ -606,7 +598,7 @@ const ForceGraph = ({
             onChange={handleNodeLimitChange}
           >
             {[
-              10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150,
+              10, 25, 50, 100, 150, 250, 500,
             ].map((value) => (
               <option key={value} value={value}>
                 {value}

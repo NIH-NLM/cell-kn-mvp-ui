@@ -34,69 +34,63 @@ def get_graph(
     depth,
     edge_direction,
     collections_to_prune,
-    nodes_to_prune,
     node_limit,
     use_schema_graph,
 ):
     # Arbitrary limit to ensure fasting loading
-    traversal_limit = node_limit * 100
+    traversal_limit = node_limit * 1000
 
     query = f"""
         // Create temp variable for paths for each origin node
-        LET temp = (
-          FOR node_id IN @node_ids
-            FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-            
-              // Remove unwanted nodes and collections from traversal
-              PRUNE (
-                CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1))) OR 
-                CONTAINS_ARRAY(@nodes_to_prune, v._id)
-              )
-              FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1)))
-              FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-            
-              // Limit traversals to avoid slow processing on graph explosion
-              LIMIT @traversal_limit
-              RETURN {{
-                node: v,
-                link: e,
-                path: p,
-                depth: LENGTH(p.vertices),
-                origin: node_id
-              }}
-        )
+            LET temp = (
+              FOR node_id IN @node_ids
+                FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+                  // Restrict the traversal to only vertices from the allowed collections
+                  OPTIONS {{ vertexCollections: @collections_to_prune }}
+                  
+                  // Limit traversals to avoid slow processing on graph explosion
+                  LIMIT @traversal_limit
+                  
+                  RETURN {{
+                    node: v,
+                    link: e,
+                    path: p,
+                    depth: LENGTH(p.vertices),
+                    origin: node_id
+                  }}
+            )
 
-        // Filter nodes to ensure uniqueness
-        LET filteredNodes = UNIQUE(
-          FOR obj IN temp
-            FILTER obj.depth != (@depth + 1)
-            LIMIT @node_limit
-            RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
-        )
+            // Filter nodes to ensure uniqueness
+            LET filteredNodes = UNIQUE(
+              FOR obj IN temp
+                FILTER obj.depth != (@depth + 1)
+                LIMIT @node_limit
+                RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
+            )
 
-        // Filter links to ensure uniqueness
-        LET uniqueLinks = UNIQUE(
-          FOR t IN temp
-            FILTER t.link != null
-            RETURN t.link
-        )
+            // Filter links to ensure uniqueness
+            LET uniqueLinks = UNIQUE(
+              FOR t IN temp
+                FILTER t.link != null
+                RETURN t.link
+            )
 
-        // Organize nodes in object, sorting by origin node id
-        LET nodesGrouped = MERGE(
-          FOR node_id IN @node_ids
+            // Organize nodes in object, sorting by origin node id
+            LET nodesGrouped = MERGE(
+              FOR node_id IN @node_ids
+                RETURN {{
+                  [node_id]: (
+                    FOR obj IN filteredNodes
+                      FILTER obj.origin == node_id
+                      RETURN {{ node: obj.node, path: obj.path }}
+                  )
+                }}
+            )
+
             RETURN {{
-              [node_id]: (
-                FOR obj IN filteredNodes
-                  FILTER obj.origin == node_id
-                  RETURN {{ node: obj.node, path: obj.path }}
-              )
+              nodes: nodesGrouped,
+              links: uniqueLinks
             }}
-        )
-
-        RETURN {{
-          nodes: nodesGrouped,
-          links: uniqueLinks
-        }}
     """
 
     # Use correct graph name
@@ -107,7 +101,6 @@ def get_graph(
         "graph_name": graph_name,
         "depth": int(depth) + 1,
         "collections_to_prune": collections_to_prune,
-        "nodes_to_prune": nodes_to_prune,
         "node_limit": node_limit,
         "traversal_limit": traversal_limit,
     }

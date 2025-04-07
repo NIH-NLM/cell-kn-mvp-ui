@@ -46,10 +46,8 @@ def get_search_items(request, st):
 def get_graph(request):
     node_ids = request.data.get("node_ids")
     depth = request.data.get("depth")
-    graph_name = request.data.get("graph_name")
     edge_direction = request.data.get("edge_direction")
     collections_to_prune = request.data.get("collections_to_prune")
-    nodes_to_prune = request.data.get("nodes_to_prune")
     use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
 
@@ -58,7 +56,6 @@ def get_graph(request):
         depth,
         edge_direction,
         collections_to_prune,
-        nodes_to_prune,
         node_limit,
         use_schema_graph,
     )
