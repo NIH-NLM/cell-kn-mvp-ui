@@ -48,7 +48,6 @@ def get_graph(request):
     depth = request.data.get("depth")
     edge_direction = request.data.get("edge_direction")
     allowed_collections = request.data.get("allowed_collections")
-    use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
 
     search_results = utils.get_graph(
@@ -57,7 +56,6 @@ def get_graph(request):
         edge_direction,
         allowed_collections,
         node_limit,
-        use_schema_graph,
     )
     return JsonResponse(search_results, safe=False)
 
