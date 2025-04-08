@@ -1,6 +1,6 @@
 from itertools import chain
 
-from arango_api.db import db, schema_db, DB_GRAPH_NAME, SCHEMA_GRAPH_NAME
+from arango_api.db import db, DB_GRAPH_NAME
 
 
 def get_document_collections():
@@ -36,7 +36,6 @@ def get_graph(
     collections_to_prune,
     nodes_to_prune,
     node_limit,
-    use_schema_graph,
 ):
     # Arbitrary limit to ensure fasting loading
     traversal_limit = node_limit * 100
@@ -100,7 +99,7 @@ def get_graph(
     """
 
     # Use correct graph name
-    graph_name = SCHEMA_GRAPH_NAME if use_schema_graph else DB_GRAPH_NAME
+    graph_name = DB_GRAPH_NAME
     # Depth is increased by one to find all edges that connect to final nodes
     bind_vars = {
         "node_ids": node_ids,
@@ -114,12 +113,7 @@ def get_graph(
 
     # Execute the query
     try:
-        if use_schema_graph:
-            # Get schema db
-            cursor = schema_db.aql.execute(query, bind_vars=bind_vars)
-        else:
-            # Get base db
-            cursor = db.aql.execute(query, bind_vars=bind_vars)
+        cursor = db.aql.execute(query, bind_vars=bind_vars)
 
         results = list(cursor)[
             0

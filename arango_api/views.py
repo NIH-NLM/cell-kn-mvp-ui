@@ -50,7 +50,6 @@ def get_graph(request):
     edge_direction = request.data.get("edge_direction")
     collections_to_prune = request.data.get("collections_to_prune")
     nodes_to_prune = request.data.get("nodes_to_prune")
-    use_schema_graph = request.data.get("use_schema_graph", False)
     node_limit = request.data.get("node_limit", 100)
 
     search_results = utils.get_graph(
@@ -60,7 +59,6 @@ def get_graph(request):
         collections_to_prune,
         nodes_to_prune,
         node_limit,
-        use_schema_graph,
     )
     return JsonResponse(search_results, safe=False)
 
