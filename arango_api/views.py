@@ -46,18 +46,15 @@ def get_search_items(request, st):
 def get_graph(request):
     node_ids = request.data.get("node_ids")
     depth = request.data.get("depth")
-    graph_name = request.data.get("graph_name")
     edge_direction = request.data.get("edge_direction")
-    collections_to_prune = request.data.get("collections_to_prune")
-    nodes_to_prune = request.data.get("nodes_to_prune")
+    allowed_collections = request.data.get("allowed_collections")
     node_limit = request.data.get("node_limit", 100)
 
     search_results = utils.get_graph(
         node_ids,
         depth,
         edge_direction,
-        collections_to_prune,
-        nodes_to_prune,
+        allowed_collections,
         node_limit,
     )
     return JsonResponse(search_results, safe=False)

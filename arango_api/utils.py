@@ -33,69 +33,65 @@ def get_graph(
     node_ids,
     depth,
     edge_direction,
-    collections_to_prune,
-    nodes_to_prune,
+    allowed_collections,
     node_limit,
 ):
-    # Arbitrary limit to ensure fasting loading
-    traversal_limit = node_limit * 100
-
     query = f"""
-        // Create temp variable for paths for each origin node
-        LET temp = (
-          FOR node_id IN @node_ids
-            FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
-            
-              // Remove unwanted nodes and collections from traversal
-              PRUNE (
-                CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1))) OR 
-                CONTAINS_ARRAY(@nodes_to_prune, v._id)
-              )
-              FILTER !CONTAINS_ARRAY(@collections_to_prune, FIRST(SPLIT(v._id, "/", 1)))
-              FILTER !CONTAINS_ARRAY(@nodes_to_prune, v._id)
-            
-              // Limit traversals to avoid slow processing on graph explosion
-              LIMIT @traversal_limit
-              RETURN {{
-                node: v,
-                link: e,
-                path: p,
-                depth: LENGTH(p.vertices),
-                origin: node_id
-              }}
-        )
+            // Create temp variable for paths for each origin node
+            LET temp = FLATTEN(
+              FOR node_id IN @node_ids
+                // For each origin, collect up to @node_limit paths
+                LET paths = (
+                  FOR v, e, p IN 0..@depth {edge_direction} node_id GRAPH @graph_name
+                    OPTIONS {{ 
+                      vertexCollections: @allowed_collections,
+                      order: "bfs"
+                    }}
+                    LIMIT @node_limit
+                    RETURN {{
+                      node: v,
+                      link: e,
+                      path: p,
+                      depth: LENGTH(p.vertices)
+                    }}
+                )
+                // Attach the origin node_id to each returned path
+                RETURN (
+                  FOR path IN paths
+                    RETURN MERGE(path, {{ origin: node_id }})
+                )
+            )
 
-        // Filter nodes to ensure uniqueness
-        LET filteredNodes = UNIQUE(
-          FOR obj IN temp
-            FILTER obj.depth != (@depth + 1)
-            LIMIT @node_limit
-            RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
-        )
+            // Filter nodes to ensure uniqueness
+            LET filteredNodes = UNIQUE(
+              FOR obj IN temp
+                FILTER obj.depth != (@depth + 1)
+                RETURN {{ node: obj.node, path: obj.path, origin: obj.origin }}
+            )
 
-        // Filter links to ensure uniqueness
-        LET uniqueLinks = UNIQUE(
-          FOR t IN temp
-            FILTER t.link != null
-            RETURN t.link
-        )
+            // Filter links to ensure uniqueness
+            LET uniqueLinks = UNIQUE(
+              FOR t IN temp
+                FILTER t.link != null
+                RETURN t.link
+            )
 
-        // Organize nodes in object, sorting by origin node id
-        LET nodesGrouped = MERGE(
-          FOR node_id IN @node_ids
+            // Organize nodes in object, sorting by origin node id
+            LET nodesGrouped = MERGE(
+              FOR node_id IN @node_ids
+                RETURN {{
+                  [node_id]: (
+                    FOR obj IN filteredNodes
+                      FILTER obj.origin == node_id
+                      RETURN {{ node: obj.node, path: obj.path }}
+                  )
+                }}
+            )
+
             RETURN {{
-              [node_id]: (
-                FOR obj IN filteredNodes
-                  FILTER obj.origin == node_id
-                  RETURN {{ node: obj.node, path: obj.path }}
-              )
+              nodes: nodesGrouped,
+              links: uniqueLinks
             }}
-        )
-
-        RETURN {{
-          nodes: nodesGrouped,
-          links: uniqueLinks
-        }}
     """
 
     # Use correct graph name
@@ -105,10 +101,8 @@ def get_graph(
         "node_ids": node_ids,
         "graph_name": graph_name,
         "depth": int(depth) + 1,
-        "collections_to_prune": collections_to_prune,
-        "nodes_to_prune": nodes_to_prune,
+        "allowed_collections": allowed_collections,
         "node_limit": node_limit,
-        "traversal_limit": traversal_limit,
     }
 
     # Execute the query
@@ -126,61 +120,86 @@ def get_graph(
     return results
 
 
-def get_shortest_paths(
-    node_ids,
-    edge_direction,
-):
-    # Assume only two nodes
-    start_node = node_ids[0]
-    target_node = node_ids[1]
-    # TODO: add ability to get shortest path for more nodes
-    query = f"""
-        LET paths = (
-          FOR p IN {edge_direction} ALL_SHORTEST_PATHS @start_node TO @target_node
-            GRAPH @graph_name
-            RETURN p
-        )
+def get_shortest_paths(node_ids, edge_direction):
+    combined_result = {"nodes": {}, "links": []}
+    link_ids = set()
 
-        LET nodesArray = UNIQUE(
-          FOR p IN paths
-            FOR v IN p.vertices
-              RETURN v
-        )
+    # Loop over each unique pair (i, j) with i < j to avoid duplicate paths.
+    for i in range(len(node_ids) - 1):
+        for j in range(i + 1, len(node_ids)):
+            start_node = node_ids[i]
+            target_node = node_ids[j]
 
-        LET linksArray = UNIQUE(
-          FOR p IN paths
-            FOR e IN p.edges
-              RETURN e
-        )
+            query = f"""
+                LET paths = (
+                  FOR p IN {edge_direction} ALL_SHORTEST_PATHS @start_node TO @target_node
+                    GRAPH @graph_name
+                    RETURN p
+                )
 
-        RETURN {{
-          nodes: {{
-            [@start_node]: (
-              FOR v IN nodesArray 
-                RETURN {{ node: v }}
-            )
-          }},
-          links: linksArray
-        }}
+                LET nodesArray = UNIQUE(
+                  FOR p IN paths
+                    FOR v IN p.vertices
+                      RETURN v
+                )
+
+                LET linksArray = UNIQUE(
+                  FOR p IN paths
+                    FOR e IN p.edges
+                      RETURN e
+                )
+
+                RETURN {{
+                  nodes: {{
+                    [@target_node]: (
+                      FOR v IN nodesArray 
+                        RETURN {{ node: v }}
+                    )
+                  }},
+                  links: linksArray
+                }}
             """
 
-    bind_vars = {
-        "start_node": start_node,
-        "target_node": target_node,
-        "graph_name": DB_GRAPH_NAME,
-    }
+            bind_vars = {
+                "start_node": start_node,
+                "target_node": target_node,
+                "graph_name": DB_GRAPH_NAME,
+            }
 
-    # Execute the query
-    try:
-        cursor = db.aql.execute(query, bind_vars=bind_vars)
+            try:
+                cursor = db.aql.execute(query, bind_vars=bind_vars)
+                result = list(cursor)[0]
 
-        results = list(cursor)[0]  # Collect the results
+                # Merge node results: result["nodes"] is like { target_node: [ { node: v }, ... ] }
+                for node_id, node_list in result["nodes"].items():
+                    if node_id not in combined_result["nodes"]:
+                        combined_result["nodes"][node_id] = node_list
+                    else:
+                        # Optionally merge node lists without duplicates
+                        existing_ids = {
+                            n["node"]["_id"] for n in combined_result["nodes"][node_id]
+                        }
+                        for node_obj in node_list:
+                            if node_obj["node"]["_id"] not in existing_ids:
+                                combined_result["nodes"][node_id].append(node_obj)
 
-    except Exception as e:
-        print(f"Error executing query: {e}")
-        results = []
+                # Merge links without duplicates
+                for link in result["links"]:
+                    link_id = link.get("_id")
+                    if link_id:
+                        if link_id not in link_ids:
+                            combined_result["links"].append(link)
+                            link_ids.add(link_id)
+                    else:
+                        if link not in combined_result["links"]:
+                            combined_result["links"].append(link)
 
-    return results
+            except Exception as e:
+                print(
+                    f"Error executing query for pair {start_node} to {target_node}: {e}"
+                )
+
+    return combined_result
 
 
 def get_all():
@@ -214,7 +233,6 @@ def get_all():
 
 
 def search_by_term(search_term):
-
     query = f"""
             // Group results by collection
             LET groupedResults = (
@@ -262,7 +280,6 @@ def search_by_term(search_term):
 
 
 def run_aql_query(query):
-
     print(query)
     # Execute the query
     try:
