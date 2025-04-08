@@ -1,12 +1,10 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useRef } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { PrunedCollections } from "../Contexts/Contexts";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
 
-/* TODO: Decide if default settings should be loaded from contexts */
 const ForceGraph = ({
   nodeIds: originNodeIds,
   heightRatio = 0.5,
@@ -23,20 +21,14 @@ const ForceGraph = ({
   const [setOperation, setSetOperation] = useState(
     settings["setOperation"] || "Union",
   );
-  const prunedCollectionsContext = useContext(PrunedCollections);
-  const [collectionsToPrune, setCollectionsToPrune] = useState(
-    settings["collectionsToPrune"] || prunedCollectionsContext,
-  );
-  const [nodesToPrune, setNodesToPrune] = useState(
-    settings["nodesToPrune"] || [],
-  );
+  const [allowedCollections, setAllowedCollections] = useState([]);
   const [nodeFontSize, setNodeFontSize] = useState(
     settings["nodeFontSize"] || 12,
   );
   const [edgeFontSize, setEdgeFontSize] = useState(
     settings["edgeFontSize"] || 8,
   );
-  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 100);
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 250);
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] || {
       ".collection-label": false,
@@ -65,23 +57,28 @@ const ForceGraph = ({
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
-  const [isSimOn, setIsSimOn] = useState(true);
   const collectionsMap = new Map(collectionsMapData);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchCollections().then((data) => {
-      // Set collections state
       let tempCollections = parseCollections(data);
       setCollections(tempCollections);
-      // Check if "collectionsToAllow" exists in settings and only allow that collection
-      if (settings["collectionsToAllow"]) {
-        const collectionsToAllow = settings["collectionsToAllow"];
-        const collectionsToPruneFiltered = tempCollections.filter(
-          (collection) => !collectionsToAllow.includes(collection),
+      // Determine allowedCollections based on incoming settings:
+      if (settings["allowedCollections"]) {
+        // Use the explicitly provided allowed collections
+        setAllowedCollections(settings["allowedCollections"]);
+      } else if (settings["collectionsToPrune"]) {
+        // If a prune list is provided, set allowedCollections to the complement
+        const pruneList = settings["collectionsToPrune"];
+        const allowed = tempCollections.filter(
+          (collection) => !pruneList.includes(collection),
         );
-        setCollectionsToPrune(collectionsToPruneFiltered);
+        setAllowedCollections(allowed);
+      } else {
+        // By default, allow all collections
+        setAllowedCollections(tempCollections);
       }
     });
 
@@ -93,25 +90,21 @@ const ForceGraph = ({
 
   // Reset expanding and pruning when creating a new graph
   useEffect(() => {
-    setNodesToPrune([]);
     setGraphNodeIds(originNodeIds);
   }, [originNodeIds]);
 
   // Fetch new graph data on change
   useEffect(() => {
-    // Ensure graph only renders once at a time
     let isMounted = true;
     setIsLoading(true);
 
-    // Use setTimeout to allow React to render the loading state before proceeding with the async operation
     setTimeout(() => {
       getGraphData(
         graphNodeIds,
         findShortestPaths,
         depth,
         edgeDirection,
-        collectionsToPrune,
-        nodesToPrune,
+        allowedCollections,
         nodeLimit,
       ).then((data) => {
         if (isMounted) {
@@ -120,7 +113,6 @@ const ForceGraph = ({
       });
     }, 0);
 
-    // Cleanup function
     return () => {
       isMounted = false;
     };
@@ -129,18 +121,15 @@ const ForceGraph = ({
     graphNodeIds,
     depth,
     edgeDirection,
-    collectionsToPrune,
-    nodesToPrune,
+    allowedCollections,
     findShortestPaths,
     nodeLimit,
   ]);
 
-  // Parse set operation on change
   useEffect(() => {
     if (Object.keys(rawData).length !== 0) {
       const processedData = performSetOperation(rawData, setOperation);
 
-      // Check if data is empty after processing
       if (
         !processedData ||
         ((processedData.nodes == null || processedData.nodes.length === 0) &&
@@ -155,7 +144,6 @@ const ForceGraph = ({
     }
   }, [rawData, setOperation]);
 
-  // Update graph if data changes
   useEffect(() => {
     const updateGraph = async () => {
       if (!showNoDataPopup && Object.keys(graphData).length !== 0) {
@@ -191,7 +179,6 @@ const ForceGraph = ({
     updateGraph();
   }, [graphData]);
 
-  // Remove and rerender graph on any changes
   useEffect(() => {
     const chartContainer = d3.select("#chart-container");
     chartContainer.selectAll("*").remove();
@@ -200,11 +187,8 @@ const ForceGraph = ({
     }
   }, [graph]);
 
-  // Toggle labels when labelStates changes or graph is created
   useEffect(() => {
-    // Check if 'graph' and 'graph.toggleLabels' are defined
     if (graph !== null && typeof graph.toggleLabels === "function") {
-      // If 'graph' and 'graph.toggleLabels' exist, call the toggleLabels method
       for (let labelClass in labelStates) {
         graph.toggleLabels(labelStates[labelClass], labelClass);
       }
@@ -216,10 +200,10 @@ const ForceGraph = ({
     shortestPaths,
     depth,
     edgeDirection,
-    collectionsToPrune,
-    nodesToPrune,
+    allowedCollections,
+    nodeLimit,
   ) => {
-    if (shortestPaths) {
+    if (shortestPaths && nodeIds.length > 1) {
       let response = await fetch("/arango_api/shortest_paths/", {
         method: "POST",
         headers: {
@@ -245,8 +229,7 @@ const ForceGraph = ({
           node_ids: nodeIds,
           depth: depth,
           edge_direction: edgeDirection,
-          collections_to_prune: collectionsToPrune,
-          nodes_to_prune: nodesToPrune,
+          allowed_collections: allowedCollections,
           node_limit: nodeLimit,
           use_schema_graph: useSchemaGraph,
         }),
@@ -263,28 +246,23 @@ const ForceGraph = ({
     const nodes = data.nodes;
     const links = data.links;
 
-    // Function to get all node ids across all origin groups
     const getAllNodeIdsFromOrigins = (operation) => {
       const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) => {
         return new Set(originGroup.map((item) => item.node._id));
       });
 
-      // Intersection returns the intersecting nodes and their connections of any two origin nodes
       if (operation === "Intersection") {
         const overlap = new Set();
         const nodeIdsPerOrigin = Object.values(nodes).map(
           (originGroup) => new Set(originGroup.map((item) => item.node._id)),
         );
 
-        // Iterate over all pairs of origin groups
         for (let i = 0; i < nodeIdsPerOrigin.length; i++) {
           for (let j = i + 1; j < nodeIdsPerOrigin.length; j++) {
-            // Find the intersection between origin group i and j
             const intersection = [...nodeIdsPerOrigin[i]].filter((id) =>
               nodeIdsPerOrigin[j].has(id),
             );
 
-            // Add the intersection to the overlap set
             intersection.forEach((id) => overlap.add(id));
           }
         }
@@ -292,22 +270,18 @@ const ForceGraph = ({
         return overlap;
       }
 
-      // Union returns the union of all node sets
       if (operation === "Union") {
         return new Set(
           nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]),
         );
       }
 
-      // TODO: While operation is correct under the parameters, it is not intuitive. Fix?
-      // Symmetric difference returns the symmetric difference of all node sets
       if (operation === "Symmetric Difference") {
         return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
           if (acc === null) {
             return nodeIdsSet;
           }
           const result = new Set();
-          // Add nodes in either set, but not both
           acc.forEach((id) => {
             if (!nodeIdsSet.has(id)) {
               result.add(id);
@@ -325,12 +299,10 @@ const ForceGraph = ({
       throw new Error("Unknown operation");
     };
 
-    // Function to add nodes from paths to the set
     const addNodesFromPathsToSet = (nodeIdsSet) => {
       Object.values(nodes).forEach((originGroup) => {
         originGroup.forEach((item) => {
           if (nodeIdsSet.has(item.node._id)) {
-            // Add all vertices in the path to the set
             item.path.vertices.forEach((vertex) => {
               nodeIdsSet.add(vertex._id);
             });
@@ -341,22 +313,16 @@ const ForceGraph = ({
 
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
-    // Add nodes from paths
     if (!findShortestPaths) {
       addNodesFromPathsToSet(nodeIds);
     }
 
-    // Set to track unique link pairs (_from, _to)
     const seenLinks = new Set();
 
-    // Filter out links that don't have both _from and _to in the node set, and remove duplicates
     const filteredLinks = links.filter((link) => {
-      // Check if both _from and _to are in nodeIds
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
-        // Create a unique key for the link pair (_from, _to)
         const linkKey = `${link._from}-${link._to}`;
 
-        // If the link pair hasn't been seen before, keep it, otherwise filter it out
         if (seenLinks.has(linkKey)) {
           return false;
         } else {
@@ -367,35 +333,30 @@ const ForceGraph = ({
       return false;
     });
 
-    // Collect nodes that are in the set
     const filteredNodes = [];
     Object.values(nodes).forEach((originGroup) => {
       originGroup.forEach((item) => {
-        if (nodeIds.size != 0 && nodeIds.has(item.node._id)) {
+        if (nodeIds.size !== 0 && nodeIds.has(item.node._id)) {
           filteredNodes.push(item.node);
           nodeIds.delete(item.node._id);
         }
       });
     });
 
-    // Return the result with filtered nodes and links
     return {
       nodes: filteredNodes,
       links: filteredLinks,
     };
   }
 
-  // Handle right click on node
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData.id);
     setClickedNodeLabel(Utils.getLabel(nodeData));
 
-    // Get the mouse position and current scroll state
     const { clientX, clientY } = e;
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
 
-    // Adjust the popup position by adding the scroll offsets
     setPopupPosition({
       x: clientX + 10 + scrollX,
       y: clientY + 10 + scrollY,
@@ -403,31 +364,28 @@ const ForceGraph = ({
     setPopupVisible(true);
   };
 
-  // Handle closing the node popup
   const handlePopupClose = () => {
     setPopupVisible(false);
   };
 
-  // Handle expanding the graph from a specific node
   const handleExpand = () => {
-    // Fetch graph data for new node
-    getGraphData([clickedNodeId], false, 1, "ANY", [], []).then((data) => {
-      graph.updateGraph({
-        newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
-        newLinks: data["links"],
-        centerNodeId: clickedNodeId,
-      });
-    });
+    getGraphData([clickedNodeId], false, 1, "ANY", [], nodeLimit).then(
+      (data) => {
+        graph.updateGraph({
+          newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
+          newLinks: data["links"],
+          centerNodeId: clickedNodeId,
+        });
+      },
+    );
   };
 
-  // Handle collapsing part of the graph based on a specific node
   const handleCollapse = () => {
     graph.updateGraph({
       collapseNodes: [clickedNodeId],
     });
   };
 
-  // Handle removing node
   const handleRemove = () => {
     graph.updateGraph({
       collapseNodes: [clickedNodeId],
@@ -435,27 +393,22 @@ const ForceGraph = ({
     });
   };
 
-  // Handle closing node popup when panning or zooming the graph
   const closePopupOnInteraction = () => {
     setPopupVisible(false);
   };
 
-  // Handle changing the search depth of the graph
   const handleDepthChange = (event) => {
     setDepth(Number(event.target.value));
   };
 
-  // Handle changing the limit of nodes to be shown
   const handleNodeLimitChange = (event) => {
     setNodeLimit(Number(event.target.value));
   };
 
-  // Handle changing the search direction of edges
   const handleEdgeDirectionChange = (event) => {
     setEdgeDirection(event.target.value);
   };
 
-  // Handle changing the set operation
   const handleOperationChange = (event) => {
     setSetOperation(event.target.value);
   };
@@ -472,28 +425,25 @@ const ForceGraph = ({
     graph.updateLinkFontSize(newFontSize);
   };
 
-  // Handle changing the checkboxes for collections
+  // Updated handler for toggling allowedCollections
   const handleCollectionChange = (collectionName) => {
-    setCollectionsToPrune((prev) =>
+    setAllowedCollections((prev) =>
       prev.includes(collectionName)
         ? prev.filter((name) => name !== collectionName)
         : [...prev, collectionName],
     );
   };
 
-  // Remove all collections from the prune list
   const handleAllOn = () => {
-    setCollectionsToPrune([]);
+    setAllowedCollections(collections);
   };
 
-  // Add all collections to the prune list
   const handleAllOff = () => {
-    setCollectionsToPrune(collections);
+    setAllowedCollections([]);
   };
 
   const handleLabelToggle = (labelClass) => {
     setLabelStates((prevStates) => {
-      // Update the specific label state
       const newStates = {
         ...prevStates,
         [labelClass]: !prevStates[labelClass],
@@ -506,17 +456,10 @@ const ForceGraph = ({
     setFindShortestPaths(!findShortestPaths);
   };
 
-  const handleSimulationToggle = () => {
-    // Turn off labels if turning on simulation
-    if (!isSimOn) {
-      setLabelStates({
-        ".collection-label": false,
-        ".link-label": false,
-        ".node-label": false,
-      });
-    }
-    graph.toggleSimulation(!isSimOn);
-    setIsSimOn(!isSimOn);
+  const handleSimulationRestart = () => {
+    graph.updateGraph({
+      simulate: true,
+    });
   };
 
   const exportGraph = (format) => {
@@ -541,7 +484,6 @@ const ForceGraph = ({
       ctx.drawImage(img, 0, 0);
 
       if (format === "png") {
-        // Export as PNG
         const imgData = canvas.toDataURL("image/png");
         const link = document.createElement("a");
         link.href = imgData;
@@ -554,7 +496,6 @@ const ForceGraph = ({
     img.src = url;
   };
 
-  // Handle toggling options
   const toggleOptionsVisibility = () => {
     setOptionsVisible(!optionsVisible);
   };
@@ -599,42 +540,36 @@ const ForceGraph = ({
           </select>
         </div>
         <div className="depth-picker">
-          <label htmlFor="depth-select">Node Limit:</label>
+          <label htmlFor="depth-select">Path Traversal Limit:</label>
           <select
             id="depth-select"
             value={nodeLimit}
             onChange={handleNodeLimitChange}
           >
-            {[
-              10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150,
-            ].map((value) => (
+            {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>
             ))}
           </select>
         </div>
-        {graphNodeIds ? (
-          graphNodeIds.length >= 2 && (
-            <div className="edge-direction-picker multi-node">
-              <label htmlFor="edge-direction-select">Graph operation</label>
-              <select
-                id="edge-direction-select"
-                value={setOperation}
-                onChange={handleOperationChange}
-              >
-                {["Intersection", "Union", "Symmetric Difference"].map(
-                  (value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-          )
-        ) : (
-          <div />
+        {graphNodeIds && graphNodeIds.length >= 2 && (
+          <div className="edge-direction-picker multi-node">
+            <label htmlFor="edge-direction-select">Graph operation</label>
+            <select
+              id="edge-direction-select"
+              value={setOperation}
+              onChange={handleOperationChange}
+            >
+              {["Intersection", "Union", "Symmetric Difference"].map(
+                (value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ),
+              )}
+            </select>
+          </div>
         )}
         <div className="font-size-picker">
           <div className="node-font-size-picker">
@@ -677,12 +612,13 @@ const ForceGraph = ({
               <div key={collection} className="checkbox-container">
                 <button
                   id={collection}
-                  checked={!collectionsToPrune.includes(collection)}
+                  // Now checked if allowedCollections includes the collection
+                  checked={allowedCollections.includes(collection)}
                   onClick={() => handleCollectionChange(collection)}
                   className={
-                    collectionsToPrune.includes(collection)
-                      ? "background-color-light"
-                      : "background-color-bg"
+                    allowedCollections.includes(collection)
+                      ? "background-color-bg"
+                      : "background-color-light"
                   }
                 >
                   {collectionsMap.has(collection)
@@ -695,9 +631,9 @@ const ForceGraph = ({
           <div className="checkboxes-container">
             <div className="checkbox-container">
               <button
-                onClick={() => handleAllOn()}
+                onClick={handleAllOn}
                 className={
-                  collectionsToPrune.length === 0
+                  allowedCollections.length === collections.length
                     ? "background-color-bg"
                     : "background-color-light"
                 }
@@ -707,9 +643,9 @@ const ForceGraph = ({
             </div>
             <div className="checkbox-container">
               <button
-                onClick={() => handleAllOff()}
+                onClick={handleAllOff}
                 className={
-                  collectionsToPrune === collections
+                  allowedCollections.length === 0
                     ? "background-color-bg"
                     : "background-color-light"
                 }
@@ -757,35 +693,22 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
-        {graphNodeIds ? (
-          graphNodeIds.length >= 2 && (
-            <div className="shortest-path-toggle multi-node">
-              Shortest Path (Currently only works with first two nodes selected)
-              <label className="switch" style={{ margin: "auto" }}>
-                <input
-                  type="checkbox"
-                  checked={findShortestPaths}
-                  onChange={handleShortestPathToggle}
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-          )
-        ) : (
-          <div />
+        {graphNodeIds && graphNodeIds.length >= 2 && (
+          <div className="shortest-path-toggle multi-node">
+            Shortest Path
+            <label className="switch" style={{ margin: "auto" }}>
+              <input
+                type="checkbox"
+                checked={findShortestPaths}
+                onChange={handleShortestPathToggle}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
         )}
-        {/* Hidden. To be removed if a use case is not found for toggling simulation manually */}
-        <div className="simulation-toggle" style={{ display: "none" }}>
-          Toggle Simulation
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={isSimOn}
-              onChange={handleSimulationToggle}
-            />
-            <span className="slider round"></span>
-          </label>
-        </div>
+        <button className="simulation-toggle" onClick={handleSimulationRestart}>
+          Restart Simulation
+        </button>
         <div className="export-buttons">
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
         </div>

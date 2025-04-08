@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import * as Utils from "../Utils/Utils";
+import collectionsMapData from "../../assets/collectionsMap.json";
 
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
+  const collectionsMap = new Map(collectionsMapData);
   // Get only the headers that have results
   const filteredHeaders = Object.keys(searchResults).filter(
     (key) => searchResults[key].length > 0,
@@ -65,7 +67,12 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
             <span className="arrow-icon">
               {expandedHeaders[header] ? "▼ " : "▶ "}
             </span>
-            <span data-testid={`header-${header}`}>{header}</span>
+            <span data-testid={`header-${header}`}>
+              {collectionsMap.get(header) &&
+              collectionsMap.get(header)["display_name"]
+                ? collectionsMap.get(header)["display_name"]
+                : header}
+            </span>
             <span className="item-count">
               {" "}
               ({searchResults[header].length})
