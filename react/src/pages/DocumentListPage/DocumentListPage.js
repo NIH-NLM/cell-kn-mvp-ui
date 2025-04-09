@@ -12,7 +12,7 @@ const DocumentListPage = () => {
   const itemsPerPage = 100;
 
   useEffect(() => {
-    // Reset page when collection changes
+    // Reset page and clear filter when collection changes
     setCurrentPage(1);
     setFilterText("");
     getDocumentList();
@@ -44,32 +44,52 @@ const DocumentListPage = () => {
     setDocumentList([...labeledItems, ...keyItems]);
   };
 
-  // Filter documents based on the filterText
+  // First, filter documents based on the filterText
   const filteredDocuments = documentList.filter((doc) => {
-    // Convert both filter text and document text to lower case for case-insensitive matching
     const searchLower = filterText.toLowerCase();
-
-    // Use label or _key as the matching field
     const label =
       doc.label && Array.isArray(doc.label) ? doc.label[0] : doc.label || "";
     const key = doc._key ? doc._key.toString() : "";
-
     return (
       label.toLowerCase().includes(searchLower) ||
       key.toLowerCase().includes(searchLower)
     );
   });
 
-  // Change page if user types a new filter to start at page 1
+  // If filterText is not empty, sort the filtered documents to bring exact matches to the top.
+  const sortedFilteredDocuments =
+    filterText.trim() !== ""
+      ? [...filteredDocuments].sort((a, b) => {
+          const searchLower = filterText.toLowerCase();
+
+          // Get document fields in lower case. If label is an array, use the first element
+          const labelA = (
+            a.label && Array.isArray(a.label) ? a.label[0] : a.label || ""
+          ).toLowerCase();
+          const keyA = a._key ? a._key.toString().toLowerCase() : "";
+          const labelB = (
+            b.label && Array.isArray(b.label) ? b.label[0] : b.label || ""
+          ).toLowerCase();
+          const keyB = b._key ? b._key.toString().toLowerCase() : "";
+
+          const scoreA = labelA === searchLower || keyA === searchLower ? 0 : 1;
+          const scoreB = labelB === searchLower || keyB === searchLower ? 0 : 1;
+
+          // Documents with score 0 (exact match) will sort to the top
+          return scoreA - scoreB;
+        })
+      : filteredDocuments;
+
+  // Change page if user types a new filter, so you always start at page 1
   const handleFilterChange = (e) => {
     setFilterText(e.target.value);
     setCurrentPage(1);
   };
 
-  // Calculate indices for the current page based on filtered results
+  // Calculate indices for current page based on sorted and filtered results
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredDocuments.slice(
+  const currentItems = sortedFilteredDocuments.slice(
     indexOfFirstItem,
     indexOfLastItem,
   );
@@ -80,7 +100,7 @@ const DocumentListPage = () => {
   };
 
   // Calculate total pages
-  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedFilteredDocuments.length / itemsPerPage);
 
   return (
     <div>
@@ -93,14 +113,21 @@ const DocumentListPage = () => {
             paginate={paginate}
           />
           <header className="document-header">
-            {/* Filter Input */}
+            <p className="document-count">
+              {sortedFilteredDocuments.length} results
+            </p>
             <input
               type="text"
               placeholder="Filter documents..."
               value={filterText}
               onChange={handleFilterChange}
+              style={{
+                margin: "10px 0",
+                padding: "5px",
+                width: "100%",
+                color: "#000",
+              }}
             />
-            <p className="document-count">{filteredDocuments.length} results</p>
           </header>
           <div className="document-list">
             {currentItems.map((document, index) => (
