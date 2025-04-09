@@ -113,15 +113,15 @@ const DocumentListPage = () => {
             paginate={paginate}
           />
           <header className="document-header">
+            <input
+                type="text"
+                placeholder="Filter documents..."
+                value={filterText}
+                onChange={handleFilterChange}
+            />
             <p className="document-count">
               {sortedFilteredDocuments.length} results
             </p>
-            <input
-              type="text"
-              placeholder="Filter documents..."
-              value={filterText}
-              onChange={handleFilterChange}
-            />
           </header>
           <div className="document-list">
             {currentItems.map((document, index) => (
