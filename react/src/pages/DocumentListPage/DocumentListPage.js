@@ -8,11 +8,13 @@ const DocumentListPage = () => {
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterText, setFilterText] = useState("");
   const itemsPerPage = 100;
 
   useEffect(() => {
     // Reset page when collection changes
     setCurrentPage(1);
+    setFilterText("");
     getDocumentList();
   }, [coll]);
 
@@ -42,10 +44,35 @@ const DocumentListPage = () => {
     setDocumentList([...labeledItems, ...keyItems]);
   };
 
-  // Calculate indices for current page
+  // Filter documents based on the filterText
+  const filteredDocuments = documentList.filter((doc) => {
+    // Convert both filter text and document text to lower case for case-insensitive matching
+    const searchLower = filterText.toLowerCase();
+
+    // Use label or _key as the matching field
+    const label =
+      doc.label && Array.isArray(doc.label) ? doc.label[0] : doc.label || "";
+    const key = doc._key ? doc._key.toString() : "";
+
+    return (
+      label.toLowerCase().includes(searchLower) ||
+      key.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Change page if user types a new filter to start at page 1
+  const handleFilterChange = (e) => {
+    setFilterText(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // Calculate indices for the current page based on filtered results
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = documentList.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredDocuments.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
 
   // Change page function
   const paginate = (pageNumber) => {
@@ -53,7 +80,7 @@ const DocumentListPage = () => {
   };
 
   // Calculate total pages
-  const totalPages = Math.ceil(documentList.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
 
   return (
     <div>
@@ -66,7 +93,14 @@ const DocumentListPage = () => {
             paginate={paginate}
           />
           <header className="document-header">
-            <p className="document-count">{documentList.length} results</p>
+            {/* Filter Input */}
+            <input
+              type="text"
+              placeholder="Filter documents..."
+              value={filterText}
+              onChange={handleFilterChange}
+            />
+            <p className="document-count">{filteredDocuments.length} results</p>
           </header>
           <div className="document-list">
             {currentItems.map((document, index) => (
