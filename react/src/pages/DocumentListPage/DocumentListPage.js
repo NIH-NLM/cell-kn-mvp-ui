@@ -121,12 +121,6 @@ const DocumentListPage = () => {
               placeholder="Filter documents..."
               value={filterText}
               onChange={handleFilterChange}
-              style={{
-                margin: "10px 0",
-                padding: "5px",
-                width: "100%",
-                color: "#000",
-              }}
             />
           </header>
           <div className="document-list">
