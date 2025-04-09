@@ -21,9 +21,6 @@ const Header = () => {
         <Link to="/">
           <h4 className={activeNav === "/" ? "active-nav" : ""}>Explore</h4>
         </Link>
-        <Link to="/aql">
-          <h4 className={activeNav === "/aql" ? "active-nav" : ""}>Query</h4>
-        </Link>
         <Link to="/browse">
           <h4 className={activeNav.startsWith("/browse") ? "active-nav" : ""}>
             Browse
@@ -33,6 +30,9 @@ const Header = () => {
           <h4 className={activeNav.startsWith("/schema") ? "active-nav" : ""}>
             Schema
           </h4>
+        </Link>
+        <Link to="/aql">
+          <h4 className={activeNav === "/aql" ? "active-nav" : ""}>Query</h4>
         </Link>
       </div>
     </div>
