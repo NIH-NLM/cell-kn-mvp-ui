@@ -9,11 +9,16 @@ environ.Env.read_env()
 
 # Retrieve ArangoDB credentials from the environment
 ARANGO_DB_HOST = env("ARANGO_DB_HOST")
-ARANGO_DB_NAME = env("ARANGO_DB_NAME")
+ARANGO_DB_NAME_ONTOLOGIES = env("ARANGO_DB_NAME_ONTOLOGIES")
+ARANGO_DB_NAME_PHENOTYPES = env("ARANGO_DB_NAME_PHENOTYPES")
 ARANGO_DB_USER = env("ARANGO_DB_USER")
 ARANGO_DB_PASSWORD = env("ARANGO_DB_PASSWORD")
-DB_GRAPH_NAME = env("DB_GRAPH_NAME")
+GRAPH_NAME_ONTOLOGIES = env("GRAPH_NAME_ONTOLOGIES")
+GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
 
 # Configure the connection
 client = ArangoClient(ARANGO_DB_HOST)
-db = client.db(ARANGO_DB_NAME, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD)
+db_ontologies = client.db(ARANGO_DB_NAME_ONTOLOGIES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD)
+db_phenotypes = client.db(
+    ARANGO_DB_NAME_PHENOTYPES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD
+)

@@ -231,7 +231,6 @@ const ForceGraph = ({
           edge_direction: edgeDirection,
           allowed_collections: allowedCollections,
           node_limit: nodeLimit,
-          use_schema_graph: useSchemaGraph,
         }),
       });
 
