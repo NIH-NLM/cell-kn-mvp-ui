@@ -42,9 +42,6 @@ const ForceGraph = ({
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
-  const [useSchemaGraph, setUseSchemaGraph] = useState(
-    "useSchemaGraph" in settings ? settings["useSchemaGraph"] : false,
-  );
   const [fullOntology, setFullOntology] = useState(
     "fullOntology" in settings ? settings["fullOntology"] : false,
   );
@@ -118,7 +115,11 @@ const ForceGraph = ({
       )
         .then((data) => {
           if (isMounted) {
-            setRawData(data);
+            if (Utils.hasAnyNodes(data, originNodeIds[0])) {
+              setRawData(data);
+            } else {
+              setFullOntology(true);
+            }
           }
         })
         .catch((error) => {
@@ -621,7 +622,6 @@ const ForceGraph = ({
       return;
     }
 
-    // Temporarily set styles for export if needed (e.g., background)
     svgElement.style.backgroundColor = "white"; // Ensure white background
 
     const svgData = new XMLSerializer().serializeToString(svgElement);
@@ -629,7 +629,7 @@ const ForceGraph = ({
       type: "image/svg+xml;charset=utf-8",
     }); // Specify charset
 
-    // Reset styles if modified
+    // Reset styles
     svgElement.style.backgroundColor = "";
 
     const url = URL.createObjectURL(svgBlob);
@@ -829,8 +829,7 @@ const ForceGraph = ({
           <div className="checkboxes-container">
             {collections.map((collection) => (
               <div key={collection} className="checkbox-container">
-                {/* Changed to input type checkbox for better semantics/accessibility */}
-                <label
+                <button
                   htmlFor={`collection-toggle-${collection}`}
                   className={
                     allowedCollections.includes(collection)
@@ -843,12 +842,12 @@ const ForceGraph = ({
                     id={`collection-toggle-${collection}`}
                     checked={allowedCollections.includes(collection)}
                     onChange={() => handleCollectionChange(collection)}
-                    style={{ display: "none" }} // Hide checkbox, style the label
+                    style={{ display: "none" }}
                   />
                   {collectionsMap.has(collection)
                     ? collectionsMap.get(collection)["display_name"]
                     : collection}
-                </label>
+                </button>
               </div>
             ))}
           </div>
@@ -860,7 +859,7 @@ const ForceGraph = ({
                   ? "background-color-bg"
                   : "background-color-light"
               }
-              disabled={allowedCollections.length === collections.length} // Disable if already all on
+              disabled={allowedCollections.length === collections.length}
             >
               All On
             </button>
@@ -871,7 +870,7 @@ const ForceGraph = ({
                   ? "background-color-bg"
                   : "background-color-light"
               }
-              disabled={allowedCollections.length === 0} // Disable if already all off
+              disabled={allowedCollections.length === 0}
             >
               All Off
             </button>
@@ -988,7 +987,6 @@ const ForceGraph = ({
         {!isLoading && !graph && showNoDataPopup && (
           <div className="no-data-message">
             {" "}
-            {/* Style this message */}
             No data meets the current criteria. Please adjust options or search
             terms.
           </div>

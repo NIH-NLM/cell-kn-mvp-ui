@@ -15,7 +15,6 @@ def list_collection_names(request):
 @api_view(["POST"])
 def list_by_collection(request, coll):
     graph = request.data.get("graph")
-    print(graph)
     objects = utils.get_all_by_collection(coll, graph)
     return JsonResponse(list(objects), safe=False)
 

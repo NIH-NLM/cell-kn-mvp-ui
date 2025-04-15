@@ -515,6 +515,10 @@ option {
   flex-direction: column;
 }
 
+.collection-controls button {
+  margin: 0 1rem;
+}
+
 .graph-options label {
   display: block;
   font-weight: bold;
