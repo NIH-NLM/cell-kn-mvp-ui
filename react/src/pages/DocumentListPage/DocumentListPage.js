@@ -15,11 +15,19 @@ const DocumentListPage = () => {
     // Reset page and clear filter when collection changes
     setCurrentPage(1);
     setFilterText("");
-    getDocumentList();
+    getDocumentList("phenotypes");
   }, [coll]);
 
-  const getDocumentList = async () => {
-    const response = await fetch(`/arango_api/collection/${coll}/`);
+  const getDocumentList = async (graphType) => {
+    const response = await fetch(`/arango_api/collection/${coll}/`, {
+    method: "POST",
+        headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      graph: graphType,
+    }),
+  });
     const data = await response.json();
     sortDocumentList(data);
   };
@@ -114,10 +122,10 @@ const DocumentListPage = () => {
           />
           <header className="document-header">
             <input
-                type="text"
-                placeholder="Filter documents..."
-                value={filterText}
-                onChange={handleFilterChange}
+              type="text"
+              placeholder="Filter documents..."
+              value={filterText}
+              onChange={handleFilterChange}
             />
             <p className="document-count">
               {sortedFilteredDocuments.length} results

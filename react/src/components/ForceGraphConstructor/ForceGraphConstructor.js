@@ -330,7 +330,7 @@ function ForceGraphConstructor(
     linkStrokeOpacity = 0.6,
     linkStrokeWidth = 1.5,
     linkStrokeLinecap = "round",
-    initialScale = 2,
+    initialScale = 1,
     width = 640,
     heightRatio = 0.5,
     nodeForceStrength = -2500,
@@ -433,7 +433,7 @@ function ForceGraphConstructor(
     .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
     .style("display", "block");
 
-  const legendSize = 45 * heightRatio;
+  const legendSize = 20 * heightRatio;
   legend
     .selectAll(".legend-item")
     .data([...new Set(nodeGroups)])

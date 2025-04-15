@@ -1,9 +1,22 @@
-export const fetchCollections = async () => {
-  let response = await fetch("/arango_api/collections/");
+export const fetchCollections = async (graphType) => {
+  // Accept graphType argument
+  let response = await fetch("/arango_api/collections/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      graph: graphType,
+    }),
+  });
   if (!response.ok) {
-    throw new Error("Network response was not ok");
+    console.error(
+      "Fetch collections failed:",
+      response.status,
+      await response.text(),
+    );
+    throw new Error(`Network response was not ok (${response.status})`);
   }
-
   return response.json();
 };
 

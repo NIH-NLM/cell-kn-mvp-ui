@@ -481,6 +481,10 @@ option {
   margin: 20px;
 }
 
+.graph-container {
+  width: 60%;
+}
+
 /*Graph Options*/
 
 .graph-options {
@@ -574,11 +578,14 @@ option {
 }
 
 .node-popup {
-  backgroundcolor: var(--color-light-bg);
+  background-color: var(--color-light-bg);
   box-shadow: 0 2px 10px black;
   z-index: 1000;
   position: absolute;
   flex-direction: column;
+  border-radius: 4px;
+  padding: 10px;
+  gap: 5px;
 }
 
 .popup-button {
@@ -588,6 +595,16 @@ option {
   text-align: center;
   padding: 1rem;
   border-radius: 0px;
+}
+
+.popup-close-button {
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
 }
 
 .popup-button:hover {

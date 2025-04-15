@@ -1,11 +1,19 @@
 from itertools import chain
 
-from arango_api.db import db_ontologies, GRAPH_NAME_ONTOLOGIES, GRAPH_NAME_PHENOTYPES
+from arango_api.db import (
+    db_ontologies,
+    GRAPH_NAME_ONTOLOGIES,
+    GRAPH_NAME_PHENOTYPES,
+    db_phenotypes,
+)
 
 
-def get_document_collections():
+def get_document_collections(graph):
     # Filter for document collections
-    all_collections = db_ontologies.collections()
+    if graph == "phenotypes":
+        all_collections = db_phenotypes.collections()
+    else:
+        all_collections = db_ontologies.collections()
     collections = [
         collection
         for collection in all_collections
@@ -14,8 +22,12 @@ def get_document_collections():
     return collections
 
 
-def get_all_by_collection(coll):
-    collection = db_ontologies.collection(coll)
+def get_all_by_collection(coll, graph):
+    if graph == "phenotypes":
+        collection = db_phenotypes.collection(coll)
+    else:
+        collection = db_ontologies.collection(coll)
+
     if not collection:
         print(f"Collection '{coll}' not found.")
     return collection.all()
@@ -111,7 +123,10 @@ def get_graph(
 
     # Execute the query
     try:
-        cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
+        if graph == "phenotypes":
+            cursor = db_phenotypes.aql.execute(query, bind_vars=bind_vars)
+        else:
+            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
 
         results = list(cursor)[
             0

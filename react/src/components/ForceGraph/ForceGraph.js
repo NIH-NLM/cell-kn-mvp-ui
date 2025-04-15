@@ -65,26 +65,31 @@ const ForceGraph = ({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetchCollections().then((data) => {
-      let tempCollections = parseCollections(data);
-      setCollections(tempCollections);
-      // Determine allowedCollections based on incoming settings:
-      if (settings["allowedCollections"]) {
-        // Use the explicitly provided allowed collections
-        setAllowedCollections(settings["allowedCollections"]);
-      } else if (settings["collectionsToPrune"]) {
-        // If a prune list is provided, set allowedCollections to the complement
-        const pruneList = settings["collectionsToPrune"];
-        const allowed = tempCollections.filter(
-          (collection) => !pruneList.includes(collection),
-        );
-        setAllowedCollections(allowed);
-      } else {
-        // By default, allow all collections
-        setAllowedCollections(tempCollections);
-      }
-    });
+    fetchCollections(fullOntology ? "ontologies" : "phenotypes").then(
+      (data) => {
+        let tempCollections = parseCollections(data);
+        setCollections(tempCollections);
+        // Determine allowedCollections based on incoming settings:
+        if (settings["allowedCollections"]) {
+          // Use the explicitly provided allowed collections
+          setAllowedCollections(settings["allowedCollections"]);
+        } else if (settings["collectionsToPrune"]) {
+          // If a prune list is provided, set allowedCollections to the complement
+          const pruneList = settings["collectionsToPrune"];
+          const allowed = tempCollections.filter(
+            (collection) => !pruneList.includes(collection),
+          );
+          setAllowedCollections(allowed);
+        } else {
+          // By default, allow all collections
+          setAllowedCollections(tempCollections);
+        }
+      },
+    );
+  }, [fullOntology]);
 
+  // Set event listeners for popup close
+  useEffect(() => {
     document.addEventListener("click", handlePopupClose);
     return () => {
       document.removeEventListener("click", handlePopupClose);
@@ -110,18 +115,20 @@ const ForceGraph = ({
         edgeDirection,
         allowedCollections,
         nodeLimit,
-      ).then((data) => {
-        if (isMounted) {
-          setRawData(data);
-        }
-      }).catch(error => {
-        console.error("Failed to fetch graph data:", error);
-        if (isMounted) {
+      )
+        .then((data) => {
+          if (isMounted) {
+            setRawData(data);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch graph data:", error);
+          if (isMounted) {
             setRawData({}); // Clear data on error
             setShowNoDataPopup(true); // Show error/no data message
             setIsLoading(false);
-        }
-      });
+          }
+        });
     }, 100); // Small delay
 
     return () => {
@@ -154,17 +161,23 @@ const ForceGraph = ({
         setGraphData(processedData);
         setShowNoDataPopup(false);
       }
-    } else if (!isLoading) { // Handle case where rawData is empty
-        setGraphData({});
-        setShowNoDataPopup(true);
+    } else if (!isLoading) {
+      // Handle case where rawData is empty
+      setGraphData({});
+      setShowNoDataPopup(true);
     }
   }, [rawData, setOperation]);
 
   useEffect(() => {
     const updateGraph = async () => {
       // Only update if data is present and not showing the 'no data' popup
-      if (!showNoDataPopup && graphData && graphData.nodes && graphData.nodes.length > 0) {
-         // Ensure graph is cleared if new data results in no nodes/links
+      if (
+        !showNoDataPopup &&
+        graphData &&
+        graphData.nodes &&
+        graphData.nodes.length > 0
+      ) {
+        // Ensure graph is cleared if new data results in no nodes/links
         const g = await new Promise((resolve) => {
           // Use requestAnimationFrame for smoother rendering updates
           requestAnimationFrame(() => {
@@ -198,8 +211,6 @@ const ForceGraph = ({
       }
     };
     updateGraph();
-    // Cleanup function for graph
-    return () => { graph?.dispose(); };
   }, [graphData]);
 
   useEffect(() => {
@@ -242,7 +253,11 @@ const ForceGraph = ({
       });
 
       if (!response.ok) {
-        console.error("Shortest path fetch failed:", response.status, await response.text());
+        console.error(
+          "Shortest path fetch failed:",
+          response.status,
+          await response.text(),
+        );
         throw new Error(`Network response was not ok (${response.status})`);
       }
       return response.json();
@@ -264,13 +279,16 @@ const ForceGraph = ({
       });
 
       if (!response.ok) {
-        console.error("Graph fetch failed:", response.status, await response.text());
+        console.error(
+          "Graph fetch failed:",
+          response.status,
+          await response.text(),
+        );
         throw new Error(`Network response was not ok (${response.status})`);
       }
       return response.json();
     }
   };
-
 
   function performSetOperation(data, operation) {
     if (!data || !data.nodes) {
@@ -282,161 +300,178 @@ const ForceGraph = ({
     const links = data.links || [];
 
     const getAllNodeIdsFromOrigins = (operation) => {
-        // Ensure nodes is an object before trying Object.values
-        if (typeof nodes !== 'object' || nodes === null) return new Set();
+      // Ensure nodes is an object before trying Object.values
+      if (typeof nodes !== "object" || nodes === null) return new Set();
 
-        const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) => {
-            // Ensure originGroup is an array and items have node._id
-            if (!Array.isArray(originGroup)) return new Set();
-            return new Set(originGroup.filter(item => item && item.node && item.node._id).map((item) => item.node._id));
-        });
+      const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) => {
+        // Ensure originGroup is an array and items have node._id
+        if (!Array.isArray(originGroup)) return new Set();
+        return new Set(
+          originGroup
+            .filter((item) => item && item.node && item.node._id)
+            .map((item) => item.node._id),
+        );
+      });
 
-        if (nodeIdsPerOrigin.length === 0) return new Set(); // Handle empty results
+      if (nodeIdsPerOrigin.length === 0) return new Set(); // Handle empty results
 
-        if (operation === "Intersection") {
-            if (nodeIdsPerOrigin.length < 2) return new Set(); // Intersection requires at least 2 sets
+      if (operation === "Intersection") {
+        if (nodeIdsPerOrigin.length < 2) return new Set(); // Intersection requires at least 2 sets
 
-            let intersectionResult = new Set(nodeIdsPerOrigin[0]);
-            for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
-                intersectionResult = new Set([...intersectionResult].filter(id => nodeIdsPerOrigin[i].has(id)));
-            }
-            return intersectionResult;
-
-        } else if (operation === "Union") {
-            return new Set(nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]));
-
-        } else if (operation === "Symmetric Difference") {
-            // SD requires at least 2 sets, return first if only one
-            if (nodeIdsPerOrigin.length < 2) return new Set(nodeIdsPerOrigin[0] || []);
-
-            let result = new Set(nodeIdsPerOrigin[0]);
-            for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
-                const currentSet = nodeIdsPerOrigin[i];
-                const nextResult = new Set();
-                // Elements in result but not in currentSet
-                result.forEach(id => {
-                    if (!currentSet.has(id)) nextResult.add(id);
-                });
-                // Elements in currentSet but not in result
-                currentSet.forEach(id => {
-                    if (!result.has(id)) nextResult.add(id);
-                });
-                result = nextResult;
-            }
-            return result;
+        let intersectionResult = new Set(nodeIdsPerOrigin[0]);
+        for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+          intersectionResult = new Set(
+            [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id)),
+          );
         }
+        return intersectionResult;
+      } else if (operation === "Union") {
+        return new Set(
+          nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]),
+        );
+      } else if (operation === "Symmetric Difference") {
+        // SD requires at least 2 sets, return first if only one
+        if (nodeIdsPerOrigin.length < 2)
+          return new Set(nodeIdsPerOrigin[0] || []);
 
-        console.error("Unknown set operation:", operation);
-        return new Set(); // Default fallback
+        let result = new Set(nodeIdsPerOrigin[0]);
+        for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+          const currentSet = nodeIdsPerOrigin[i];
+          const nextResult = new Set();
+          // Elements in result but not in currentSet
+          result.forEach((id) => {
+            if (!currentSet.has(id)) nextResult.add(id);
+          });
+          // Elements in currentSet but not in result
+          currentSet.forEach((id) => {
+            if (!result.has(id)) nextResult.add(id);
+          });
+          result = nextResult;
+        }
+        return result;
+      }
+
+      console.error("Unknown set operation:", operation);
+      return new Set(); // Default fallback
     };
 
-
     const addNodesFromPathsToSet = (nodeIdsSet) => {
-       if (typeof nodes !== 'object' || nodes === null) return; // Guard
+      if (typeof nodes !== "object" || nodes === null) return; // Guard
 
-        Object.values(nodes).forEach((originGroup) => {
-            if (!Array.isArray(originGroup)) return; // Guard
+      Object.values(nodes).forEach((originGroup) => {
+        if (!Array.isArray(originGroup)) return; // Guard
 
-            originGroup.forEach((item) => {
-                 // Check item structure carefully
-                if (item && item.node && item.node._id && item.path && Array.isArray(item.path.vertices)) {
-                    if (nodeIdsSet.has(item.node._id)) {
-                        item.path.vertices.forEach((vertex) => {
-                           if (vertex && vertex._id) { // Ensure vertex is valid
-                             nodeIdsSet.add(vertex._id);
-                           }
-                        });
-                    }
+        originGroup.forEach((item) => {
+          // Check item structure carefully
+          if (
+            item &&
+            item.node &&
+            item.node._id &&
+            item.path &&
+            Array.isArray(item.path.vertices)
+          ) {
+            if (nodeIdsSet.has(item.node._id)) {
+              item.path.vertices.forEach((vertex) => {
+                if (vertex && vertex._id) {
+                  // Ensure vertex is valid
+                  nodeIdsSet.add(vertex._id);
                 }
-            });
+              });
+            }
+          }
         });
+      });
     };
 
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
     // Only add path nodes if not doing shortest paths
     if (!findShortestPaths) {
-        addNodesFromPathsToSet(nodeIds);
+      addNodesFromPathsToSet(nodeIds);
     }
-
 
     const seenLinks = new Set();
     const filteredLinks = links.filter((link) => {
-        // Ensure link structure is valid
-       if (!link || !link._from || !link._to) return false;
+      // Ensure link structure is valid
+      if (!link || !link._from || !link._to) return false;
 
-        if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
-            const linkKey = `${link._from}-${link._to}`;
-            const reverseLinkKey = `${link._to}-${link._from}`;
+      if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
+        const linkKey = `${link._from}-${link._to}`;
+        const reverseLinkKey = `${link._to}-${link._from}`;
 
-            if (seenLinks.has(linkKey) || seenLinks.has(reverseLinkKey)) {
-                return false;
-            } else {
-                seenLinks.add(linkKey);
-                return true;
-            }
+        if (seenLinks.has(linkKey) || seenLinks.has(reverseLinkKey)) {
+          return false;
+        } else {
+          seenLinks.add(linkKey);
+          return true;
         }
-        return false;
+      }
+      return false;
     });
 
     const finalNodes = new Set();
     const addedNodeIds = new Set(); // Track added nodes to avoid duplicates
 
     // Add nodes that are part of the filtered links
-    filteredLinks.forEach(link => {
+    filteredLinks.forEach((link) => {
       if (link._from) finalNodes.add(link._from);
       if (link._to) finalNodes.add(link._to);
     });
 
     // Find the actual node objects corresponding to the IDs in finalNodes
     const filteredNodes = [];
-    if (typeof nodes === 'object' && nodes !== null) {
-        Object.values(nodes).forEach(originGroup => {
-            if (Array.isArray(originGroup)) {
-                originGroup.forEach(item => {
-                    if (item && item.node && item.node._id && finalNodes.has(item.node._id) && !addedNodeIds.has(item.node._id)) {
-                        filteredNodes.push(item.node);
-                        addedNodeIds.add(item.node._id);
-                    }
-                });
+    if (typeof nodes === "object" && nodes !== null) {
+      Object.values(nodes).forEach((originGroup) => {
+        if (Array.isArray(originGroup)) {
+          originGroup.forEach((item) => {
+            if (
+              item &&
+              item.node &&
+              item.node._id &&
+              finalNodes.has(item.node._id) &&
+              !addedNodeIds.has(item.node._id)
+            ) {
+              filteredNodes.push(item.node);
+              addedNodeIds.add(item.node._id);
             }
-        });
+          });
+        }
+      });
     }
-
 
     // Ensure origin nodes are included if they weren't part of any links
     if (Array.isArray(originNodeIds)) {
-        originNodeIds.forEach(originId => {
-            if (!addedNodeIds.has(originId)) {
-                 // Find the origin node object in the original data
-                 let foundNode = null;
-                 if (typeof nodes === 'object' && nodes !== null) {
-                     Object.values(nodes).find(originGroup => {
-                         if (Array.isArray(originGroup)) {
-                             const nodeItem = originGroup.find(item => item && item.node && item.node._id === originId);
-                             if (nodeItem) {
-                                 foundNode = nodeItem.node;
-                                 return true;
-                             }
-                         }
-                         return false;
-                     });
-                 }
-                 if (foundNode) {
-                    filteredNodes.push(foundNode);
-                    addedNodeIds.add(originId);
-                 }
-            }
-        });
+      originNodeIds.forEach((originId) => {
+        if (!addedNodeIds.has(originId)) {
+          // Find the origin node object in the original data
+          let foundNode = null;
+          if (typeof nodes === "object" && nodes !== null) {
+            Object.values(nodes).find((originGroup) => {
+              if (Array.isArray(originGroup)) {
+                const nodeItem = originGroup.find(
+                  (item) => item && item.node && item.node._id === originId,
+                );
+                if (nodeItem) {
+                  foundNode = nodeItem.node;
+                  return true;
+                }
+              }
+              return false;
+            });
+          }
+          if (foundNode) {
+            filteredNodes.push(foundNode);
+            addedNodeIds.add(originId);
+          }
+        }
+      });
     }
 
-
     return {
-        nodes: filteredNodes,
-        links: filteredLinks,
+      nodes: filteredNodes,
+      links: filteredLinks,
     };
-}
-
+  }
 
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData._id);
@@ -460,7 +495,14 @@ const ForceGraph = ({
   const handleExpand = () => {
     if (!clickedNodeId) return;
     // Use the current settings for the expansion fetch
-    getGraphData([clickedNodeId], false, 1, "ANY", allowedCollections, nodeLimit)
+    getGraphData(
+      [clickedNodeId],
+      false,
+      1,
+      "ANY",
+      allowedCollections,
+      nodeLimit,
+    )
       .then((data) => {
         if (graph && data && data.nodes && data.nodes[clickedNodeId]) {
           graph.updateGraph({
@@ -469,29 +511,33 @@ const ForceGraph = ({
             centerNodeId: clickedNodeId,
           });
         } else {
-          console.warn("Expansion data not found or graph not ready for:", clickedNodeId);
+          console.warn(
+            "Expansion data not found or graph not ready for:",
+            clickedNodeId,
+          );
         }
-      }).catch(error => console.error("Expansion failed:", error));
+      })
+      .catch((error) => console.error("Expansion failed:", error));
     handlePopupClose(); // Close popup after action
   };
 
   const handleCollapse = () => {
     if (graph && clickedNodeId) {
-       graph.updateGraph({
-            collapseNodes: [clickedNodeId], // Pass node ID to collapse around
-        });
+      graph.updateGraph({
+        collapseNodes: [clickedNodeId], // Pass node ID to collapse around
+      });
     }
-     handlePopupClose();
+    handlePopupClose();
   };
 
   const handleRemove = () => {
     if (graph && clickedNodeId) {
-        graph.updateGraph({
-            collapseNodes: [clickedNodeId], // Collapse first
-            removeNode: true,             // Then mark for removal
-        });
+      graph.updateGraph({
+        collapseNodes: [clickedNodeId], // Collapse first
+        removeNode: true, // Then mark for removal
+      });
     }
-     handlePopupClose(); // Close popup after action
+    handlePopupClose(); // Close popup after action
   };
 
   const handleDepthChange = (event) => {
@@ -514,15 +560,15 @@ const ForceGraph = ({
     const newFontSize = parseInt(event.target.value, 10);
     setNodeFontSize(newFontSize);
     if (graph?.updateNodeFontSize) {
-        graph.updateNodeFontSize(newFontSize);
+      graph.updateNodeFontSize(newFontSize);
     }
   };
 
   const handleEdgeFontSizeChange = (event) => {
     const newFontSize = parseInt(event.target.value, 10);
     setEdgeFontSize(newFontSize);
-     if (graph?.updateLinkFontSize) {
-        graph.updateLinkFontSize(newFontSize);
+    if (graph?.updateLinkFontSize) {
+      graph.updateLinkFontSize(newFontSize);
     }
   };
 
@@ -536,7 +582,7 @@ const ForceGraph = ({
   };
 
   const handleAllOn = () => {
-    setAllowedCollections(collections.map(c => c));
+    setAllowedCollections(collections.map((c) => c));
   };
 
   const handleAllOff = () => {
@@ -545,9 +591,9 @@ const ForceGraph = ({
 
   const handleLabelToggle = (labelClass) => {
     setLabelStates((prevStates) => ({
-        ...prevStates,
-        [labelClass]: !prevStates[labelClass],
-      }));
+      ...prevStates,
+      [labelClass]: !prevStates[labelClass],
+    }));
     // The actual toggling happens in the useEffect watching labelStates
   };
 
@@ -559,98 +605,101 @@ const ForceGraph = ({
     setFullOntology(!fullOntology);
   };
 
-
   const handleSimulationRestart = () => {
-     if (graph?.updateGraph) {
-        graph.updateGraph({
-            simulate: true,
-        });
-     }
+    if (graph?.updateGraph) {
+      graph.updateGraph({
+        simulate: true,
+      });
+    }
   };
 
   const exportGraph = (format) => {
     if (!chartContainerRef.current) return;
     const svgElement = chartContainerRef.current.querySelector("svg");
     if (!svgElement) {
-        console.error("SVG element not found for export.");
-        return;
+      console.error("SVG element not found for export.");
+      return;
     }
 
     // Temporarily set styles for export if needed (e.g., background)
     svgElement.style.backgroundColor = "white"; // Ensure white background
 
     const svgData = new XMLSerializer().serializeToString(svgElement);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" }); // Specify charset
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    }); // Specify charset
 
     // Reset styles if modified
     svgElement.style.backgroundColor = "";
-
 
     const url = URL.createObjectURL(svgBlob);
 
     const img = new Image();
     img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        // Consider dynamic scaling based on SVG size or user input
-        let scaleFactor = 4; // Increased scale factor for better resolution
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      // Consider dynamic scaling based on SVG size or user input
+      let scaleFactor = 4; // Increased scale factor for better resolution
 
-        // Use viewBox for sizing if available, otherwise use width/height attributes
-        const viewBox = svgElement.viewBox.baseVal;
-        const svgWidth = viewBox && viewBox.width ? viewBox.width : svgElement.width.baseVal.value;
-        const svgHeight = viewBox && viewBox.height ? viewBox.height : svgElement.height.baseVal.value;
+      // Use viewBox for sizing if available, otherwise use width/height attributes
+      const viewBox = svgElement.viewBox.baseVal;
+      const svgWidth =
+        viewBox && viewBox.width
+          ? viewBox.width
+          : svgElement.width.baseVal.value;
+      const svgHeight =
+        viewBox && viewBox.height
+          ? viewBox.height
+          : svgElement.height.baseVal.value;
 
-        canvas.width = svgWidth * scaleFactor;
-        canvas.height = svgHeight * scaleFactor;
+      canvas.width = svgWidth * scaleFactor;
+      canvas.height = svgHeight * scaleFactor;
 
+      // Draw white background on canvas
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw white background on canvas
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scaleFactor, scaleFactor); // Scale context
+      ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Draw image at original size
 
-        ctx.scale(scaleFactor, scaleFactor); // Scale context
-        ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Draw image at original size
+      let downloadUrl;
+      let filename;
 
-        let downloadUrl;
-        let filename;
+      if (format === "png") {
+        downloadUrl = canvas.toDataURL("image/png");
+        filename = "graph.png";
+      } else if (format === "jpeg") {
+        downloadUrl = canvas.toDataURL("image/jpeg", 0.9); // Quality setting for JPEG
+        filename = "graph.jpeg";
+      } else if (format === "svg") {
+        // For SVG, just use the blob URL directly
+        downloadUrl = url;
+        filename = "graph.svg";
+      } else {
+        console.error("Unsupported export format:", format);
+        URL.revokeObjectURL(url); // Clean up blob URL
+        return;
+      }
 
-        if (format === "png") {
-            downloadUrl = canvas.toDataURL("image/png");
-            filename = "graph.png";
-        } else if (format === "jpeg") {
-            downloadUrl = canvas.toDataURL("image/jpeg", 0.9); // Quality setting for JPEG
-            filename = "graph.jpeg";
-        } else if (format === "svg") {
-            // For SVG, just use the blob URL directly
-             downloadUrl = url;
-             filename = "graph.svg";
-        } else {
-            console.error("Unsupported export format:", format);
-            URL.revokeObjectURL(url); // Clean up blob URL
-            return;
-        }
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link); // Append link to body for Firefox compatibility
+      link.click();
+      document.body.removeChild(link); // Clean up link
 
-
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = filename;
-        document.body.appendChild(link); // Append link to body for Firefox compatibility
-        link.click();
-        document.body.removeChild(link); // Clean up link
-
-        // Revoke object URLs after download is initiated
-        if (format !== 'svg') { // SVG uses the url directly for download href
-             URL.revokeObjectURL(url);
-        }
-
+      // Revoke object URLs after download is initiated
+      if (format !== "svg") {
+        // SVG uses the url directly for download href
+        URL.revokeObjectURL(url);
+      }
     };
     img.onerror = (e) => {
-        console.error("Error loading SVG blob into image:", e);
-        URL.revokeObjectURL(url); // Clean up blob URL on error
+      console.error("Error loading SVG blob into image:", e);
+      URL.revokeObjectURL(url); // Clean up blob URL on error
     };
     img.src = url; // Load the SVG blob URL into the Image object
-};
-
+  };
 
   const toggleOptionsVisibility = () => {
     setOptionsVisible(!optionsVisible);
@@ -780,23 +829,26 @@ const ForceGraph = ({
           <div className="checkboxes-container">
             {collections.map((collection) => (
               <div key={collection} className="checkbox-container">
-                 {/* Changed to input type checkbox for better semantics/accessibility */}
-                 <label htmlFor={`collection-toggle-${collection}`} className={
+                {/* Changed to input type checkbox for better semantics/accessibility */}
+                <label
+                  htmlFor={`collection-toggle-${collection}`}
+                  className={
                     allowedCollections.includes(collection)
                       ? "collection-button background-color-bg"
                       : "collection-button background-color-light"
-                  }>
-                     <input
-                        type="checkbox"
-                        id={`collection-toggle-${collection}`}
-                        checked={allowedCollections.includes(collection)}
-                        onChange={() => handleCollectionChange(collection)}
-                        style={{ display: 'none' }} // Hide checkbox, style the label
-                    />
-                     {collectionsMap.has(collection)
-                        ? collectionsMap.get(collection)["display_name"]
-                        : collection}
-                 </label>
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    id={`collection-toggle-${collection}`}
+                    checked={allowedCollections.includes(collection)}
+                    onChange={() => handleCollectionChange(collection)}
+                    style={{ display: "none" }} // Hide checkbox, style the label
+                  />
+                  {collectionsMap.has(collection)
+                    ? collectionsMap.get(collection)["display_name"]
+                    : collection}
+                </label>
               </div>
             ))}
           </div>
@@ -808,7 +860,7 @@ const ForceGraph = ({
                   ? "background-color-bg"
                   : "background-color-light"
               }
-               disabled={allowedCollections.length === collections.length} // Disable if already all on
+              disabled={allowedCollections.length === collections.length} // Disable if already all on
             >
               All On
             </button>
@@ -868,17 +920,17 @@ const ForceGraph = ({
 
         {/* Shortest Path Toggle */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
-           <div className="option-group multi-node">
-              Shortest Path
-              <label className="switch" style={{ margin: "auto" }}>
-                <input
-                  type="checkbox"
-                  checked={findShortestPaths}
-                  onChange={handleShortestPathToggle}
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
+          <div className="option-group multi-node">
+            Shortest Path
+            <label className="switch" style={{ margin: "auto" }}>
+              <input
+                type="checkbox"
+                checked={findShortestPaths}
+                onChange={handleShortestPathToggle}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
         )}
 
         {/* UI TOGGLE */}
@@ -896,45 +948,59 @@ const ForceGraph = ({
 
         {/* Simulation Restart Button */}
         <div className="option-group">
-            <button className="simulation-toggle" onClick={handleSimulationRestart}>
-                Restart Simulation
-            </button>
+          <button
+            className="simulation-toggle"
+            onClick={handleSimulationRestart}
+          >
+            Restart Simulation
+          </button>
         </div>
-
 
         {/* Export Buttons */}
         <div className="option-group export-buttons">
-             <label>Export Graph:</label>
-             <button onClick={() => exportGraph("svg")}>Download as SVG</button>
-             <button onClick={() => exportGraph("png")}>Download as PNG</button>
-             {/* <button onClick={() => exportGraph("jpeg")}>Download as JPEG</button> */}
+          <label>Export Graph:</label>
+          <button onClick={() => exportGraph("svg")}>Download as SVG</button>
+          <button onClick={() => exportGraph("png")}>Download as PNG</button>
+          {/* <button onClick={() => exportGraph("jpeg")}>Download as JPEG</button> */}
         </div>
-
-      </div> {/* End graph-options */}
-
+      </div>{" "}
+      {/* End graph-options */}
       {isLoading && (
-        <div className="loading-indicator"> {/* Changed class for clarity */}
-          <div className="progress-bar"></div> {/* Basic progress bar style needed */}
+        <div className="loading-indicator">
+          {" "}
+          {/* Changed class for clarity */}
+          <div className="progress-bar"></div>{" "}
+          {/* Basic progress bar style needed */}
           <span>Loading graph data...</span>
         </div>
       )}
-
       {/* Chart Container */}
-      <div id="chart-container" ref={chartContainerRef} style={{ minHeight: '500px', border: '1px solid #ccc', position: 'relative' /* Needed for absolute positioning of popups */ }}>
-           {/* Conditional rendering inside container */}
-            {!isLoading && !graph && showNoDataPopup && (
-                <div className="no-data-message"> {/* Style this message */}
-                No data meets the current criteria. Please adjust options or search terms.
-                </div>
-            )}
-             {!isLoading && !graph && !showNoDataPopup && !originNodeIds?.length && (
-                 <div className="no-data-message"> {/* Style this message */}
-                    Please search for nodes to visualize a graph.
-                 </div>
-            )}
+      <div
+        id="chart-container"
+        ref={chartContainerRef}
+        style={{
+          minHeight: "500px",
+          border: "1px solid #ccc",
+          position: "relative" /* Needed for absolute positioning of popups */,
+        }}
+      >
+        {/* Conditional rendering inside container */}
+        {!isLoading && !graph && showNoDataPopup && (
+          <div className="no-data-message">
+            {" "}
+            {/* Style this message */}
+            No data meets the current criteria. Please adjust options or search
+            terms.
+          </div>
+        )}
+        {!isLoading && !graph && !showNoDataPopup && !originNodeIds?.length && (
+          <div className="no-data-message">
+            {" "}
+            {/* Style this message */}
+            Please search for nodes to visualize a graph.
+          </div>
+        )}
       </div>
-
-
       {/* Node Action Popup */}
       <div
         className="node-popup"
@@ -942,7 +1008,7 @@ const ForceGraph = ({
           popupVisible
             ? {
                 display: "flex", // Changed to flex for better layout
-                position: 'absolute', // Position relative to chart-container
+                position: "absolute", // Position relative to chart-container
                 left: `${popupPosition.x}px`,
                 top: `${popupPosition.y}px`,
               }
@@ -968,13 +1034,12 @@ const ForceGraph = ({
         </button>
         {/* Simple text 'X' button for closing */}
         <button
-            className="popup-close-button"
-            onClick={handlePopupClose}
-            aria-label="Close popup" // Accessibility
-            >
-            ×
+          className="popup-close-button"
+          onClick={handlePopupClose}
+          aria-label="Close popup" // Accessibility
+        >
+          ×
         </button>
-
       </div>
     </div>
   );

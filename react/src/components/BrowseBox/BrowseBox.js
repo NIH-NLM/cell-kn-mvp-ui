@@ -8,7 +8,7 @@ const BrowseBox = ({ currentCollection }) => {
   const collectionsMap = new Map(collectionsMapData);
 
   useEffect(() => {
-    fetchCollections().then((data) => {
+    fetchCollections("phenotypes").then((data) => {
       // Set collections state
       setCollections(parseCollections(data, collectionsMap));
     });

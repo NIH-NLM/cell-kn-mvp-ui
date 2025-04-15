@@ -18,7 +18,9 @@ GRAPH_NAME_PHENOTYPES = env("GRAPH_NAME_PHENOTYPES")
 
 # Configure the connection
 client = ArangoClient(ARANGO_DB_HOST)
-db_ontologies = client.db(ARANGO_DB_NAME_ONTOLOGIES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD)
+db_ontologies = client.db(
+    ARANGO_DB_NAME_ONTOLOGIES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD
+)
 db_phenotypes = client.db(
     ARANGO_DB_NAME_PHENOTYPES, username=ARANGO_DB_USER, password=ARANGO_DB_PASSWORD
 )
