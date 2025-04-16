@@ -23,8 +23,10 @@ export const fetchCollections = async (graphType) => {
 export const hasAnyNodes = (data, nodeId) => {
   // Check if data, data.nodes exist and are objects.
   if (
-    !data || typeof data !== 'object' ||
-    !data.nodes || typeof data.nodes !== 'object' ||
+    !data ||
+    typeof data !== "object" ||
+    !data.nodes ||
+    typeof data.nodes !== "object" ||
     !data.nodes.hasOwnProperty(nodeId) // Check if the specific nodeId key exists
   ) {
     // Return false if basic structure or the specific key is missing
@@ -40,17 +42,19 @@ export const hasAnyNodes = (data, nodeId) => {
   }
 
   //    .some() returns true if the callback function returns true for at least one element.
-  const result = nodeEntries.some(entry => {
+  const result = nodeEntries.some((entry) => {
     // Check if the entry exists, is an object, has the 'node' property, AND that property is not null
-    return entry &&                     // Check if entry is truthy
-           typeof entry === 'object' && // Check if entry is an object
-           entry.hasOwnProperty('node') && // Check if entry has the 'node' property
-           entry.node !== null;         // Check if the 'node' property's value is not null
+    return (
+      entry && // Check if entry is truthy
+      typeof entry === "object" && // Check if entry is an object
+      entry.hasOwnProperty("node") && // Check if entry has the 'node' property
+      entry.node !== null
+    ); // Check if the 'node' property's value is not null
   });
 
   // Return the result of the .some() check
   return result;
-}
+};
 
 export const parseCollections = (collections, collectionsMap = null) => {
   if (collectionsMap) {
