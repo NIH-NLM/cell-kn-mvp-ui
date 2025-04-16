@@ -1,6 +1,12 @@
 import * as d3 from "d3";
 
-function SunburstConstructor(data, size, handleSunburstClick) {
+function SunburstConstructor(
+  data,
+  size,
+  handleSunburstClick,
+  handleNodeClick,
+  previousHierarchyRoot,
+) {
   // Specify the chart’s dimensions.
   const width = size;
   const height = width;
@@ -8,18 +14,21 @@ function SunburstConstructor(data, size, handleSunburstClick) {
 
   // Create the color scale.
   const color = d3.scaleOrdinal(
-    d3.quantize(d3.interpolateRainbow, data.children.length + 1),
+    // Handle case where root has no children initially
+    d3.quantize(d3.interpolateRainbow, (data.children || []).length + 1),
   );
 
   // Compute the layout.
-  const hierarchy = d3.hierarchy(data).sum((d) => 1);
-  // .sort((a, b) => b._id - a._id);
+  const hierarchy = d3
+    .hierarchy(data)
+    .sum((d) => d.value || 1) // Use value from data if available
+    .sort((a, b) => (b.value || 1) - (a.value || 1)); // Sort by value
+
   const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(
     hierarchy,
   );
-  root.each((d) => (d.current = d));
+  root.each((d) => (d.current = d)); // Initialize current position
 
-  /* TODO: Review math to make arc 360 degrees */
   // Create the arc generator.
   const arc = d3
     .arc()
@@ -35,52 +44,71 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     .create("svg")
     .attr("viewBox", [-width / 2, -height / 2, width, width])
     .style("font", "12px sans-serif")
-    .style("max-height", "100vh");
+    .style("max-height", "100vh"); // Consider setting fixed height/width styles
 
   // Append the arcs.
   const path = svg
     .append("g")
     .selectAll("path")
-    .data(root.descendants().slice(1))
+    .data(root.descendants().slice(1)) // Exclude root circle area
     .join("path")
     .attr("fill", (d) => {
-      while (d.depth > 1) d = d.parent;
-      return color(d.data.label);
+      // Traverse up to find the first ancestor with children for color consistency
+      let colorNode = d;
+      while (colorNode.depth > 1) colorNode = colorNode.parent;
+      return color(colorNode.data.label);
     })
+    // Indicate visually if children can be loaded
     .attr("fill-opacity", (d) =>
-      arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0,
-    )
+      arcVisible(d.current)
+        ? d.data._hasChildren && !d.children
+          ? 0.8
+          : d.children
+            ? 0.6
+            : 0.4
+        : 0,
+    ) // Higher opacity if loadable
     .attr("pointer-events", (d) => (arcVisible(d.current) ? "auto" : "none"))
-
-    .attr("d", (d) => arc(d.current));
-
-  // Make arcs context menu open with right click
-  path.style("cursor", "pointer").on("contextmenu", function (event, d) {
-    event.preventDefault();
-    handleSunburstClick(event, d);
-  });
-
-  // Make them navigable if they have children.
-  path.filter((d) => d.children).on("click", clicked);
-
-  // Make arcs context menu clickable if they do not have children
-  path
-    .filter((d) => !d.children)
-    .on("click", function (event, d) {
-      event.preventDefault();
-      handleSunburstClick(event, d);
+    .attr("d", (d) => arc(d.current))
+    // Add cursor style based on potential actions
+    .style("cursor", (d) => {
+      if (d.data._hasChildren && !d.children) return "pointer"; // Loadable
+      if (d.children) return "pointer"; // Zoomable
+      return "default"; // Leaf node
     });
 
+  // --- CLICK HANDLERS ---
+
+  // RIGHT CLICK: Context Menu
+  path.on("contextmenu", function (event, d) {
+    event.preventDefault(); // Prevent default browser context menu
+    handleSunburstClick(event, d); // Pass the D3 node `d`
+  });
+
+  // LEFT CLICK: Zoom or Load
+  path.on("click", (event, d) => {
+    // Call the React handler first to check if data needs loading
+    const shouldZoom = handleNodeClick(event, d);
+
+    if (shouldZoom) {
+      clicked(event, d); // Zoom function
+    }
+  });
+
+  // Tooltip
   const format = d3.format(",d");
   path.append("title").text(
     (d) =>
       `${d
         .ancestors()
-        .map((d) => d.data.label)
+        .map((a) => a.data.label)
         .reverse()
-        .join("/")}\n${format(1)}`,
+        .join(
+          "/",
+        )}\nValue: ${format(d.value || 1)} ${d.data._hasChildren && !d.children ? "(Click to load children)" : ""}`,
   );
 
+  // Labels
   const label = svg
     .append("g")
     .attr("pointer-events", "none")
@@ -92,35 +120,44 @@ function SunburstConstructor(data, size, handleSunburstClick) {
     .attr("dy", "0.35em")
     .attr("fill-opacity", (d) => +labelVisible(d.current))
     .attr("transform", (d) => labelTransform(d.current))
-    .text((d) => d.data.label);
+    .text((d) =>
+      d.data.label.length > 10
+        ? d.data.label.slice(0, 9) + "..."
+        : d.data.label,
+    ); // Truncate long labels
 
+  // Center circle for zooming out / root info
   const parent = svg
     .append("circle")
     .datum(root)
     .attr("r", radius)
     .attr("fill", "none")
     .attr("pointer-events", "all")
-    .on("click", clicked);
-
-  const centerText = svg
-    .append("text")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("text-anchor", "middle")
-    .attr("dy", "0.35em")
-    .style("font-size", "16px")
-    .style("font-weight", "bold")
-    .text(data.label)
-    .style("cursor", "default")
-    .on("click", function (event) {
-      event.preventDefault();
-      clicked(event, root);
+    .on("click", (event, d) => {
+      // Clicking center always zooms out to parent or triggers zoom on root
+      clicked(event, d);
     });
 
-  // Handle zoom on click.
+  // Center Text
+  const centerText = svg
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "0.35em")
+    .style("font-size", "12px")
+    .style("font-weight", "bold")
+    .style("cursor", "default") // Default cursor for center
+    .text(root.data.label) // Start with root label
+    .on("click", (event) => {
+      // Clicking text zooms out to parent
+      clicked(event, parent.datum());
+    });
+
+  // --- Internal Zoom Function ---
   function clicked(event, p) {
+    // Update parent circle datum for zoom-out clicks
     parent.datum(p.parent || root);
 
+    // Transition calculations
     root.each(
       (d) =>
         (d.target = {
@@ -139,12 +176,7 @@ function SunburstConstructor(data, size, handleSunburstClick) {
 
     const t = svg.transition().duration(750);
 
-    // Update the cursor based on the depth of the node
-    updateCursor(p);
-
-    // Transition the data on all arcs, even the ones that aren’t visible,
-    // so that if this transition is interrupted, entering arcs will start
-    // the next transition from the desired position.
+    // Transition paths
     path
       .transition(t)
       .tween("data", (d) => {
@@ -155,12 +187,18 @@ function SunburstConstructor(data, size, handleSunburstClick) {
         return +this.getAttribute("fill-opacity") || arcVisible(d.target);
       })
       .attr("fill-opacity", (d) =>
-        arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0,
+        arcVisible(d.target)
+          ? d.data._hasChildren && !d.children
+            ? 0.8
+            : d.children
+              ? 0.6
+              : 0.4
+          : 0,
       )
       .attr("pointer-events", (d) => (arcVisible(d.target) ? "auto" : "none"))
-
       .attrTween("d", (d) => () => arc(d.current));
 
+    // Transition labels
     label
       .filter(function (d) {
         return +this.getAttribute("fill-opacity") || labelVisible(d.target);
@@ -169,15 +207,20 @@ function SunburstConstructor(data, size, handleSunburstClick) {
       .attr("fill-opacity", (d) => +labelVisible(d.target))
       .attrTween("transform", (d) => () => labelTransform(d.current));
 
-    // Update the center text based on the current node's data
-    centerText.text(p.data.label);
+    // Update center text and cursor for center circle/text
+    centerText.text(p.data.label); // Update center text to focused node
+    updateCursor(p); // Update cursor for center circle/text
   }
 
+  // --- Helper Functions ---
   function arcVisible(d) {
-    return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+    // Visibility depth
+    let depth = 3;
+    return d.y1 <= depth && d.y0 >= 1 && d.x1 > d.x0;
   }
 
   function labelVisible(d) {
+    // Label visibility
     return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
   }
 
@@ -188,13 +231,14 @@ function SunburstConstructor(data, size, handleSunburstClick) {
   }
 
   function updateCursor(p) {
-    // Change cursor based on depth: if depth is 0, use default cursor
-    const cursorStyle = p.depth === 0 ? "default" : "pointer";
+    // Change cursor for the center elements based on current zoom level 'p'
+    const cursorStyle = p.depth === 0 ? "default" : "pointer"; // Pointer if zoomed in
     parent.style("cursor", cursorStyle);
     centerText.style("cursor", cursorStyle);
   }
 
-  return svg.node();
+  // Return the SVG node *and* the calculated hierarchy root
+  return { svgNode: svg.node(), hierarchyRoot: root };
 }
 
 export default SunburstConstructor;

@@ -313,85 +313,19 @@ def run_aql_query(query):
     return results
 
 
-def get_sunburst():
-    # Root node ids for each collection
-    # Note that NCBITaxon is starting from cellular organisms, and not root
-    node_ids = [
-        "CL/0000000",
-        "GO/0008150",
-        "GO/0003674",
-        "GO/0005575",
-        "PATO/0000001",
-        "MONDO/0000001",
-        "UBERON/0000000",
-    ]
-
-    # Edge collections for each type
-    edge_collections = {
-        "CL": "CL-CL",
-        "GO": "GO-GO",
-        "PATO": "PATO-PATO",
-        "MONDO": "MONDO-MONDO",
-        "UBERON": "UBERON-UBERON",
-    }
-
-    depth = 2
-
-    # Initialize an empty list to collect the final results for the sunburst
-    root_nodes = []
-
-    # Query to traverse the graph for each root node
-    # TODO: Check whether it is better to combine into one query
-    for node_id in node_ids:
+def get_collection_info(node_id, edge_collections):
+    """Gets the edge collection based on the node ID prefix."""
+    try:
         collection_type = node_id.split("/")[0]
         edge_col = edge_collections.get(collection_type)
-
-        # Query to get nodes for a specific root node and edge collection
-        query = f"""
-            FOR v, e IN 0..@depth INBOUND @node_id @edge_col
-                FILTER e.label == 'subClassOf' OR v._id == @node_id
-                RETURN {{v, e}}
-        """
-
-        bind_vars = {"node_id": node_id, "edge_col": edge_col, "depth": depth}
-
-        # Execute the query
-        try:
-            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-            results = list(cursor)  # Collect the results
-
-            # Process the results to form the sunburst structure
-            paths = {}  # Dictionary to store object by _id for quick lookup
-
-            # Initialize the first root object (the node we start with)
-            data = results.pop(0)["v"]
-            data["children"] = []  # Initialize the children attribute
-            paths[data["_id"]] = data  # Store the root node in paths
-
-            # Iterate through results to build the child hierarchy
-            for result in results:
-                v = result["v"]
-                e = result["e"]
-
-                parent_id = e["_to"]  # Parent's _id
-                parent = paths.get(parent_id)  # Look up the parent object
-
-                # If parent exists, append this object to the parent's children list
-                if parent:
-                    if "children" not in parent:
-                        parent["children"] = []  # Ensure the parent has a children list
-                    parent["children"].append(v)
-
-                # Store the current object in paths for future lookups
-                paths[v["_id"]] = v
-
-            # Append the processed data for this root node to root_nodes
-            root_nodes.append(data)
-
-        except Exception as e:
-            print(f"Error processing node {node_id}: {e}")
-
-    # Create a Root node that links only to the root nodes in node_ids
-    graph_root = {"label": "NLM Cell Knowledge Network", "children": root_nodes}
-
-    return graph_root
+        if not edge_col:
+            # Handle cases where the prefix doesn't match known collections
+            print(
+                f"Warning: No edge collection defined for prefix {collection_type} in node_id {node_id}"
+            )
+            return None
+        return edge_col
+    except (IndexError, AttributeError):
+        # Handle cases where node_id is None or not in the expected format
+        print(f"Warning: Could not parse collection type from node_id: {node_id}")
+        return None

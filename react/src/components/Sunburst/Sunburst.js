@@ -1,144 +1,198 @@
-import { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
+import { useEffect, useRef, useState, useCallback } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
+import { mergeChildren } from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
-  const [graphData, setGraphData] = useState({});
-  const [graph, setGraph] = useState(null);
+  const [graphData, setGraphData] = useState(null); // Initialize as null
+  const [isLoading, setIsLoading] = useState(false); // Loading state
   const [clickedItem, setClickedItem] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
 
+  const svgContainerRef = useRef(null); // Ref for the SVG container
+  const svgNodeRef = useRef(null); // Ref for the actual SVG node returned by D3
   const popupRef = useRef(null);
+  const currentHierarchyRootRef = useRef(null); // Store the D3 hierarchy root
 
-  // Fetch new graph data
-  useEffect(() => {
-    // Ensure graph only renders once at a time
-    let isMounted = true;
-    getGraphData().then((data) => {
-      if (isMounted) {
+  // --- Data Fetching ---
+  const fetchSunburstData = useCallback(async (parentId = null) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/arango_api/sunburst/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Send parent_id if provided
+        body: JSON.stringify(parentId ? { parent_id: parentId } : {}),
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Network response was not ok (status: ${response.status})`,
+        );
+      }
+      const data = await response.json();
+      console.log(data);
+
+      if (parentId) {
+        setGraphData((prevData) => {
+          if (!prevData) return prevData;
+          return mergeChildren(prevData, parentId, data);
+        });
+      } else {
         setGraphData(data);
       }
-    });
-
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
+    } catch (error) {
+      console.error("Failed to fetch sunburst data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Update graph if data changes
+  // --- Initial Data Load ---
   useEffect(() => {
-    if (Object.keys(graphData).length !== 0) {
-      //TODO: Review size
-      const g = SunburstConstructor(graphData, 928, handleSunburstClick);
-      setGraph(g);
+    // Fetch root data on mount
+    fetchSunburstData();
+  }, [fetchSunburstData]);
+
+  // --- D3 Graph Update ---
+  useEffect(() => {
+    if (graphData && svgContainerRef.current) {
+      // Create or update the graph
+      const { svgNode, hierarchyRoot } = SunburstConstructor(
+        graphData,
+        928, // size
+        handleSunburstClick, // Right-click handler
+        handleNodeClick, // Left-click handler for zoom/load
+        currentHierarchyRootRef.current, // Pass previous hierarchy for transitions
+      );
+
+      // Store the new hierarchy root for the next update
+      currentHierarchyRootRef.current = hierarchyRoot;
+
+      // Manage the SVG node addition/replacement
+      if (svgNodeRef.current) {
+        svgContainerRef.current.removeChild(svgNodeRef.current);
+      }
+      svgNodeRef.current = svgNode;
+      svgContainerRef.current.appendChild(svgNode);
+    } else if (!graphData && svgNodeRef.current && svgContainerRef.current) {
+      // If graphData becomes null remove the SVG
+      svgContainerRef.current.removeChild(svgNodeRef.current);
+      svgNodeRef.current = null;
+      currentHierarchyRootRef.current = null;
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (svgNodeRef.current && svgContainerRef.current) {
+        // Check ref validity before trying removal
+        try {
+          svgContainerRef.current.removeChild(svgNodeRef.current);
+        } catch (e) {
+          // Ignore errors if node already removed elsewhere
+        }
+      }
+      svgNodeRef.current = null;
+      currentHierarchyRootRef.current = null;
+    };
   }, [graphData]);
 
-  // Remove and rerender graph on any changes
-  useEffect(() => {
-    if (graph) {
-      const chartContainer = d3.select("#sunburst-container");
-      chartContainer.selectAll("*").remove();
-      chartContainer.append(() => graph);
-    }
-  }, [graph]);
+  // --- Event Handlers ---
 
-  // Add event listeners to close popup window if clicks occur outside popup
+  // Left Click: Handles Zooming and Lazy Loading
+  const handleNodeClick = useCallback(
+    (event, d) => {
+      if (d.data._hasChildren && !d.children && !isLoading) {
+        console.log("Fetching children for:", d.data._id);
+        fetchSunburstData(d.data._id);
+      } else if (d.children || d.depth === 0) {
+        return true;
+      }
+      return false;
+    },
+    [fetchSunburstData, isLoading],
+  );
+
+  // Right Click: Handles Popup Menu
+  const handleSunburstClick = useCallback((e, dataNode) => {
+    // Use dataNode.data to get original data object
+    setClickedItem(dataNode.data);
+
+    const { clientX, clientY } = e;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    setPopupPosition({ x: clientX + 10 + scrollX, y: clientY + 10 + scrollY });
+    setPopupVisible(true);
+  }, []);
+
+  // --- Popup Logic ---
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if the click is outside the popup
       if (popupRef.current && !popupRef.current.contains(event.target)) {
         handlePopupClose();
       }
     };
-
-    // Add event listener for clicks on the document
     document.addEventListener("mousedown", handleClickOutside);
-
-    // Cleanup the event listener when the component unmounts or popup visibility changes
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* TODO: optimize lazy loading of sunburst to allow for the entire dataset to be in sunburst */
-  let getGraphData = async () => {
-    let response = await fetch("/arango_api/sunburst/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
-    return response.json();
-  };
-
-  // Handle right click on node
-  const handleSunburstClick = (e, data) => {
-    setClickedItem(data.data);
-
-    // Get the mouse position and current scroll state
-    const { clientX, clientY } = e;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    // Adjust the popup position by adding the scroll offsets
-    setPopupPosition({
-      x: clientX + 10 + scrollX,
-      y: clientY + 10 + scrollY,
-    });
-    setPopupVisible(true);
-  };
-
   function handleSelectItem() {
-    addSelectedItem(clickedItem);
+    if (clickedItem) {
+      addSelectedItem(clickedItem);
+    }
     handlePopupClose();
   }
 
-  // Handle closing the node popup
   const handlePopupClose = () => {
     setPopupVisible(false);
+    setClickedItem(null);
   };
 
   return (
     <div>
-      <div data-testid="sunburst-container" id="sunburst-container" />
+      {/* Container for D3 SVG */}
       <div
-        ref={popupRef}
-        className="node-popup"
-        style={
-          popupVisible
-            ? {
-                display: "flex",
-                left: `${popupPosition.x + 10}px`,
-                top: `${popupPosition.y + 10}px`,
-              }
-            : { display: "none" }
-        }
+        data-testid="sunburst-container"
+        id="sunburst-container"
+        ref={svgContainerRef}
+        style={{ position: "relative" }}
       >
-        <a
-          className="popup-button"
-          data-testid="popup-button"
-          href={`/#/browse/${clickedItem ? clickedItem["_id"] : ""}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={handlePopupClose}
-        >
-          Go To Page
-        </a>
-        <button className="popup-button" onClick={handleSelectItem}>
-          Add as origin
-        </button>
-        <button className="x-button" onClick={handlePopupClose}>
-          X
-        </button>
+        {/* Loading Indicator */}
+        {isLoading && <div className="loading-overlay">Loading...</div>}
       </div>
+
+      {/* Popup */}
+      {popupVisible && clickedItem && (
+        <div
+          ref={popupRef}
+          className="node-popup"
+          style={{
+            position: "absolute",
+            display: "flex",
+            left: `${popupPosition.x}px`,
+            top: `${popupPosition.y}px`,
+            zIndex: 1000,
+          }}
+        >
+          <a
+            className="popup-button"
+            data-testid="popup-button"
+            href={`/#/browse/${clickedItem["_id"]}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handlePopupClose}
+          >
+            Go To Page
+          </a>
+          <button className="popup-button" onClick={handleSelectItem}>
+            Add as origin
+          </button>
+          <button className="x-button" onClick={handlePopupClose}>
+            X
+          </button>
+        </div>
+      )}
     </div>
   );
 };

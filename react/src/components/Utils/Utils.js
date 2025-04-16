@@ -93,3 +93,36 @@ export const getLabel = (item) => {
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
     .join(" + ");
 };
+
+export function findNodeById(node, id) {
+  if (node._id === id) {
+    return node;
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeById(child, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+// Function to immutably merge children into the graph data
+export function mergeChildren(graphData, parentId, children) {
+  // Deep copy
+  const newData = JSON.parse(JSON.stringify(graphData));
+
+  // Find the parent node in the copied data structure
+  const parentNode = findNodeById(newData, parentId);
+
+  if (parentNode) {
+    // Assign the fetched children
+    parentNode.children = children;
+  } else {
+    console.warn(`Parent node with ID ${parentId} not found in graph data.`);
+  }
+
+  return newData;
+}
