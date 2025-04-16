@@ -34,8 +34,8 @@ function SunburstConstructor(data, size, handleSunburstClick) {
   const svg = d3
     .create("svg")
     .attr("viewBox", [-width / 2, -height / 2, width, width])
-    .style("font", "16px sans-serif")
-    .style("max-height", "80vh");
+    .style("font", "12px sans-serif")
+    .style("max-height", "100vh");
 
   // Append the arcs.
   const path = svg

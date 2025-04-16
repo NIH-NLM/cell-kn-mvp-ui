@@ -335,7 +335,7 @@ def get_sunburst():
         "UBERON": "UBERON-UBERON",
     }
 
-    depth = 3
+    depth = 2
 
     # Initialize an empty list to collect the final results for the sunburst
     root_nodes = []
