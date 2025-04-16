@@ -482,7 +482,7 @@ option {
 }
 
 .graph-container {
-  width: 60%;
+  min-width: 60%;
 }
 
 /*Graph Options*/

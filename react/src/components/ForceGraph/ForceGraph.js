@@ -830,20 +830,16 @@ const ForceGraph = ({
             {collections.map((collection) => (
               <div key={collection} className="checkbox-container">
                 <button
-                  htmlFor={`collection-toggle-${collection}`}
+                  id={collection}
+                  // Now checked if allowedCollections includes the collection
+                  checked={allowedCollections.includes(collection)}
+                  onClick={() => handleCollectionChange(collection)}
                   className={
                     allowedCollections.includes(collection)
-                      ? "collection-button background-color-bg"
-                      : "collection-button background-color-light"
+                      ? "background-color-bg"
+                      : "background-color-light"
                   }
                 >
-                  <input
-                    type="checkbox"
-                    id={`collection-toggle-${collection}`}
-                    checked={allowedCollections.includes(collection)}
-                    onChange={() => handleCollectionChange(collection)}
-                    style={{ display: "none" }}
-                  />
                   {collectionsMap.has(collection)
                     ? collectionsMap.get(collection)["display_name"]
                     : collection}
