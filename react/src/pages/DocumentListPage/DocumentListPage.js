@@ -6,7 +6,7 @@ import Pagination from "../../components/Pagination/Pagination";
 import { GraphContext } from "../../components/Contexts/Contexts";
 
 const DocumentListPage = () => {
-  const { graph, setGraph } = useContext(GraphContext);
+  const { graphType, setGraphType } = useContext(GraphContext);
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,8 +17,8 @@ const DocumentListPage = () => {
     // Reset page and clear filter when collection changes
     setCurrentPage(1);
     setFilterText("");
-    getDocumentList(graph);
-  }, [coll, graph]);
+    getDocumentList(graphType);
+  }, [coll, graphType]);
 
   const getDocumentList = async (graphType) => {
     const response = await fetch(`/arango_api/collection/${coll}/`, {

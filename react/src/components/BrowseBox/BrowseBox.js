@@ -5,23 +5,17 @@ import collectionsMapData from "../../assets/collectionsMap.json";
 import { GraphContext } from "../Contexts/Contexts";
 
 const BrowseBox = ({ currentCollection }) => {
-  const { graph, setGraph } = useContext(GraphContext);
+  const { graphType, setGraphType } = useContext(GraphContext);
 
   const [collections, setCollections] = useState([]);
   const collectionsMap = new Map(collectionsMapData);
 
   useEffect(() => {
     setCollections([]); // Clear old collections
-    fetchCollections(graph).then((data) => {
+    fetchCollections(graphType).then((data) => {
       setCollections(parseCollections(data, collectionsMap));
     });
-  }, [graph]);
-
-  // Handler uses setGraph from context
-  const handleGraphToggle = () => {
-    const newGraphValue = graph === "phenotypes" ? "ontologies" : "phenotypes";
-    setGraph(newGraphValue);
-  };
+  }, [graphType]);
 
   return (
     <div className="browse-box-container">
@@ -47,21 +41,6 @@ const BrowseBox = ({ currentCollection }) => {
             </li>
           ))}
         </ul>
-      </div>
-      <div className="graph-toggle-container">
-        <div className="graph-toggle">
-          <span className="label-toggle-item">Phenotypes</span>
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={graph === "ontologies"}
-              onChange={handleGraphToggle}
-              aria-label="Toggle between Phenotypes and Ontologies"
-            />
-            <span className="slider round"></span>
-          </label>
-          <span className="label-toggle-item">Ontologies</span>
-        </div>
       </div>
     </div>
   );

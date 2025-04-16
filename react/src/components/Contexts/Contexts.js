@@ -5,8 +5,8 @@ export const PrunedCollections = createContext(["NCBITaxon"]);
 
 /* Graph Context */
 const defaultGraphContextValue = {
-  graph: "phenotypes",
-  setGraph: () => {
+  graphType: "phenotypes",
+  setGraphType: () => {
     // Default no-op function
     console.warn("Attempted to set graph outside of GraphProvider");
   },
@@ -14,10 +14,10 @@ const defaultGraphContextValue = {
 
 // Create a Provider Component
 export const GraphProvider = ({ children }) => {
-  const [graph, setGraph] = useState("phenotypes");
+  const [graphType, setGraphType] = useState("phenotypes");
   const providerValue = {
-    graph,
-    setGraph,
+    graphType,
+    setGraphType,
   };
   return (
     <GraphContext.Provider value={providerValue}>

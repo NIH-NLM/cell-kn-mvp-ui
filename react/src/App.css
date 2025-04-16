@@ -485,6 +485,11 @@ option {
   min-width: 60%;
 }
 
+.graph-context-toggle-container {
+  margin: 1rem 1rem 1rem auto;
+  padding-right: 3rem;
+}
+
 /*Graph Options*/
 
 .graph-options {
@@ -684,7 +689,7 @@ option {
   position: relative;
   display: inline-block;
   width: 60px;
-  height: 34px;
+  height: 28px;
   margin: 0 1rem;
 }
 
@@ -712,8 +717,8 @@ option {
 .slider:before {
   position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
+  height: 20px;
+  width: 20px;
   left: 4px;
   bottom: 4px;
   background-color: var(--color-white);
@@ -737,7 +742,7 @@ input:checked + .slider:before {
 
 /* Rounded sliders */
 .slider.round {
-  border-radius: 34px;
+  border-radius: 28px;
 }
 
 .slider.round:before {

@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import {useEffect, useState, useRef, useContext} from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
+import {GraphContext} from "../Contexts/Contexts";
 
 const ForceGraph = ({
   nodeIds: originNodeIds,
@@ -42,9 +43,6 @@ const ForceGraph = ({
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
-  const [fullOntology, setFullOntology] = useState(
-    "fullOntology" in settings ? settings["fullOntology"] : false,
-  );
 
   // Init other states
   const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
@@ -61,8 +59,10 @@ const ForceGraph = ({
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { graphType, setGraphType } = useContext(GraphContext);
+
   useEffect(() => {
-    fetchCollections(fullOntology ? "ontologies" : "phenotypes").then(
+    fetchCollections(graphType).then(
       (data) => {
         let tempCollections = parseCollections(data);
         setCollections(tempCollections);
@@ -83,7 +83,7 @@ const ForceGraph = ({
         }
       },
     );
-  }, [fullOntology]);
+  }, [graphType]);
 
   // Set event listeners for popup close
   useEffect(() => {
@@ -118,7 +118,7 @@ const ForceGraph = ({
             if (Utils.hasAnyNodes(data, originNodeIds[0])) {
               setRawData(data);
             } else {
-              setFullOntology(true);
+              setGraphType("ontologies");
             }
           }
         })
@@ -144,7 +144,7 @@ const ForceGraph = ({
     allowedCollections,
     findShortestPaths,
     nodeLimit,
-    fullOntology,
+    graphType,
   ]);
 
   useEffect(() => {
@@ -238,8 +238,6 @@ const ForceGraph = ({
     allowedCollections,
     nodeLimit,
   ) => {
-    // Determine the graph type based on the state
-    const graphType = fullOntology ? "ontologies" : "phenotypes";
 
     if (shortestPaths && nodeIds.length > 1) {
       let response = await fetch("/arango_api/shortest_paths/", {
@@ -602,10 +600,6 @@ const ForceGraph = ({
     setFindShortestPaths(!findShortestPaths);
   };
 
-  const handleFullOntologyToggle = () => {
-    setFullOntology(!fullOntology);
-  };
-
   const handleSimulationRestart = () => {
     if (graph?.updateGraph) {
       graph.updateGraph({
@@ -927,19 +921,6 @@ const ForceGraph = ({
             </label>
           </div>
         )}
-
-        {/* UI TOGGLE */}
-        <div className="option-group">
-          Full Ontology
-          <label className="switch" style={{ margin: "auto" }}>
-            <input
-              type="checkbox"
-              checked={fullOntology}
-              onChange={handleFullOntologyToggle}
-            />
-            <span className="slider round"></span>
-          </label>
-        </div>
 
         {/* Simulation Restart Button */}
         <div className="option-group">
