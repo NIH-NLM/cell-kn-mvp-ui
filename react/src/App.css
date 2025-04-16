@@ -90,7 +90,7 @@ a {
   width: 100vw;
 }
 
-.app {
+.app > * {
   padding: 5rem;
 }
 
@@ -266,6 +266,7 @@ tr:nth-of-type(odd) {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding: 5rem 5rem 0 0;
 }
 
 .search-bar-container,
@@ -643,6 +644,7 @@ option {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 0;
 }
 
 .sunburst-search-container {

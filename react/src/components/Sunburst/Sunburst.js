@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 
@@ -31,7 +31,7 @@ const Sunburst = ({ addSelectedItem }) => {
   useEffect(() => {
     if (Object.keys(graphData).length !== 0) {
       //TODO: Review size
-      const g = SunburstConstructor(graphData, 928, handleSunburstClick);
+      const g = SunburstConstructor(graphData, "960", handleSunburstClick);
       setGraph(g);
     }
   }, [graphData]);

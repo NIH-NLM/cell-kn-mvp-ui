@@ -9,7 +9,8 @@ const Header = () => {
   const location = useLocation();
 
   const handleGraphToggle = () => {
-    const newGraphValue = graphType === "phenotypes" ? "ontologies" : "phenotypes";
+    const newGraphValue =
+      graphType === "phenotypes" ? "ontologies" : "phenotypes";
     setGraphType(newGraphValue);
   };
 

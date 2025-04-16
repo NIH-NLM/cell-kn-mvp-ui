@@ -1,10 +1,10 @@
-import {useEffect, useState, useRef, useContext} from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
-import {GraphContext} from "../Contexts/Contexts";
+import { GraphContext } from "../Contexts/Contexts";
 
 const ForceGraph = ({
   nodeIds: originNodeIds,
@@ -62,27 +62,25 @@ const ForceGraph = ({
   const { graphType, setGraphType } = useContext(GraphContext);
 
   useEffect(() => {
-    fetchCollections(graphType).then(
-      (data) => {
-        let tempCollections = parseCollections(data);
-        setCollections(tempCollections);
-        // Determine allowedCollections based on incoming settings:
-        if (settings["allowedCollections"]) {
-          // Use the explicitly provided allowed collections
-          setAllowedCollections(settings["allowedCollections"]);
-        } else if (settings["collectionsToPrune"]) {
-          // If a prune list is provided, set allowedCollections to the complement
-          const pruneList = settings["collectionsToPrune"];
-          const allowed = tempCollections.filter(
-            (collection) => !pruneList.includes(collection),
-          );
-          setAllowedCollections(allowed);
-        } else {
-          // By default, allow all collections
-          setAllowedCollections(tempCollections);
-        }
-      },
-    );
+    fetchCollections(graphType).then((data) => {
+      let tempCollections = parseCollections(data);
+      setCollections(tempCollections);
+      // Determine allowedCollections based on incoming settings:
+      if (settings["allowedCollections"]) {
+        // Use the explicitly provided allowed collections
+        setAllowedCollections(settings["allowedCollections"]);
+      } else if (settings["collectionsToPrune"]) {
+        // If a prune list is provided, set allowedCollections to the complement
+        const pruneList = settings["collectionsToPrune"];
+        const allowed = tempCollections.filter(
+          (collection) => !pruneList.includes(collection),
+        );
+        setAllowedCollections(allowed);
+      } else {
+        // By default, allow all collections
+        setAllowedCollections(tempCollections);
+      }
+    });
   }, [graphType]);
 
   // Set event listeners for popup close
@@ -238,7 +236,6 @@ const ForceGraph = ({
     allowedCollections,
     nodeLimit,
   ) => {
-
     if (shortestPaths && nodeIds.length > 1) {
       let response = await fetch("/arango_api/shortest_paths/", {
         method: "POST",
