@@ -31,7 +31,7 @@ const Sunburst = ({ addSelectedItem }) => {
   useEffect(() => {
     if (Object.keys(graphData).length !== 0) {
       //TODO: Review size
-      const g = SunburstConstructor(graphData, "960", handleSunburstClick);
+      const g = SunburstConstructor(graphData, 928, handleSunburstClick);
       setGraph(g);
     }
   }, [graphData]);
