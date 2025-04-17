@@ -1,11 +1,19 @@
 from itertools import chain
 
-from arango_api.db import db, DB_GRAPH_NAME
+from arango_api.db import (
+    db_ontologies,
+    GRAPH_NAME_ONTOLOGIES,
+    GRAPH_NAME_PHENOTYPES,
+    db_phenotypes,
+)
 
 
-def get_document_collections():
+def get_document_collections(graph):
     # Filter for document collections
-    all_collections = db.collections()
+    if graph == "phenotypes":
+        all_collections = db_phenotypes.collections()
+    else:
+        all_collections = db_ontologies.collections()
     collections = [
         collection
         for collection in all_collections
@@ -14,19 +22,23 @@ def get_document_collections():
     return collections
 
 
-def get_all_by_collection(coll):
-    collection = db.collection(coll)
+def get_all_by_collection(coll, graph):
+    if graph == "phenotypes":
+        collection = db_phenotypes.collection(coll)
+    else:
+        collection = db_ontologies.collection(coll)
+
     if not collection:
         print(f"Collection '{coll}' not found.")
     return collection.all()
 
 
 def get_by_id(coll, id):
-    return db.collection(coll).get(id)
+    return db_ontologies.collection(coll).get(id)
 
 
 def get_edges_by_id(edge_coll, dr, item_coll, item_id):
-    return db.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
+    return db_ontologies.collection(edge_coll).find({dr: f"{item_coll}/{item_id}"})
 
 
 def get_graph(
@@ -35,6 +47,7 @@ def get_graph(
     edge_direction,
     allowed_collections,
     node_limit,
+    graph,
 ):
     query = f"""
             // Create temp variable for paths for each origin node
@@ -95,7 +108,10 @@ def get_graph(
     """
 
     # Use correct graph name
-    graph_name = DB_GRAPH_NAME
+    if graph == "phenotypes":
+        graph_name = GRAPH_NAME_PHENOTYPES
+    else:
+        graph_name = GRAPH_NAME_ONTOLOGIES
     # Depth is increased by one to find all edges that connect to final nodes
     bind_vars = {
         "node_ids": node_ids,
@@ -107,7 +123,10 @@ def get_graph(
 
     # Execute the query
     try:
-        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        if graph == "phenotypes":
+            cursor = db_phenotypes.aql.execute(query, bind_vars=bind_vars)
+        else:
+            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
 
         results = list(cursor)[
             0
@@ -163,11 +182,11 @@ def get_shortest_paths(node_ids, edge_direction):
             bind_vars = {
                 "start_node": start_node,
                 "target_node": target_node,
-                "graph_name": DB_GRAPH_NAME,
+                "graph_name": GRAPH_NAME_ONTOLOGIES,
             }
 
             try:
-                cursor = db.aql.execute(query, bind_vars=bind_vars)
+                cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
                 result = list(cursor)[0]
 
                 # Merge node results: result["nodes"] is like { target_node: [ { node: v }, ... ] }
@@ -221,7 +240,7 @@ def get_all():
 
     # Execute the query
     try:
-        cursor = db.aql.execute(final_query)
+        cursor = db_ontologies.aql.execute(final_query)
         results = list(cursor)  # Collect the results
     except Exception as e:
         print(f"Error executing query: {e}")
@@ -270,7 +289,7 @@ def search_by_term(search_term):
     bind_vars = {"search_term": search_term}
     # Execute the query
     try:
-        cursor = db.aql.execute(query, bind_vars=bind_vars)
+        cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
         results = list(cursor)[0]  # Collect the results
     except Exception as e:
         print(f"Error executing query: {e}")
@@ -283,7 +302,7 @@ def run_aql_query(query):
     print(query)
     # Execute the query
     try:
-        cursor = db.aql.execute(query)
+        cursor = db_ontologies.aql.execute(query)
         results = list(cursor)[
             0
         ]  # Collect the results - one element should be guaranteed
@@ -338,7 +357,7 @@ def get_sunburst():
 
         # Execute the query
         try:
-            cursor = db.aql.execute(query, bind_vars=bind_vars)
+            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
             results = list(cursor)  # Collect the results
 
             # Process the results to form the sunburst structure

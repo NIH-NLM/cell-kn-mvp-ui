@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 

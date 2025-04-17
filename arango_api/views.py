@@ -4,16 +4,18 @@ from rest_framework.decorators import api_view
 from arango_api import utils
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 def list_collection_names(request):
-    objects = utils.get_document_collections()
+    graph = request.data.get("graph")
+    objects = utils.get_document_collections(graph)
     collection_names = [collection["name"] for collection in objects]
     return JsonResponse(collection_names, safe=False)
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 def list_by_collection(request, coll):
-    objects = utils.get_all_by_collection(coll)
+    graph = request.data.get("graph")
+    objects = utils.get_all_by_collection(coll, graph)
     return JsonResponse(list(objects), safe=False)
 
 
@@ -49,13 +51,10 @@ def get_graph(request):
     edge_direction = request.data.get("edge_direction")
     allowed_collections = request.data.get("allowed_collections")
     node_limit = request.data.get("node_limit", 100)
+    graph = request.data.get("graph", 100)
 
     search_results = utils.get_graph(
-        node_ids,
-        depth,
-        edge_direction,
-        allowed_collections,
-        node_limit,
+        node_ids, depth, edge_direction, allowed_collections, node_limit, graph
     )
     return JsonResponse(search_results, safe=False)
 

@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import BrowseBox from "../../components/BrowseBox/BrowseBox";
 import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
 import Pagination from "../../components/Pagination/Pagination";
+import { GraphContext } from "../../components/Contexts/Contexts";
 
 const DocumentListPage = () => {
+  const { graphType, setGraphType } = useContext(GraphContext);
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,11 +17,19 @@ const DocumentListPage = () => {
     // Reset page and clear filter when collection changes
     setCurrentPage(1);
     setFilterText("");
-    getDocumentList();
-  }, [coll]);
+    getDocumentList(graphType);
+  }, [coll, graphType]);
 
-  const getDocumentList = async () => {
-    const response = await fetch(`/arango_api/collection/${coll}/`);
+  const getDocumentList = async (graphType) => {
+    const response = await fetch(`/arango_api/collection/${coll}/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        graph: graphType,
+      }),
+    });
     const data = await response.json();
     sortDocumentList(data);
   };
@@ -114,10 +124,10 @@ const DocumentListPage = () => {
           />
           <header className="document-header">
             <input
-                type="text"
-                placeholder="Filter documents..."
-                value={filterText}
-                onChange={handleFilterChange}
+              type="text"
+              placeholder="Filter documents..."
+              value={filterText}
+              onChange={handleFilterChange}
             />
             <p className="document-count">
               {sortedFilteredDocuments.length} results

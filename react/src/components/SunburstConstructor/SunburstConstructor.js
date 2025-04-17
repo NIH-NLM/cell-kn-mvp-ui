@@ -4,7 +4,7 @@ function SunburstConstructor(data, size, handleSunburstClick) {
   // Specify the chart’s dimensions.
   const width = size;
   const height = width;
-  const radius = width / 6;
+  const radius = width / 8;
 
   // Create the color scale.
   const color = d3.scaleOrdinal(
@@ -34,7 +34,8 @@ function SunburstConstructor(data, size, handleSunburstClick) {
   const svg = d3
     .create("svg")
     .attr("viewBox", [-width / 2, -height / 2, width, width])
-    .style("font", "10px sans-serif");
+    .style("font", "16px sans-serif")
+    .style("max-height", "80vh");
 
   // Append the arcs.
   const path = svg

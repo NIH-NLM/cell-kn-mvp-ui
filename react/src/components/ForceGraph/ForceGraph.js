@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import * as Utils from "../Utils/Utils";
+import { GraphContext } from "../Contexts/Contexts";
 
 const ForceGraph = ({
   nodeIds: originNodeIds,
@@ -42,9 +43,6 @@ const ForceGraph = ({
   const [useFocusNodes, setUseFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
-  const [useSchemaGraph, setUseSchemaGraph] = useState(
-    "useSchemaGraph" in settings ? settings["useSchemaGraph"] : false,
-  );
 
   // Init other states
   const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
@@ -61,8 +59,10 @@ const ForceGraph = ({
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { graphType, setGraphType } = useContext(GraphContext);
+
   useEffect(() => {
-    fetchCollections().then((data) => {
+    fetchCollections(graphType).then((data) => {
       let tempCollections = parseCollections(data);
       setCollections(tempCollections);
       // Determine allowedCollections based on incoming settings:
@@ -81,10 +81,13 @@ const ForceGraph = ({
         setAllowedCollections(tempCollections);
       }
     });
+  }, [graphType]);
 
-    document.addEventListener("click", closePopupOnInteraction);
+  // Set event listeners for popup close
+  useEffect(() => {
+    document.addEventListener("click", handlePopupClose);
     return () => {
-      document.removeEventListener("click", closePopupOnInteraction);
+      document.removeEventListener("click", handlePopupClose);
     };
   }, []);
 
@@ -98,7 +101,8 @@ const ForceGraph = ({
     let isMounted = true;
     setIsLoading(true);
 
-    setTimeout(() => {
+    // Debounce or delay slightly to avoid rapid fetches if multiple states change
+    const timerId = setTimeout(() => {
       getGraphData(
         graphNodeIds,
         findShortestPaths,
@@ -106,15 +110,29 @@ const ForceGraph = ({
         edgeDirection,
         allowedCollections,
         nodeLimit,
-      ).then((data) => {
-        if (isMounted) {
-          setRawData(data);
-        }
-      });
-    }, 0);
+      )
+        .then((data) => {
+          if (isMounted) {
+            if (Utils.hasAnyNodes(data, originNodeIds[0])) {
+              setRawData(data);
+            } else {
+              setGraphType("ontologies");
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch graph data:", error);
+          if (isMounted) {
+            setRawData({}); // Clear data on error
+            setShowNoDataPopup(true); // Show error/no data message
+            setIsLoading(false);
+          }
+        });
+    }, 100); // Small delay
 
     return () => {
       isMounted = false;
+      clearTimeout(timerId); // Clear timeout on unmount or dependency change
     };
   }, [
     originNodeIds,
@@ -124,6 +142,7 @@ const ForceGraph = ({
     allowedCollections,
     findShortestPaths,
     nodeLimit,
+    graphType,
   ]);
 
   useEffect(() => {
@@ -135,20 +154,32 @@ const ForceGraph = ({
         ((processedData.nodes == null || processedData.nodes.length === 0) &&
           (processedData.links == null || processedData.links.length === 0))
       ) {
-        setGraphData(processedData);
+        setGraphData(processedData); // Set potentially empty data
         setShowNoDataPopup(true);
       } else {
         setGraphData(processedData);
         setShowNoDataPopup(false);
       }
+    } else if (!isLoading) {
+      // Handle case where rawData is empty
+      setGraphData({});
+      setShowNoDataPopup(true);
     }
   }, [rawData, setOperation]);
 
   useEffect(() => {
     const updateGraph = async () => {
-      if (!showNoDataPopup && Object.keys(graphData).length !== 0) {
+      // Only update if data is present and not showing the 'no data' popup
+      if (
+        !showNoDataPopup &&
+        graphData &&
+        graphData.nodes &&
+        graphData.nodes.length > 0
+      ) {
+        // Ensure graph is cleared if new data results in no nodes/links
         const g = await new Promise((resolve) => {
-          setTimeout(() => {
+          // Use requestAnimationFrame for smoother rendering updates
+          requestAnimationFrame(() => {
             const graphInstance = ForceGraphConstructor(graphData, {
               nodeGroup: (d) => d._id.split("/")[0],
               nodeGroups: collections,
@@ -156,36 +187,38 @@ const ForceGraph = ({
               originNodeIds: useFocusNodes ? originNodeIds : [],
               nodeFontSize: nodeFontSize,
               linkFontSize: edgeFontSize,
-              nodeHover: (d) => (d.label ? `${d.id}\n${d.label}` : `${d._id}`),
+              nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
               label: Utils.getLabel,
               onNodeClick: handleNodeClick,
-              interactionCallback: closePopupOnInteraction,
+              interactionCallback: handlePopupClose,
               nodeStrength: -100,
-              width: "2560",
+              width: chartContainerRef.current?.clientWidth || "2560",
               heightRatio: heightRatio,
               labelStates: labelStates,
             });
             resolve(graphInstance);
-          }, 0);
+          });
         });
 
         setGraph(g);
-        setIsLoading(false);
+        setIsLoading(false); // Stop loading indicator after graph instance is created
       } else {
+        // Clear graph and stop loading if no data or error
         setGraph(null);
-        setIsLoading(false);
+        // Ensure loading is false
+        if (isLoading) setIsLoading(false);
       }
     };
     updateGraph();
   }, [graphData]);
 
   useEffect(() => {
-    const chartContainer = d3.select("#chart-container");
-    chartContainer.selectAll("*").remove();
+    const chartContainer = d3.select(chartContainerRef.current);
+    chartContainer.selectAll("*").remove(); // Clear previous graph
     if (graph) {
-      chartContainer.append(() => graph);
+      chartContainer.append(() => graph); // Append the new graph element
     }
-  }, [graph]);
+  }, [graph]); // Re-run only when the graph instance itself changes
 
   useEffect(() => {
     if (graph !== null && typeof graph.toggleLabels === "function") {
@@ -216,10 +249,16 @@ const ForceGraph = ({
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        console.error(
+          "Shortest path fetch failed:",
+          response.status,
+          await response.text(),
+        );
+        throw new Error(`Network response was not ok (${response.status})`);
       }
       return response.json();
     } else {
+      // Regular graph traversal
       let response = await fetch("/arango_api/graph/", {
         method: "POST",
         headers: {
@@ -231,81 +270,110 @@ const ForceGraph = ({
           edge_direction: edgeDirection,
           allowed_collections: allowedCollections,
           node_limit: nodeLimit,
-          use_schema_graph: useSchemaGraph,
+          graph: graphType,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        console.error(
+          "Graph fetch failed:",
+          response.status,
+          await response.text(),
+        );
+        throw new Error(`Network response was not ok (${response.status})`);
       }
       return response.json();
     }
   };
 
   function performSetOperation(data, operation) {
+    if (!data || !data.nodes) {
+      console.warn("performSetOperation called with invalid data:", data);
+      return { nodes: [], links: [] };
+    }
+
     const nodes = data.nodes;
-    const links = data.links;
+    const links = data.links || [];
 
     const getAllNodeIdsFromOrigins = (operation) => {
+      // Ensure nodes is an object before trying Object.values
+      if (typeof nodes !== "object" || nodes === null) return new Set();
+
       const nodeIdsPerOrigin = Object.values(nodes).map((originGroup) => {
-        return new Set(originGroup.map((item) => item.node._id));
+        // Ensure originGroup is an array and items have node._id
+        if (!Array.isArray(originGroup)) return new Set();
+        return new Set(
+          originGroup
+            .filter((item) => item && item.node && item.node._id)
+            .map((item) => item.node._id),
+        );
       });
 
+      if (nodeIdsPerOrigin.length === 0) return new Set(); // Handle empty results
+
       if (operation === "Intersection") {
-        const overlap = new Set();
-        const nodeIdsPerOrigin = Object.values(nodes).map(
-          (originGroup) => new Set(originGroup.map((item) => item.node._id)),
-        );
+        if (nodeIdsPerOrigin.length < 2) return new Set(); // Intersection requires at least 2 sets
 
-        for (let i = 0; i < nodeIdsPerOrigin.length; i++) {
-          for (let j = i + 1; j < nodeIdsPerOrigin.length; j++) {
-            const intersection = [...nodeIdsPerOrigin[i]].filter((id) =>
-              nodeIdsPerOrigin[j].has(id),
-            );
-
-            intersection.forEach((id) => overlap.add(id));
-          }
+        let intersectionResult = new Set(nodeIdsPerOrigin[0]);
+        for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+          intersectionResult = new Set(
+            [...intersectionResult].filter((id) => nodeIdsPerOrigin[i].has(id)),
+          );
         }
-
-        return overlap;
-      }
-
-      if (operation === "Union") {
+        return intersectionResult;
+      } else if (operation === "Union") {
         return new Set(
           nodeIdsPerOrigin.flatMap((nodeIdsSet) => [...nodeIdsSet]),
         );
+      } else if (operation === "Symmetric Difference") {
+        // SD requires at least 2 sets, return first if only one
+        if (nodeIdsPerOrigin.length < 2)
+          return new Set(nodeIdsPerOrigin[0] || []);
+
+        let result = new Set(nodeIdsPerOrigin[0]);
+        for (let i = 1; i < nodeIdsPerOrigin.length; i++) {
+          const currentSet = nodeIdsPerOrigin[i];
+          const nextResult = new Set();
+          // Elements in result but not in currentSet
+          result.forEach((id) => {
+            if (!currentSet.has(id)) nextResult.add(id);
+          });
+          // Elements in currentSet but not in result
+          currentSet.forEach((id) => {
+            if (!result.has(id)) nextResult.add(id);
+          });
+          result = nextResult;
+        }
+        return result;
       }
 
-      if (operation === "Symmetric Difference") {
-        return nodeIdsPerOrigin.reduce((acc, nodeIdsSet) => {
-          if (acc === null) {
-            return nodeIdsSet;
-          }
-          const result = new Set();
-          acc.forEach((id) => {
-            if (!nodeIdsSet.has(id)) {
-              result.add(id);
-            }
-          });
-          nodeIdsSet.forEach((id) => {
-            if (!acc.has(id)) {
-              result.add(id);
-            }
-          });
-          return result;
-        }, null);
-      }
-
-      throw new Error("Unknown operation");
+      console.error("Unknown set operation:", operation);
+      return new Set(); // Default fallback
     };
 
     const addNodesFromPathsToSet = (nodeIdsSet) => {
+      if (typeof nodes !== "object" || nodes === null) return; // Guard
+
       Object.values(nodes).forEach((originGroup) => {
+        if (!Array.isArray(originGroup)) return; // Guard
+
         originGroup.forEach((item) => {
-          if (nodeIdsSet.has(item.node._id)) {
-            item.path.vertices.forEach((vertex) => {
-              nodeIdsSet.add(vertex._id);
-            });
+          // Check item structure carefully
+          if (
+            item &&
+            item.node &&
+            item.node._id &&
+            item.path &&
+            Array.isArray(item.path.vertices)
+          ) {
+            if (nodeIdsSet.has(item.node._id)) {
+              item.path.vertices.forEach((vertex) => {
+                if (vertex && vertex._id) {
+                  // Ensure vertex is valid
+                  nodeIdsSet.add(vertex._id);
+                }
+              });
+            }
           }
         });
       });
@@ -313,17 +381,21 @@ const ForceGraph = ({
 
     let nodeIds = getAllNodeIdsFromOrigins(operation);
 
+    // Only add path nodes if not doing shortest paths
     if (!findShortestPaths) {
       addNodesFromPathsToSet(nodeIds);
     }
 
     const seenLinks = new Set();
-
     const filteredLinks = links.filter((link) => {
+      // Ensure link structure is valid
+      if (!link || !link._from || !link._to) return false;
+
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
         const linkKey = `${link._from}-${link._to}`;
+        const reverseLinkKey = `${link._to}-${link._from}`;
 
-        if (seenLinks.has(linkKey)) {
+        if (seenLinks.has(linkKey) || seenLinks.has(reverseLinkKey)) {
           return false;
         } else {
           seenLinks.add(linkKey);
@@ -333,15 +405,63 @@ const ForceGraph = ({
       return false;
     });
 
+    const finalNodes = new Set();
+    const addedNodeIds = new Set(); // Track added nodes to avoid duplicates
+
+    // Add nodes that are part of the filtered links
+    filteredLinks.forEach((link) => {
+      if (link._from) finalNodes.add(link._from);
+      if (link._to) finalNodes.add(link._to);
+    });
+
+    // Find the actual node objects corresponding to the IDs in finalNodes
     const filteredNodes = [];
-    Object.values(nodes).forEach((originGroup) => {
-      originGroup.forEach((item) => {
-        if (nodeIds.size !== 0 && nodeIds.has(item.node._id)) {
-          filteredNodes.push(item.node);
-          nodeIds.delete(item.node._id);
+    if (typeof nodes === "object" && nodes !== null) {
+      Object.values(nodes).forEach((originGroup) => {
+        if (Array.isArray(originGroup)) {
+          originGroup.forEach((item) => {
+            if (
+              item &&
+              item.node &&
+              item.node._id &&
+              finalNodes.has(item.node._id) &&
+              !addedNodeIds.has(item.node._id)
+            ) {
+              filteredNodes.push(item.node);
+              addedNodeIds.add(item.node._id);
+            }
+          });
         }
       });
-    });
+    }
+
+    // Ensure origin nodes are included if they weren't part of any links
+    if (Array.isArray(originNodeIds)) {
+      originNodeIds.forEach((originId) => {
+        if (!addedNodeIds.has(originId)) {
+          // Find the origin node object in the original data
+          let foundNode = null;
+          if (typeof nodes === "object" && nodes !== null) {
+            Object.values(nodes).find((originGroup) => {
+              if (Array.isArray(originGroup)) {
+                const nodeItem = originGroup.find(
+                  (item) => item && item.node && item.node._id === originId,
+                );
+                if (nodeItem) {
+                  foundNode = nodeItem.node;
+                  return true;
+                }
+              }
+              return false;
+            });
+          }
+          if (foundNode) {
+            filteredNodes.push(foundNode);
+            addedNodeIds.add(originId);
+          }
+        }
+      });
+    }
 
     return {
       nodes: filteredNodes,
@@ -350,7 +470,7 @@ const ForceGraph = ({
   }
 
   const handleNodeClick = (e, nodeData) => {
-    setClickedNodeId(nodeData.id);
+    setClickedNodeId(nodeData._id);
     setClickedNodeLabel(Utils.getLabel(nodeData));
 
     const { clientX, clientY } = e;
@@ -369,32 +489,51 @@ const ForceGraph = ({
   };
 
   const handleExpand = () => {
-    getGraphData([clickedNodeId], false, 1, "ANY", [], nodeLimit).then(
-      (data) => {
-        graph.updateGraph({
-          newNodes: data["nodes"][clickedNodeId].map((d) => d["node"]),
-          newLinks: data["links"],
-          centerNodeId: clickedNodeId,
-        });
-      },
-    );
+    if (!clickedNodeId) return;
+    // Use the current settings for the expansion fetch
+    getGraphData(
+      [clickedNodeId],
+      false,
+      1,
+      "ANY",
+      allowedCollections,
+      nodeLimit,
+    )
+      .then((data) => {
+        if (graph && data && data.nodes && data.nodes[clickedNodeId]) {
+          graph.updateGraph({
+            newNodes: data.nodes[clickedNodeId].map((d) => d.node),
+            newLinks: data.links || [],
+            centerNodeId: clickedNodeId,
+          });
+        } else {
+          console.warn(
+            "Expansion data not found or graph not ready for:",
+            clickedNodeId,
+          );
+        }
+      })
+      .catch((error) => console.error("Expansion failed:", error));
+    handlePopupClose(); // Close popup after action
   };
 
   const handleCollapse = () => {
-    graph.updateGraph({
-      collapseNodes: [clickedNodeId],
-    });
+    if (graph && clickedNodeId) {
+      graph.updateGraph({
+        collapseNodes: [clickedNodeId], // Pass node ID to collapse around
+      });
+    }
+    handlePopupClose();
   };
 
   const handleRemove = () => {
-    graph.updateGraph({
-      collapseNodes: [clickedNodeId],
-      removeNode: true,
-    });
-  };
-
-  const closePopupOnInteraction = () => {
-    setPopupVisible(false);
+    if (graph && clickedNodeId) {
+      graph.updateGraph({
+        collapseNodes: [clickedNodeId], // Collapse first
+        removeNode: true, // Then mark for removal
+      });
+    }
+    handlePopupClose(); // Close popup after action
   };
 
   const handleDepthChange = (event) => {
@@ -416,13 +555,17 @@ const ForceGraph = ({
   const handleNodeFontSizeChange = (event) => {
     const newFontSize = parseInt(event.target.value, 10);
     setNodeFontSize(newFontSize);
-    graph.updateNodeFontSize(newFontSize);
+    if (graph?.updateNodeFontSize) {
+      graph.updateNodeFontSize(newFontSize);
+    }
   };
 
   const handleEdgeFontSizeChange = (event) => {
     const newFontSize = parseInt(event.target.value, 10);
     setEdgeFontSize(newFontSize);
-    graph.updateLinkFontSize(newFontSize);
+    if (graph?.updateLinkFontSize) {
+      graph.updateLinkFontSize(newFontSize);
+    }
   };
 
   // Updated handler for toggling allowedCollections
@@ -435,7 +578,7 @@ const ForceGraph = ({
   };
 
   const handleAllOn = () => {
-    setAllowedCollections(collections);
+    setAllowedCollections(collections.map((c) => c));
   };
 
   const handleAllOff = () => {
@@ -443,13 +586,11 @@ const ForceGraph = ({
   };
 
   const handleLabelToggle = (labelClass) => {
-    setLabelStates((prevStates) => {
-      const newStates = {
-        ...prevStates,
-        [labelClass]: !prevStates[labelClass],
-      };
-      return newStates;
-    });
+    setLabelStates((prevStates) => ({
+      ...prevStates,
+      [labelClass]: !prevStates[labelClass],
+    }));
+    // The actual toggling happens in the useEffect watching labelStates
   };
 
   const handleShortestPathToggle = () => {
@@ -457,43 +598,98 @@ const ForceGraph = ({
   };
 
   const handleSimulationRestart = () => {
-    graph.updateGraph({
-      simulate: true,
-    });
+    if (graph?.updateGraph) {
+      graph.updateGraph({
+        simulate: true,
+      });
+    }
   };
 
   const exportGraph = (format) => {
+    if (!chartContainerRef.current) return;
     const svgElement = chartContainerRef.current.querySelector("svg");
+    if (!svgElement) {
+      console.error("SVG element not found for export.");
+      return;
+    }
+
+    svgElement.style.backgroundColor = "white"; // Ensure white background
+
     const svgData = new XMLSerializer().serializeToString(svgElement);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml" });
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    }); // Specify charset
+
+    // Reset styles
+    svgElement.style.backgroundColor = "";
+
     const url = URL.createObjectURL(svgBlob);
 
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      let scaleFactor = 6;
+      // Consider dynamic scaling based on SVG size or user input
+      let scaleFactor = 4; // Increased scale factor for better resolution
 
-      canvas.width = img.width * scaleFactor;
-      canvas.height = img.height * scaleFactor;
+      // Use viewBox for sizing if available, otherwise use width/height attributes
+      const viewBox = svgElement.viewBox.baseVal;
+      const svgWidth =
+        viewBox && viewBox.width
+          ? viewBox.width
+          : svgElement.width.baseVal.value;
+      const svgHeight =
+        viewBox && viewBox.height
+          ? viewBox.height
+          : svgElement.height.baseVal.value;
 
+      canvas.width = svgWidth * scaleFactor;
+      canvas.height = svgHeight * scaleFactor;
+
+      // Draw white background on canvas
       ctx.fillStyle = "white";
-
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(scaleFactor, scaleFactor);
-      ctx.drawImage(img, 0, 0);
+
+      ctx.scale(scaleFactor, scaleFactor); // Scale context
+      ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Draw image at original size
+
+      let downloadUrl;
+      let filename;
 
       if (format === "png") {
-        const imgData = canvas.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.href = imgData;
-        link.download = "graph.png";
-        link.click();
+        downloadUrl = canvas.toDataURL("image/png");
+        filename = "graph.png";
+      } else if (format === "jpeg") {
+        downloadUrl = canvas.toDataURL("image/jpeg", 0.9); // Quality setting for JPEG
+        filename = "graph.jpeg";
+      } else if (format === "svg") {
+        // For SVG, just use the blob URL directly
+        downloadUrl = url;
+        filename = "graph.svg";
+      } else {
+        console.error("Unsupported export format:", format);
+        URL.revokeObjectURL(url); // Clean up blob URL
+        return;
       }
 
-      URL.revokeObjectURL(url);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link); // Append link to body for Firefox compatibility
+      link.click();
+      document.body.removeChild(link); // Clean up link
+
+      // Revoke object URLs after download is initiated
+      if (format !== "svg") {
+        // SVG uses the url directly for download href
+        URL.revokeObjectURL(url);
+      }
     };
-    img.src = url;
+    img.onerror = (e) => {
+      console.error("Error loading SVG blob into image:", e);
+      URL.revokeObjectURL(url); // Clean up blob URL on error
+    };
+    img.src = url; // Load the SVG blob URL into the Image object
   };
 
   const toggleOptionsVisibility = () => {
@@ -505,15 +701,19 @@ const ForceGraph = ({
       <button
         onClick={toggleOptionsVisibility}
         className="toggle-button background-color-white"
+        aria-expanded={optionsVisible}
+        aria-controls="graph-options-panel"
       >
-        {optionsVisible ? "Toggle Options ▼" : "Toggle Options ▲"}
+        {optionsVisible ? "Hide Options ▼" : "Show Options ▲"}
       </button>
       <div
+        id="graph-options-panel"
         className="graph-options"
         data-testid="graph-options"
-        style={optionsVisible ? { display: "flex" } : { display: "none" }}
+        style={{ display: optionsVisible ? "flex" : "none" }}
       >
-        <div className="depth-picker">
+        {/* Depth Picker */}
+        <div className="option-group">
           <label htmlFor="depth-select">Depth:</label>
           <select id="depth-select" value={depth} onChange={handleDepthChange}>
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
@@ -523,9 +723,11 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
-        <div className="edge-direction-picker">
+
+        {/* Edge Direction Picker */}
+        <div className="option-group">
           <label htmlFor="edge-direction-select">
-            Edge traversal direction
+            Edge traversal direction:
           </label>
           <select
             id="edge-direction-select"
@@ -539,10 +741,12 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
-        <div className="depth-picker">
-          <label htmlFor="depth-select">Path Traversal Limit:</label>
+
+        {/* Node Limit Picker */}
+        <div className="option-group">
+          <label htmlFor="node-limit-select">Path Traversal Limit:</label>
           <select
-            id="depth-select"
+            id="node-limit-select"
             value={nodeLimit}
             onChange={handleNodeLimitChange}
           >
@@ -553,11 +757,13 @@ const ForceGraph = ({
             ))}
           </select>
         </div>
+
+        {/* Graph Operation (Set Operation) */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
-          <div className="edge-direction-picker multi-node">
-            <label htmlFor="edge-direction-select">Graph operation</label>
+          <div className="option-group multi-node">
+            <label htmlFor="set-operation-select">Graph operation:</label>
             <select
-              id="edge-direction-select"
+              id="set-operation-select"
               value={setOperation}
               onChange={handleOperationChange}
             >
@@ -571,7 +777,9 @@ const ForceGraph = ({
             </select>
           </div>
         )}
-        <div className="font-size-picker">
+
+        {/* Font Size Pickers */}
+        <div className="option-group font-size-picker">
           <div className="node-font-size-picker">
             <label htmlFor="node-font-size-select">Node font size:</label>
             <select
@@ -605,7 +813,9 @@ const ForceGraph = ({
             </select>
           </div>
         </div>
-        <div className="collection-picker">
+
+        {/* Collection Picker */}
+        <div className="option-group collection-picker">
           <label>Select collections to include in graph traversal:</label>
           <div className="checkboxes-container">
             {collections.map((collection) => (
@@ -628,37 +838,37 @@ const ForceGraph = ({
               </div>
             ))}
           </div>
-          <div className="checkboxes-container">
-            <div className="checkbox-container">
-              <button
-                onClick={handleAllOn}
-                className={
-                  allowedCollections.length === collections.length
-                    ? "background-color-bg"
-                    : "background-color-light"
-                }
-              >
-                All On
-              </button>
-            </div>
-            <div className="checkbox-container">
-              <button
-                onClick={handleAllOff}
-                className={
-                  allowedCollections.length === 0
-                    ? "background-color-bg"
-                    : "background-color-light"
-                }
-              >
-                All Off
-              </button>
-            </div>
+          <div className="checkboxes-container collection-controls">
+            <button
+              onClick={handleAllOn}
+              className={
+                allowedCollections.length === collections.length
+                  ? "background-color-bg"
+                  : "background-color-light"
+              }
+              disabled={allowedCollections.length === collections.length}
+            >
+              All On
+            </button>
+            <button
+              onClick={handleAllOff}
+              className={
+                allowedCollections.length === 0
+                  ? "background-color-bg"
+                  : "background-color-light"
+              }
+              disabled={allowedCollections.length === 0}
+            >
+              All Off
+            </button>
           </div>
         </div>
-        <div className="labels-toggle-container">
-          <label>Toggle Labels</label>
+
+        {/* Label Toggles */}
+        <div className="option-group labels-toggle-container">
+          <label>Toggle Labels:</label>
           <div className="labels-toggle">
-            <div className="collection-toggle">
+            <div className="label-toggle-item">
               Collection
               <label className="switch">
                 <input
@@ -669,7 +879,7 @@ const ForceGraph = ({
                 <span className="slider round"></span>
               </label>
             </div>
-            <div className="edge-toggle">
+            <div className="label-toggle-item">
               Edge
               <label className="switch">
                 <input
@@ -680,7 +890,7 @@ const ForceGraph = ({
                 <span className="slider round"></span>
               </label>
             </div>
-            <div className="node-toggle">
+            <div className="label-toggle-item">
               Node
               <label className="switch">
                 <input
@@ -693,8 +903,10 @@ const ForceGraph = ({
             </div>
           </div>
         </div>
+
+        {/* Shortest Path Toggle */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
-          <div className="shortest-path-toggle multi-node">
+          <div className="option-group multi-node">
             Shortest Path
             <label className="switch" style={{ margin: "auto" }}>
               <input
@@ -706,36 +918,71 @@ const ForceGraph = ({
             </label>
           </div>
         )}
-        <button className="simulation-toggle" onClick={handleSimulationRestart}>
-          Restart Simulation
-        </button>
-        <div className="export-buttons">
+
+        {/* Simulation Restart Button */}
+        <div className="option-group">
+          <button
+            className="simulation-toggle"
+            onClick={handleSimulationRestart}
+          >
+            Restart Simulation
+          </button>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="option-group export-buttons">
+          <label>Export Graph:</label>
+          <button onClick={() => exportGraph("svg")}>Download as SVG</button>
           <button onClick={() => exportGraph("png")}>Download as PNG</button>
+          {/* <button onClick={() => exportGraph("jpeg")}>Download as JPEG</button> */}
         </div>
-      </div>
+      </div>{" "}
+      {/* End graph-options */}
       {isLoading && (
-        <div className="loading-bar">
-          <div className="progress"></div>
-          Loading, please wait...
+        <div className="loading-indicator">
+          {" "}
+          {/* Changed class for clarity */}
+          <div className="progress-bar"></div>{" "}
+          {/* Basic progress bar style needed */}
+          <span>Loading graph data...</span>
         </div>
       )}
-      <div id="chart-container" ref={chartContainerRef}></div>
-      {showNoDataPopup && (
-        <div className="popup">
-          <p>
-            No data meets these criteria. Please adjust your options or refine
-            your search.
-          </p>
-        </div>
-      )}
+      {/* Chart Container */}
+      <div
+        id="chart-container"
+        ref={chartContainerRef}
+        style={{
+          minHeight: "500px",
+          border: "1px solid #ccc",
+          position: "relative" /* Needed for absolute positioning of popups */,
+        }}
+      >
+        {/* Conditional rendering inside container */}
+        {!isLoading && !graph && showNoDataPopup && (
+          <div className="no-data-message">
+            {" "}
+            No data meets the current criteria. Please adjust options or search
+            terms.
+          </div>
+        )}
+        {!isLoading && !graph && !showNoDataPopup && !originNodeIds?.length && (
+          <div className="no-data-message">
+            {" "}
+            {/* Style this message */}
+            Please search for nodes to visualize a graph.
+          </div>
+        )}
+      </div>
+      {/* Node Action Popup */}
       <div
         className="node-popup"
         style={
           popupVisible
             ? {
-                display: "flex",
-                left: `${popupPosition.x + 10}px`,
-                top: `${popupPosition.y + 10}px`,
+                display: "flex", // Changed to flex for better layout
+                position: "absolute", // Position relative to chart-container
+                left: `${popupPosition.x}px`,
+                top: `${popupPosition.y}px`,
               }
             : { display: "none" }
         }
@@ -752,13 +999,18 @@ const ForceGraph = ({
           Expand from "{clickedNodeLabel}"
         </button>
         <button className="popup-button" onClick={handleCollapse}>
-          Collapse Satellite Nodes
+          Collapse Neighbors
         </button>
         <button className="popup-button" onClick={handleRemove}>
-          Collapse and Remove
+          Remove Node & Neighbors
         </button>
-        <button className="x-button" onClick={handlePopupClose}>
-          X
+        {/* Simple text 'X' button for closing */}
+        <button
+          className="popup-close-button"
+          onClick={handlePopupClose}
+          aria-label="Close popup" // Accessibility
+        >
+          ×
         </button>
       </div>
     </div>
