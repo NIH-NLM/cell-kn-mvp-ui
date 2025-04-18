@@ -13,6 +13,7 @@ const Sunburst = ({ addSelectedItem }) => {
   const [clickedItem, setClickedItem] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [zoomedNodeId, setZoomedNodeId] = useState(null);
 
   // --- Refs ---
   const svgContainerRef = useRef(null);
@@ -80,9 +81,10 @@ const Sunburst = ({ addSelectedItem }) => {
   useEffect(() => {
     if (graphData && svgContainerRef.current) {
       console.log(`--- D3 Render/Update Effect Triggered ---`);
+      console.log(`Rendering with zoomedNodeId: ${zoomedNodeId}`);
       const sunburstInstance = SunburstConstructor(
         graphData, 928, handleSunburstClick, handleNodeClick,
-        currentHierarchyRootRef.current
+        currentHierarchyRootRef.current, zoomedNodeId
       );
       currentHierarchyRootRef.current = sunburstInstance.hierarchyRoot;
       if (svgNodeRef.current) { try { svgContainerRef.current.removeChild(svgNodeRef.current); } catch (e) { /* ignore */ } }
@@ -117,11 +119,13 @@ const Sunburst = ({ addSelectedItem }) => {
 
       if (needsLoad && !isLoading) {
           console.log(` ACTION: Load & Zoom for ${d.data._id}`);
+          setZoomedNodeId(d.data._id);
           // *** This calls fetchSunburstData, which uses POST ***
           fetchSunburstData(d.data._id, false);
           return true; // Tell D3 constructor to ZOOM NOW
       } else if (!needsLoad && (d.children || d.parent)) {
            console.log(` ACTION: Zoom Only for ${d.data._id}`);
+           setZoomedNodeId(d.data._id)
            return true; // Tell D3 constructor to ZOOM NOW
       } else {
            console.log(` ACTION: No Action (Loading or Leaf) for ${d.data._id}`);
