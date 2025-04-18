@@ -329,3 +329,14 @@ def get_collection_info(node_id, edge_collections):
         # Handle cases where node_id is None or not in the expected format
         print(f"Warning: Could not parse collection type from node_id: {node_id}")
         return None
+
+
+def format_node_data(node_doc, has_children):
+    """Helper to format node data consistently."""
+    return {
+        "_id": node_doc["_id"],
+        "label": node_doc.get("label") or node_doc.get("name") or node_doc["_key"],
+        "value": 1,
+        "_hasChildren": has_children,
+        "children": None,  # Always start with null children unless fetching them explicitly
+    }

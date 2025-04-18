@@ -109,20 +109,16 @@ export function findNodeById(node, id) {
   return null;
 }
 
-// Function to immutably merge children into the graph data
-export function mergeChildren(graphData, parentId, children) {
-  // Deep copy
-  const newData = JSON.parse(JSON.stringify(graphData));
-
-  // Find the parent node in the copied data structure
+export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
+  const newData = JSON.parse(JSON.stringify(graphData)); // Deep copy
   const parentNode = findNodeById(newData, parentId);
 
   if (parentNode) {
-    // Assign the fetched children
-    parentNode.children = children;
+    console.log(`Found parent ${parentId}, merging children:`, childrenWithGrandchildren);
+    parentNode.children = childrenWithGrandchildren;
+    parentNode._childrenLoaded = true;
   } else {
-    console.warn(`Parent node with ID ${parentId} not found in graph data.`);
+    console.warn(`Parent node ${parentId} not found for merging children.`);
   }
-
   return newData;
 }

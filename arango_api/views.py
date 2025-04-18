@@ -2,10 +2,10 @@ from django.http import JsonResponse, HttpResponseNotFound
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.utils import json
 
 from arango_api import utils
 from arango_api.db import db_ontologies, GRAPH_NAME_ONTOLOGIES
-from arango_api.utils import get_collection_info
 
 # TODO: Move from global?
 EDGE_COLLECTIONS = {
@@ -116,129 +116,174 @@ def run_aql_query(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@api_view(["POST"])
+@api_view(['POST'])
 def get_sunburst(request):
     """
-    API endpoint for fetching sunburst data.
-    - If no 'parent_id' is provided, returns the initial root structure.
-    - If 'parent_id' is provided, returns the direct children of that node.
+    API endpoint for fetching sunburst data, supporting initial load (L0+L1)
+    and loading children + grandchildren (L N+1, L N+2) on demand.
+    Includes extensive debugging print statements.
     """
-    parent_id = request.data.get("parent_id", None)
+    if db_ontologies is None:
+        print("ERROR: db_ontologies object is None. Cannot proceed.")
+        return Response({"error": "Database connection not available."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    parent_id = request.data.get('parent_id', None)
+    print(f"\n--- Request Received ---")
+    print(f"DEBUG: parent_id received: {parent_id}")
+
 
     if parent_id:
-        # --- Fetch Children ---
-        edge_col = get_collection_info(parent_id, EDGE_COLLECTIONS)
-        if not edge_col:
-            return Response(
-                {
-                    "error": f"Could not determine edge collection for parent_id: {parent_id}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # === Fetch Children (C) AND Grandchildren (G) for the given parent_id (P) ===
+        print(f"DEBUG: Handling request for children/grandchildren of parent_id: {parent_id}")
 
-        # AQL query to get direct children and check if they have children themselves
-        query = """
-            LET parent_id = @parent_id
+        # AQL Query: Fetches C nodes and their G children
+        query_children_grandchildren = """
+            LET start_node_id = @parent_id // This is P
 
-            FOR child_node, edge IN 1..1 INBOUND parent_id GRAPH @graph_name 
-                FILTER edge.label == 'subClassOf' // Filter on the edge label
+            // Find direct children (Level N+1, Nodes C)
+            // Ensure edge direction and filter are correct for your 'subClassOf'
+            FOR child_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                FILTER edge1.label == 'subClassOf' // <<< Check Case Sensitivity
 
-                // Check if this child_node has children using the same relationship
-                LET has_children = COUNT(
-                    FOR grandchild, grandchild_edge IN 1..1 INBOUND child_node._id GRAPH @graph_name 
-                        FILTER grandchild_edge.label == 'subClassOf'
-                        LIMIT 1 
-                        RETURN 1
-                ) > 0
+                // For each child_node (C), find its children (Level N+2, Nodes G)
+                LET grandchildren = (
+                    FOR grandchild_node, edge2 IN 1..1 INBOUND child_node._id GRAPH @graph_name
+                        FILTER edge2.label == 'subClassOf'
 
-                // Ensure required fields exist, provide defaults if necessary
-                RETURN {
+                        // Check if grandchild (G) has children (Level N+3)
+                        LET grandchild_has_children = COUNT(
+                            FOR great_grandchild, edge3 IN 1..1 INBOUND grandchild_node._id GRAPH @graph_name
+                                FILTER edge3.label == 'subClassOf'
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format grandchild (G)
+                            _id: grandchild_node._id,
+                            label: grandchild_node.label || grandchild_node.name || grandchild_node._key,
+                            value: 1,
+                            _hasChildren: grandchild_has_children,
+                            children: null // Level N+3 not loaded here
+                        }
+                ) // Collect grandchildren (G) into an array for this child (C)
+
+                // Check if the child_node (C) itself has children (G) loaded above
+                LET child_has_children = COUNT(grandchildren) > 0
+
+                RETURN { // Format child (C)
                     _id: child_node._id,
-                    label: child_node.label || child_node.name || child_node._key, // Use label, fallback to name or _key
-                    value: 1, // Assign a default value for size calculation in D3
-                    _hasChildren: has_children,
-                    children: null // Children are not loaded at this stage
+                    label: child_node.label || child_node.name || child_node._key,
+                    value: 1,
+                    _hasChildren: child_has_children, // Does C have children G?
+                    children: grandchildren // Attach the array of grandchildren (G)
                 }
         """
-
-        bind_vars = {
-            "parent_id": parent_id,
-            "graph_name": GRAPH_NAME_ONTOLOGIES,
-        }
+        bind_vars = {"parent_id": parent_id, "graph_name": GRAPH_NAME_ONTOLOGIES}
+        print(f"DEBUG: Executing Child/Grandchild Query with bind_vars: {bind_vars}")
+        # print(f"DEBUG: Query:\n{query_children_grandchildren}") # Uncomment to see full query if needed
 
         try:
-            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-            children_data = list(cursor)
-            return Response(children_data, status=status.HTTP_200_OK)
+            cursor = db_ontologies.aql.execute(query_children_grandchildren, bind_vars=bind_vars)
+            results = list(cursor) # <<< Get results immediately
+            print(f"DEBUG: Query executed. Number of children (C) found for {parent_id}: {len(results)}")
+            if len(results) < 5: # Print details only if few results for clarity
+                print(f"DEBUG: Raw child/grandchild results: {json.dumps(results, indent=2)}")
+            else:
+                print(f"DEBUG: Raw child/grandchild results (first 5): {json.dumps(results[:5], indent=2)}")
+
+            # The results list *is* the data we need to return
+            children_and_grandchildren_data = results
+
+            print(f"DEBUG: Returning {len(children_and_grandchildren_data)} children nodes for {parent_id}.")
+            return Response(children_and_grandchildren_data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Error fetching children for {parent_id}: {e}")
-            # Consider more specific error logging/handling
-            return Response(
-                {"error": "Failed to fetch children data."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            print(f"ERROR: AQL Execution failed for children/grandchildren of {parent_id}: {e}")
+            # You might want to inspect the specific ArangoDB error details if available in 'e'
+            return Response({"error": f"Failed to fetch nested children data for {parent_id}."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     else:
-        # --- Fetch Initial Roots ---
-        initial_nodes = []
-        graph_root_id = "root_nlm"  # Give the top-level root a unique ID
+        # === Fetch Initial Roots (Level 0) AND their Children (Level 1) ===
+        print("DEBUG: Handling request for initial data (Root + L0 + L1).")
+        initial_nodes_with_children = []
+        graph_root_id = "root_nlm" # Unique ID for the artificial root
 
+        # Loop through predefined starting nodes
         for node_id in INITIAL_ROOT_IDS:
-            edge_col = get_collection_info(node_id, EDGE_COLLECTIONS)
-            if not edge_col:
-                print(
-                    f"Skipping initial node due to missing edge collection: {node_id}"
-                )
-                continue  # Skip nodes that can't be processed
+            print(f"\nDEBUG: Processing initial root ID: {node_id}")
 
-            # Query to get node details and check if it has children
-            query = """
-                LET node_id = @node_id
+            # AQL Query: Fetches L0 node and its direct L1 children
+            query_initial = """
+                LET start_node_id = @node_id // This is L0
 
-                LET node_details = DOCUMENT(node_id)
-                FILTER node_details != null // Ensure the root node exists
+                // 1. Get the L0 node details
+                LET start_node_doc = DOCUMENT(start_node_id)
+                FILTER start_node_doc != null // Ensure L0 exists
 
-                // Check if this node has children
-                LET has_children = COUNT(
-                    FOR child, edge IN 1..1 INBOUND node_id GRAPH @graph_name 
-                        FILTER edge.label == 'subClassOf'
-                        LIMIT 1
-                        RETURN 1
+                // 2. Check if L0 has children (L1)
+                LET start_node_has_children = COUNT(
+                    FOR c1, e1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER e1.label == 'subClassOf' // <<< Check direction/label
+                        LIMIT 1 RETURN 1
                 ) > 0
 
-                RETURN {
-                    _id: node_details._id,
-                    label: node_details.label || node_details.name || node_details._key,
-                    value: 1,
-                    _hasChildren: has_children,
-                    children: null // Children are not loaded initially
+                // 3. Get L1 children
+                LET children_level1 = (
+                    FOR child1_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER edge1.label == 'subClassOf' // <<< Check direction/label
+
+                        // 4. Check if each L1 child has children (L2)
+                        LET child1_has_children = COUNT(
+                            FOR c2, e2 IN 1..1 INBOUND child1_node._id GRAPH @graph_name
+                                FILTER e2.label == 'subClassOf' // <<< Check direction/label
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format Level 1 node
+                            _id: child1_node._id,
+                            label: child1_node.label || child1_node.name || child1_node._key,
+                            value: 1,
+                            _hasChildren: child1_has_children, // Does L1 have L2 children?
+                            children: null // L2 not loaded here
+                        }
+                ) // Collect L1 children into an array
+
+                // 5. Return the formatted L0 node with its L1 children attached
+                RETURN { // Format Level 0 node
+                    _id: start_node_doc._id,
+                    label: start_node_doc.label || start_node_doc.name || start_node_doc._key,
+                    value: 1, // Could calculate SUM(children_level1[*].value) if needed
+                    _hasChildren: start_node_has_children, // Does L0 have L1 children?
+                    children: children_level1 // Attach array of formatted L1 children
                 }
             """
-            bind_vars = {
-                "node_id": node_id,
-                "graph_name": GRAPH_NAME_ONTOLOGIES,
-            }
+            bind_vars = {"node_id": node_id, "graph_name": GRAPH_NAME_ONTOLOGIES}
+            print(f"DEBUG: Executing Initial Query for {node_id} with bind_vars: {bind_vars}")
+            # print(f"DEBUG: Query:\n{query_initial}") # Uncomment to see full query if needed
 
             try:
-                cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-                node_data = cursor.next()  # Expecting exactly one result for the root
-                if node_data:
-                    initial_nodes.append(node_data)
+                cursor = db_ontologies.aql.execute(query_initial, bind_vars=bind_vars)
+                # Expecting only one result document per initial node_id
+                node_data_list = list(cursor)
+                if node_data_list:
+                    node_data = node_data_list[0]
+                    print(f"DEBUG: Found initial data for {node_id}.")
+                    # print(f"DEBUG: Raw data for {node_id}: {json.dumps(node_data, indent=2)}") # Uncomment for detailed view
+                    initial_nodes_with_children.append(node_data)
                 else:
-                    print(
-                        f"Warning: Initial root node not found or query failed for {node_id}"
-                    )
+                     print(f"WARNING: Initial query for {node_id} returned NO results. Check node existence and relationships.")
 
             except Exception as e:
-                print(f"Error processing initial node {node_id}: {e}")
-                # Decide if one failure should stop the whole process or just skip the node
+                print(f"ERROR: AQL Execution failed for initial node {node_id}: {e}")
+                # Decide if one failure should stop the whole initial load or just skip this node
 
-        # Create the top-level root node structure expected by the frontend
+        # Create the final top-level root node structure
         graph_root = {
             "_id": graph_root_id,
-            "label": "NLM Cell Knowledge Network",
-            "_hasChildren": True,
-            "children": initial_nodes,
+            "label": "NLM Cell Knowledge Network", # Or your preferred root label
+            "_hasChildren": len(initial_nodes_with_children) > 0, # True if any L0 nodes were found
+            "children": initial_nodes_with_children # Assign the list of L0 nodes (containing L1)
         }
+        print(f"\nDEBUG: Finished processing initial nodes. Found {len(initial_nodes_with_children)} L0 nodes.")
+        # print(f"DEBUG: Final graph_root structure: {json.dumps(graph_root, indent=2)}") # Uncomment for full structure view
+
         return Response(graph_root, status=status.HTTP_200_OK)
