@@ -114,7 +114,10 @@ export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
   const parentNode = findNodeById(newData, parentId);
 
   if (parentNode) {
-    console.log(`Found parent ${parentId}, merging children:`, childrenWithGrandchildren);
+    console.log(
+      `Found parent ${parentId}, merging children:`,
+      childrenWithGrandchildren,
+    );
     parentNode.children = childrenWithGrandchildren;
     parentNode._childrenLoaded = true;
   } else {

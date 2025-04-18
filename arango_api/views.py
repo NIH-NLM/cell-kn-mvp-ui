@@ -116,7 +116,7 @@ def run_aql_query(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def get_sunburst(request):
     """
     API endpoint for fetching sunburst data, supporting initial load (L0+L1)
@@ -125,16 +125,20 @@ def get_sunburst(request):
     """
     if db_ontologies is None:
         print("ERROR: db_ontologies object is None. Cannot proceed.")
-        return Response({"error": "Database connection not available."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"error": "Database connection not available."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
-    parent_id = request.data.get('parent_id', None)
+    parent_id = request.data.get("parent_id", None)
     print(f"\n--- Request Received ---")
     print(f"DEBUG: parent_id received: {parent_id}")
 
-
     if parent_id:
         # === Fetch Children (C) AND Grandchildren (G) for the given parent_id (P) ===
-        print(f"DEBUG: Handling request for children/grandchildren of parent_id: {parent_id}")
+        print(
+            f"DEBUG: Handling request for children/grandchildren of parent_id: {parent_id}"
+        )
 
         # AQL Query: Fetches C nodes and their G children
         query_children_grandchildren = """
@@ -182,30 +186,45 @@ def get_sunburst(request):
         # print(f"DEBUG: Query:\n{query_children_grandchildren}") # Uncomment to see full query if needed
 
         try:
-            cursor = db_ontologies.aql.execute(query_children_grandchildren, bind_vars=bind_vars)
-            results = list(cursor) # <<< Get results immediately
-            print(f"DEBUG: Query executed. Number of children (C) found for {parent_id}: {len(results)}")
-            if len(results) < 5: # Print details only if few results for clarity
-                print(f"DEBUG: Raw child/grandchild results: {json.dumps(results, indent=2)}")
+            cursor = db_ontologies.aql.execute(
+                query_children_grandchildren, bind_vars=bind_vars
+            )
+            results = list(cursor)  # <<< Get results immediately
+            print(
+                f"DEBUG: Query executed. Number of children (C) found for {parent_id}: {len(results)}"
+            )
+            if len(results) < 5:  # Print details only if few results for clarity
+                print(
+                    f"DEBUG: Raw child/grandchild results: {json.dumps(results, indent=2)}"
+                )
             else:
-                print(f"DEBUG: Raw child/grandchild results (first 5): {json.dumps(results[:5], indent=2)}")
+                print(
+                    f"DEBUG: Raw child/grandchild results (first 5): {json.dumps(results[:5], indent=2)}"
+                )
 
             # The results list *is* the data we need to return
             children_and_grandchildren_data = results
 
-            print(f"DEBUG: Returning {len(children_and_grandchildren_data)} children nodes for {parent_id}.")
+            print(
+                f"DEBUG: Returning {len(children_and_grandchildren_data)} children nodes for {parent_id}."
+            )
             return Response(children_and_grandchildren_data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"ERROR: AQL Execution failed for children/grandchildren of {parent_id}: {e}")
+            print(
+                f"ERROR: AQL Execution failed for children/grandchildren of {parent_id}: {e}"
+            )
             # You might want to inspect the specific ArangoDB error details if available in 'e'
-            return Response({"error": f"Failed to fetch nested children data for {parent_id}."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": f"Failed to fetch nested children data for {parent_id}."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     else:
         # === Fetch Initial Roots (Level 0) AND their Children (Level 1) ===
         print("DEBUG: Handling request for initial data (Root + L0 + L1).")
         initial_nodes_with_children = []
-        graph_root_id = "root_nlm" # Unique ID for the artificial root
+        graph_root_id = "root_nlm"  # Unique ID for the artificial root
 
         # Loop through predefined starting nodes
         for node_id in INITIAL_ROOT_IDS:
@@ -257,7 +276,9 @@ def get_sunburst(request):
                 }
             """
             bind_vars = {"node_id": node_id, "graph_name": GRAPH_NAME_ONTOLOGIES}
-            print(f"DEBUG: Executing Initial Query for {node_id} with bind_vars: {bind_vars}")
+            print(
+                f"DEBUG: Executing Initial Query for {node_id} with bind_vars: {bind_vars}"
+            )
             # print(f"DEBUG: Query:\n{query_initial}") # Uncomment to see full query if needed
 
             try:
@@ -270,7 +291,9 @@ def get_sunburst(request):
                     # print(f"DEBUG: Raw data for {node_id}: {json.dumps(node_data, indent=2)}") # Uncomment for detailed view
                     initial_nodes_with_children.append(node_data)
                 else:
-                     print(f"WARNING: Initial query for {node_id} returned NO results. Check node existence and relationships.")
+                    print(
+                        f"WARNING: Initial query for {node_id} returned NO results. Check node existence and relationships."
+                    )
 
             except Exception as e:
                 print(f"ERROR: AQL Execution failed for initial node {node_id}: {e}")
@@ -279,11 +302,14 @@ def get_sunburst(request):
         # Create the final top-level root node structure
         graph_root = {
             "_id": graph_root_id,
-            "label": "NLM Cell Knowledge Network", # Or your preferred root label
-            "_hasChildren": len(initial_nodes_with_children) > 0, # True if any L0 nodes were found
-            "children": initial_nodes_with_children # Assign the list of L0 nodes (containing L1)
+            "label": "NLM Cell Knowledge Network",  # Or your preferred root label
+            "_hasChildren": len(initial_nodes_with_children)
+            > 0,  # True if any L0 nodes were found
+            "children": initial_nodes_with_children,  # Assign the list of L0 nodes (containing L1)
         }
-        print(f"\nDEBUG: Finished processing initial nodes. Found {len(initial_nodes_with_children)} L0 nodes.")
+        print(
+            f"\nDEBUG: Finished processing initial nodes. Found {len(initial_nodes_with_children)} L0 nodes."
+        )
         # print(f"DEBUG: Final graph_root structure: {json.dumps(graph_root, indent=2)}") # Uncomment for full structure view
 
         return Response(graph_root, status=status.HTTP_200_OK)
