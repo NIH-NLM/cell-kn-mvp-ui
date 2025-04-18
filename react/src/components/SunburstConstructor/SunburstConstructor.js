@@ -154,15 +154,10 @@ function SunburstConstructor(
         d.children || d.data._hasChildren ? "pointer" : "default",
       )
       .attr("d", arc);
-    const format = d3.format(",d");
-    pathEnter.append("title").text(
-      (d) =>
-        `${d
-          .ancestors()
-          .map((a) => a.data.label)
-          .reverse()
-          .join("/")}\nValue: ${format(d.value || 1)}`,
-    );
+    pathEnter
+      .append("title")
+      .text((d) => d.data.label || d.data._id || "Unknown");
+
     pathUpdate = path.merge(pathEnter);
     pathUpdate
       .on("contextmenu", function (event, d) {

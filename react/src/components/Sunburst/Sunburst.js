@@ -454,7 +454,7 @@ const Sunburst = ({ addSelectedItem }) => {
             className="popup-button"
             data-testid="popup-button-goto"
             // Ensure ID is URL-safe
-            href={`/#/browse/${encodeURIComponent(clickedItem._id)}`}
+            href={`/#/browse/${clickedItem._id}`}
             target="_blank" // Open in new tab
             rel="noopener noreferrer" // Security best practice
             onClick={handlePopupClose} // Close popup when link is clicked
