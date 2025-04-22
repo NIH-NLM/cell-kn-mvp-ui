@@ -1,3 +1,5 @@
+import collectionsMapData from "../../assets/collectionsMap.json";
+
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
   let response = await fetch("/arango_api/collections/", {
@@ -78,18 +80,72 @@ export const parseCollections = (collections, collectionsMap = null) => {
 };
 
 export const getLabel = (item) => {
-  return [
-    item.label,
-    item.Name,
-    item.term,
-    item.Symbol,
-    item.Author_cell_term,
-    item.Label,
-    item._id,
-  ]
+  const collectionsMap = new Map(collectionsMapData);
+  // Get item collection
+  const itemCollection = item._id.split("/")[0];
+  const labelOptions =
+    collectionsMap.get(itemCollection)?.["individual_labels"] ?? // Get options
+    collectionsMap.get("edges")?.["individual_labels"]; // Expected fallback for edge collections
+  const label = labelOptions
+    .map((key) => item[key]) // Get array of options
     .find((value) => value !== undefined) // Find the first non-undefined value
     ?.toString()
     .split(",")
-    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .flatMap((value) => (Array.isArray(value) ? value : [value])) // Handle array
     .join(" + ");
+  return label;
+};
+
+export const getUrl = (item) => {
+  const collectionsMap = new Map(collectionsMapData);
+  // Get item collection
+  const itemCollection = item._id.split("/")[0];
+  const collectionMap = collectionsMap.get(itemCollection);
+
+  const individualUrl = collectionMap?.["individual_url"];
+  let replacement = item[collectionMap["field_to_use"]].replaceAll(
+    collectionMap["to_be_replaced"],
+    collectionMap["replace_with"],
+  );
+  if (collectionMap["make_lower_case"]) {
+    replacement = replacement.toLowerCase();
+  }
+  // Create url
+  const url = individualUrl.replace("<FIELD_TO_USE>", replacement);
+  return url;
+};
+
+export const getTitle = (item) => {
+  const collectionsMap = new Map(collectionsMapData);
+  // Get item collection
+  const itemCollection = item._id.split("/")[0];
+  const collectionMap = collectionsMap.get(itemCollection);
+
+  const title = `${collectionMap["display_name"]}: ${getLabel(item)}`;
+  return capitalCase(title);
+};
+
+export const capitalCase = (input) => {
+  if (Array.isArray(input)) {
+    // If the input is an array, map over each element and capitalize each word
+    return input
+      .map((str) =>
+        typeof str === "string"
+          ? str
+              .split(" ")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")
+          : str,
+      )
+      .join("+");
+  } else if (typeof input === "string") {
+    // If the input is a single string, capitalize each word
+    return input
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  } else {
+    // If the input is neither a string nor an array of strings, return as is
+    return input;
+  }
 };
