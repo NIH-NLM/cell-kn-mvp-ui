@@ -1,3 +1,5 @@
+import collectionsMapData from "../../assets/collectionsMap.json";
+
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
   let response = await fetch("/arango_api/collections/", {
@@ -78,18 +80,16 @@ export const parseCollections = (collections, collectionsMap = null) => {
 };
 
 export const getLabel = (item) => {
-  return [
-    item.label,
-    item.Name,
-    item.term,
-    item.Symbol,
-    item.Author_cell_term,
-    item.Label,
-    item._id,
-  ]
-    .find((value) => value !== undefined) // Find the first non-undefined value
-    ?.toString()
-    .split(",")
-    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-    .join(" + ");
+  const collectionsMap = new Map(collectionsMapData);
+  // Get item collection
+  const itemCollection = item._id.split('/')[0]
+  const labelOptions = collectionsMap.get(itemCollection)?.["individual_labels"] ??  // Get options
+      collectionsMap.get("edges")?.["individual_labels"]; // Expected fallback for edge collections
+  const label = labelOptions.map(key => item[key]) // Get array of options
+      .find((value) => value !== undefined) // Find the first non-undefined value
+      ?.toString()
+      .split(",")
+      .flatMap((value) => (Array.isArray(value) ? value : [value])) // Handle array
+      .join(" + ");
+  return label
 };
