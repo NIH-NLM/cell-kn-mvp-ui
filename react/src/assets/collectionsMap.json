@@ -18,7 +18,7 @@
     {
       "abbreviated_name": "CHEBI",
       "display_name": "Molecular entity",
-      "individual_labels": ["label", "_key"],
+      "individual_labels": ["label"],
       "individual_url": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=<FIELD_TO_USE>",
       "field_to_use": "_key",
       "to_be_replaced": "",
@@ -32,7 +32,7 @@
     {
       "abbreviated_name": "CHEMBL",
       "display_name": "Bioactive molecule",
-      "individual_labels": ["Name", "Trade_names", "Synonyms", "_key"],
+      "individual_labels": ["Name", "Trade_names", "Synonyms"],
       "individual_url": "https://www.ebi.ac.uk/chembl/explore/compound/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -46,7 +46,7 @@
     {
       "abbreviated_name": "CL",
       "display_name": "Cell type",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -60,7 +60,7 @@
     {
       "abbreviated_name": "CS",
       "display_name": "Cell set",
-      "individual_labels": ["Label", "_key"],
+      "individual_labels": ["Label"],
       "individual_url": "http://44.220.217.88/#/browse/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "",
@@ -74,7 +74,7 @@
     {
       "abbreviated_name": "CSD",
       "display_name": "Cell set dataset",
-      "individual_labels": ["Collection_id", "_key"],
+      "individual_labels": ["Collection_id"],
       "individual_url": "http://44.220.217.88/#/browse/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "",
@@ -88,7 +88,7 @@
     {
       "abbreviated_name": "GO",
       "display_name": "Gene ontology",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "https://www.ebi.ac.uk/QuickGO/term/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -130,7 +130,7 @@
     {
       "abbreviated_name": "HsapDv",
       "display_name": "Life cycle stage",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -144,7 +144,7 @@
     {
       "abbreviated_name": "MONDO",
       "display_name": "Disease",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -158,7 +158,7 @@
     {
       "abbreviated_name": "MmusDv",
       "display_name": "Life cycle stage",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -172,7 +172,7 @@
     {
       "abbreviated_name": "NCBITaxon",
       "display_name": "Taxonomy",
-      "individual_labels": ["label", "_key"],
+      "individual_labels": ["label"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -214,7 +214,7 @@
     {
       "abbreviated_name": "PATO",
       "display_name": "Phenotype",
-      "individual_labels": ["label", "_key"],
+      "individual_labels": ["label"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -228,7 +228,7 @@
     {
       "abbreviated_name": "PR",
       "display_name": "Protein",
-      "individual_labels": ["Recommended_name", "_key"],
+      "individual_labels": ["Recommended_name", "label"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -242,7 +242,7 @@
     {
       "abbreviated_name": "PUB",
       "display_name": "Publication",
-      "individual_labels": ["PMID", "PMCID", "_key"],
+      "individual_labels": ["PMID", "PMCID"],
       "individual_url": "http://44.220.217.88/#/browse/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "",
@@ -284,7 +284,7 @@
     {
       "abbreviated_name": "UBERON",
       "display_name": "Anatomy structure",
-      "individual_labels": ["label", "definition", "_key"],
+      "individual_labels": ["label", "definition"],
       "individual_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
       "field_to_use": "_id",
       "to_be_replaced": "/",
@@ -296,7 +296,7 @@
   [
     "edges",
     {
-      "individual_labels": ["label", "_key"]
+      "individual_labels": ["label"]
     }
   ]
 ]

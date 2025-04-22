@@ -4,6 +4,7 @@ import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
 import Pagination from "../../components/Pagination/Pagination";
 import { GraphContext } from "../../components/Contexts/Contexts";
+import {getLabel} from "../../components/Utils/Utils";
 
 const DocumentListPage = () => {
   const { graphType, setGraphType } = useContext(GraphContext);
@@ -37,13 +38,13 @@ const DocumentListPage = () => {
   const sortDocumentList = (documents) => {
     const sortedList = Object.values(documents);
     // Separate items that have a label and those that do not
-    const labeledItems = sortedList.filter((item) => item.label);
-    const keyItems = sortedList.filter((item) => !item.label && item._key);
+    const labeledItems = sortedList.filter((item) => getLabel(item));
+    const keyItems = sortedList.filter((item) => !getLabel(item));
 
     // Sort labeled items alphabetically by label, handling arrays
     labeledItems.sort((a, b) => {
-      const labelA = Array.isArray(a.label) ? a.label[0] : a.label;
-      const labelB = Array.isArray(b.label) ? b.label[0] : b.label;
+      const labelA = Array.isArray(getLabel(a)) ? getLabel(a)[0] : getLabel(a);
+      const labelB = Array.isArray(getLabel(b)) ? getLabel(b)[0] : getLabel(b);
       return labelA.localeCompare(labelB);
     });
 
