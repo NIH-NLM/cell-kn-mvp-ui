@@ -2,8 +2,12 @@ import { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { fetchCollections, parseCollections } from "../Utils/Utils";
-import * as Utils from "../Utils/Utils";
+import {
+  fetchCollections,
+  getLabel,
+  hasAnyNodes,
+  parseCollections,
+} from "../Utils/Utils";
 import { GraphContext } from "../Contexts/Contexts";
 
 const ForceGraph = ({
@@ -113,7 +117,7 @@ const ForceGraph = ({
       )
         .then((data) => {
           if (isMounted) {
-            if (Utils.hasAnyNodes(data, originNodeIds[0])) {
+            if (hasAnyNodes(data, originNodeIds[0])) {
               setRawData(data);
             } else {
               setGraphType("ontologies");
@@ -188,7 +192,7 @@ const ForceGraph = ({
               nodeFontSize: nodeFontSize,
               linkFontSize: edgeFontSize,
               nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
-              label: Utils.getLabel,
+              label: getLabel,
               onNodeClick: handleNodeClick,
               interactionCallback: handlePopupClose,
               nodeStrength: -100,
@@ -471,7 +475,7 @@ const ForceGraph = ({
 
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData._id);
-    setClickedNodeLabel(Utils.getLabel(nodeData));
+    setClickedNodeLabel(getLabel(nodeData));
 
     const { clientX, clientY } = e;
     const scrollX = window.scrollX;

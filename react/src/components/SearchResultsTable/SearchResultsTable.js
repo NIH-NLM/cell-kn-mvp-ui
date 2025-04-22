@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import * as Utils from "../Utils/Utils";
 import collectionsMapData from "../../assets/collectionsMap.json";
+import { getLabel } from "../Utils/Utils";
 
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
   const collectionsMap = new Map(collectionsMapData);
@@ -92,7 +93,7 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
                       target="_blank"
                       className="item-link"
                     >
-                      {Utils.getLabel(item)}
+                      {getLabel(item)}
                     </Link>
                     <span
                       className="plus-icon"
