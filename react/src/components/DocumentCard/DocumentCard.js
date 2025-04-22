@@ -1,7 +1,7 @@
 import React from "react";
 
 /* TODO: Rename */
-const CellCard = ({ cell: cell }) => {
+const DocumentCard = ({ cell: cell }) => {
   return (
     <div className="cell-item-list">
       <fieldset>
@@ -27,4 +27,4 @@ const CellCard = ({ cell: cell }) => {
   );
 };
 
-export default CellCard;
+export default DocumentCard;

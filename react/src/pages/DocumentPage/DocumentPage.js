@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import CellCard from "../../components/CellCard/CellCard";
+import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
 import { useParams } from "react-router-dom";
@@ -58,7 +58,7 @@ const DocumentPage = ({}) => {
           <span>{document.term}</span>
         </div>
         <div className="document-item-container">
-          <CellCard cell={document} />
+          <DocumentCard cell={document} />
           <ForceGraph
             nodeIds={[document._id]}
             heightRatio={1}
