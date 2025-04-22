@@ -18,7 +18,11 @@ describe("DocumentCard", () => {
   });
 
   it("renders the component correctly with an array as label", () => {
-    const document = { _id:"CL/0", label: ["Label1", "Label2"], prop1: "value1" };
+    const document = {
+      _id: "CL/0",
+      label: ["Label1", "Label2"],
+      prop1: "value1",
+    };
     render(<DocumentCard document={document} />);
 
     // Check if the label is joined correctly in the legend
@@ -26,7 +30,11 @@ describe("DocumentCard", () => {
   });
 
   it("should not render table rows with keys that start with an underscore", () => {
-    const document = { _id:"CL/0", label: "Document Label", _hiddenProp: "shouldNotShow" };
+    const document = {
+      _id: "CL/0",
+      label: "Document Label",
+      _hiddenProp: "shouldNotShow",
+    };
     render(<DocumentCard document={document} />);
 
     // Ensure that properties starting with an underscore are not rendered
@@ -34,7 +42,11 @@ describe("DocumentCard", () => {
   });
 
   it("renders array values correctly", () => {
-    const document = { _id:"CL/0", label: "Document Label", prop1: ["value1", "value2"] };
+    const document = {
+      _id: "CL/0",
+      label: "Document Label",
+      prop1: ["value1", "value2"],
+    };
     render(<DocumentCard document={document} />);
 
     // Check if array values are joined correctly in the table

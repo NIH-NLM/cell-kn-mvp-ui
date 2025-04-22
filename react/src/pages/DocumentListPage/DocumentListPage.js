@@ -4,7 +4,7 @@ import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
 import Pagination from "../../components/Pagination/Pagination";
 import { GraphContext } from "../../components/Contexts/Contexts";
-import {getLabel} from "../../components/Utils/Utils";
+import { getLabel } from "../../components/Utils/Utils";
 
 const DocumentListPage = () => {
   const { graphType, setGraphType } = useContext(GraphContext);

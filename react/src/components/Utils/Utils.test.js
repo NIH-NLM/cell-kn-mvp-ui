@@ -11,28 +11,45 @@ import {
 // --- Mocking ---
 
 // Mock the collectionsMapData import
-jest.mock("../../assets/collectionsMap.json", () => ([
-  ["nodes_a", {
-    display_name: "Nodes A",
-    individual_labels: ["name", "key"],
-    individual_url: "/data/nodes-a/<FIELD_TO_USE>",
-    field_to_use: "key",
-    to_be_replaced: "_",
-    replace_with: "-",
-    make_lower_case: true,
-  }],
-  ["nodes_b", {
-    display_name: "Nodes B",
-    individual_labels: ["title"],
-  }],
-  ["edges", { // Mock default edge config
-    display_name: "Relationships",
-    individual_labels: ["label"],
-  }],
-  ["nodes_c", {
-    individual_labels: ["description"],
-  }],
-]), { virtual: true });
+jest.mock(
+  "../../assets/collectionsMap.json",
+  () => [
+    [
+      "nodes_a",
+      {
+        display_name: "Nodes A",
+        individual_labels: ["name", "key"],
+        individual_url: "/data/nodes-a/<FIELD_TO_USE>",
+        field_to_use: "key",
+        to_be_replaced: "_",
+        replace_with: "-",
+        make_lower_case: true,
+      },
+    ],
+    [
+      "nodes_b",
+      {
+        display_name: "Nodes B",
+        individual_labels: ["title"],
+      },
+    ],
+    [
+      "edges",
+      {
+        // Mock default edge config
+        display_name: "Relationships",
+        individual_labels: ["label"],
+      },
+    ],
+    [
+      "nodes_c",
+      {
+        individual_labels: ["description"],
+      },
+    ],
+  ],
+  { virtual: true },
+);
 
 // Mock the global fetch function
 global.fetch = jest.fn();
@@ -45,7 +62,6 @@ beforeEach(() => {
 // --- Tests ---
 
 describe("Utils Module", () => {
-
   // --- fetchCollections ---
   describe("fetchCollections", () => {
     it("should fetch collections successfully", async () => {
@@ -85,12 +101,14 @@ describe("Utils Module", () => {
       });
 
       // Spy on console.error to ensure it's called
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       // Assert that the function call rejects with the expected error
-      await expect(fetchCollections(graphType))
-        .rejects
-        .toThrow(`Network response was not ok (${errorStatus})`);
+      await expect(fetchCollections(graphType)).rejects.toThrow(
+        `Network response was not ok (${errorStatus})`,
+      );
 
       // Check if fetch was called
       expect(fetch).toHaveBeenCalledTimes(1);
@@ -98,7 +116,7 @@ describe("Utils Module", () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         "Fetch collections failed:",
         errorStatus,
-        errorText
+        errorText,
       );
 
       // Restore console.error spy
@@ -125,14 +143,18 @@ describe("Utils Module", () => {
       expect(hasAnyNodes({ nodes: "string" }, nodeId)).toBe(false);
     });
 
-     it("should return false if the specific nodeId key is missing in data.nodes", () => {
-       expect(hasAnyNodes({ nodes: { "other_nodes/456": [] } }, nodeId)).toBe(false);
-     });
+    it("should return false if the specific nodeId key is missing in data.nodes", () => {
+      expect(hasAnyNodes({ nodes: { "other_nodes/456": [] } }, nodeId)).toBe(
+        false,
+      );
+    });
 
     it("should return false if the value for nodeId is not an array", () => {
       expect(hasAnyNodes({ nodes: { [nodeId]: null } }, nodeId)).toBe(false);
       expect(hasAnyNodes({ nodes: { [nodeId]: {} } }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: { [nodeId]: "string" } }, nodeId)).toBe(false);
+      expect(hasAnyNodes({ nodes: { [nodeId]: "string" } }, nodeId)).toBe(
+        false,
+      );
     });
 
     it("should return false for an empty array", () => {
@@ -140,23 +162,45 @@ describe("Utils Module", () => {
     });
 
     it("should return false if array entries are null or not objects", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [null, undefined] } }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [1, "a"] } }, nodeId)).toBe(false);
+      expect(
+        hasAnyNodes({ nodes: { [nodeId]: [null, undefined] } }, nodeId),
+      ).toBe(false);
+      expect(hasAnyNodes({ nodes: { [nodeId]: [1, "a"] } }, nodeId)).toBe(
+        false,
+      );
     });
 
     it("should return false if array entries lack a 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ id: 1 }, {}] } }, nodeId)).toBe(false);
+      expect(
+        hasAnyNodes({ nodes: { [nodeId]: [{ id: 1 }, {}] } }, nodeId),
+      ).toBe(false);
     });
 
     it("should return false if all 'node' properties are null", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: null }] } }, nodeId)).toBe(false);
+      expect(
+        hasAnyNodes(
+          { nodes: { [nodeId]: [{ node: null }, { node: null }] } },
+          nodeId,
+        ),
+      ).toBe(false);
     });
 
     it("should return true if at least one entry has a non-null 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: {} }] } }, nodeId)).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: { id: 1 } }] } }, nodeId)).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId)).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(true); // 0 is not null
+      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: {} }] } }, nodeId)).toBe(
+        true,
+      );
+      expect(
+        hasAnyNodes(
+          { nodes: { [nodeId]: [{ node: null }, { node: { id: 1 } }] } },
+          nodeId,
+        ),
+      ).toBe(true);
+      expect(
+        hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId),
+      ).toBe(true);
+      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(
+        true,
+      ); // 0 is not null
     });
   });
 
@@ -171,36 +215,44 @@ describe("Utils Module", () => {
 
     it("should sort collections using display_name from map (case-insensitive)", () => {
       // Use the mocked collectionsMapData via the Map constructor
-      const collectionsMap = new Map(require("../../assets/collectionsMap.json"));
+      const collectionsMap = new Map(
+        require("../../assets/collectionsMap.json"),
+      );
       const input = ["nodes_b", "nodes_a"]; // Based on mock display names: Nodes B, Nodes A
       const expected = ["nodes_a", "nodes_b"]; // Sorted: Nodes A, Nodes B
       expect(parseCollections(input, collectionsMap)).toEqual(expected);
     });
 
     it("should fallback to collection key for sorting if display_name is missing", () => {
-      const collectionsMap = new Map(require("../../assets/collectionsMap.json"));
-       // nodes_c has no display_name in mock, nodes_a has "Nodes A"
+      const collectionsMap = new Map(
+        require("../../assets/collectionsMap.json"),
+      );
+      // nodes_c has no display_name in mock, nodes_a has "Nodes A"
       const input = ["nodes_c", "nodes_a"];
-       // Expected: nodes_a ("Nodes A"), nodes_c (key)
+      // Expected: nodes_a ("Nodes A"), nodes_c (key)
       const expected = ["nodes_a", "nodes_c"];
       expect(parseCollections(input, collectionsMap)).toEqual(expected);
     });
 
-     it("should fallback to collection key for sorting if collection not in map", () => {
-      const collectionsMap = new Map(require("../../assets/collectionsMap.json"));
-       // nodes_x not in mock map, nodes_a has "Nodes A"
+    it("should fallback to collection key for sorting if collection not in map", () => {
+      const collectionsMap = new Map(
+        require("../../assets/collectionsMap.json"),
+      );
+      // nodes_x not in mock map, nodes_a has "Nodes A"
       const input = ["nodes_x", "nodes_a"];
-       // Expected: nodes_a ("Nodes A"), nodes_x (key)
+      // Expected: nodes_a ("Nodes A"), nodes_x (key)
       const expected = ["nodes_a", "nodes_x"];
       expect(parseCollections(input, collectionsMap)).toEqual(expected);
     });
 
     it("should handle mixed cases with and without map entries", () => {
-        const collectionsMap = new Map(require("../../assets/collectionsMap.json"));
-        // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
-        const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
-        const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];
-        expect(parseCollections(input, collectionsMap)).toEqual(expected);
+      const collectionsMap = new Map(
+        require("../../assets/collectionsMap.json"),
+      );
+      // nodes_a: "Nodes A", nodes_b: "Nodes B", nodes_c: no display, nodes_x: no entry
+      const input = ["nodes_x", "nodes_c", "nodes_b", "nodes_a"];
+      const expected = ["nodes_a", "nodes_b", "nodes_c", "nodes_x"];
+      expect(parseCollections(input, collectionsMap)).toEqual(expected);
     });
   });
 
@@ -221,10 +273,10 @@ describe("Utils Module", () => {
       expect(getLabel(item)).toBe("Edge Label");
     });
 
-     it("should handle label values that are arrays by joining with ' + '", () => {
-       const item = { _id: "nodes_b/3", title: ["Part 1", "Part 2"] };
-       expect(getLabel(item)).toBe("Part 1 + Part 2");
-     });
+    it("should handle label values that are arrays by joining with ' + '", () => {
+      const item = { _id: "nodes_b/3", title: ["Part 1", "Part 2"] };
+      expect(getLabel(item)).toBe("Part 1 + Part 2");
+    });
 
     it("should handle numeric labels", () => {
       const item = { _id: "nodes_a/4", key: 12345 }; // 'name' is missing
@@ -232,8 +284,8 @@ describe("Utils Module", () => {
     });
 
     it("should return undefined string if no label options are found", () => {
-        const item = { _id: "nodes_a/5", other_prop: "value" }; // neither 'name' nor 'key' exist
-        expect(getLabel(item)).toBeUndefined();
+      const item = { _id: "nodes_a/5", other_prop: "value" }; // neither 'name' nor 'key' exist
+      expect(getLabel(item)).toBeUndefined();
     });
   });
 
@@ -245,8 +297,8 @@ describe("Utils Module", () => {
     });
 
     it("should throw if config has no url", () => {
-       const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
-       expect(() => getUrl(item)).toThrow();
+      const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
+      expect(() => getUrl(item)).toThrow();
     });
   });
 
@@ -276,14 +328,16 @@ describe("Utils Module", () => {
     });
 
     it("should capitalize words in each string of an array and join with '+'", () => {
-      expect(capitalCase(["hello world", "test case"]))
-        .toBe("Hello World+Test Case");
+      expect(capitalCase(["hello world", "test case"])).toBe(
+        "Hello World+Test Case",
+      );
       expect(capitalCase(["single"])).toBe("Single");
     });
 
     it("should handle arrays with non-string elements gracefully", () => {
-      expect(capitalCase(["string one", 123, "string two"]))
-        .toBe("String One+123+String Two"); // Only strings are modified
+      expect(capitalCase(["string one", 123, "string two"])).toBe(
+        "String One+123+String Two",
+      ); // Only strings are modified
     });
 
     it("should handle empty arrays", () => {
@@ -297,5 +351,4 @@ describe("Utils Module", () => {
       expect(capitalCase({ a: 1 })).toEqual({ a: 1 });
     });
   });
-
 });

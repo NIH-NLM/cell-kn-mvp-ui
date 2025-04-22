@@ -35,9 +35,12 @@ const BrowseBox = ({ currentCollection }) => {
                 <h3>
                   {collectionsMap.has(coll)
                     ? collectionsMap.get(coll)["display_name"]
-                    : ""} ({collectionsMap.has(coll)
+                    : ""}{" "}
+                  (
+                  {collectionsMap.has(coll)
                     ? collectionsMap.get(coll)["abbreviated_name"]
-                    : coll})
+                    : coll}
+                  )
                 </h3>
               </Link>
             </li>
