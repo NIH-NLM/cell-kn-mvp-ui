@@ -92,7 +92,7 @@ export const getLabel = (item) => {
     ?.toString()
     .split(",")
     .flatMap((value) => (Array.isArray(value) ? value : [value])) // Handle array
-    .join(" + ");
+    .join(" | ");
   return label;
 };
 
@@ -137,7 +137,7 @@ export const capitalCase = (input) => {
               .join(" ")
           : str,
       )
-      .join("+");
+      .join("|");
   } else if (typeof input === "string") {
     // If the input is a single string, capitalize each word
     return input

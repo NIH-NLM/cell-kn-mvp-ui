@@ -123,10 +123,9 @@ function SunburstConstructor(
       .create("svg")
       .attr("viewBox", [-width / 2, -height / 2, width, width])
       .style("font", "12px sans-serif")
-      .style("max-height", "100vh")
+      .style("max-height", "80vh")
       .style("display", "block")
-      .style("margin", "auto")
-      .style("background-color", "#f9f9f9");
+      .style("margin", "auto");
   } catch (error) {
     console.error("Constructor Error: Failed creating SVG:", error);
     return { svgNode: null, hierarchyRoot: root };
