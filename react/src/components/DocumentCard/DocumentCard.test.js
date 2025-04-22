@@ -3,7 +3,11 @@ import DocumentCard from "./DocumentCard";
 
 describe("DocumentCard", () => {
   it("renders the component correctly with a string label", () => {
-    const document = { label: "Document Label", prop1: "value1", prop2: "value2" };
+    const document = {
+      label: "Document Label",
+      prop1: "value1",
+      prop2: "value2",
+    };
     render(<DocumentCard document={document} />);
 
     // Check if legend renders correctly

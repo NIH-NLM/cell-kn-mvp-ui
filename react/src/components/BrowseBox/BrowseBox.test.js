@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import BrowseBox from "./BrowseBox";
-import * as utils from "../Utils/Utils";
 import { MemoryRouter } from "react-router-dom";
 
 // Mocking the fetchCollections and parseCollections functions

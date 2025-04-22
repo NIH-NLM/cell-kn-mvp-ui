@@ -12,7 +12,7 @@
   --color-white: #fff;
   --color-border: #aeb0b5;
   --color-focus: #0071bc;
-  --color-visted: #4c2c92;
+  --color-visited: #4c2c92;
   --color-green-light: #4aa564;
 }
 
@@ -28,7 +28,7 @@
   --color-white: #323a45;
   --color-border: #212121;
   --color-focus: #0071bc;
-  --color-visted: #4c2c92;
+  --color-visited: #4c2c92;
   --color-green-light: #4aa564;
 }
 
@@ -946,4 +946,32 @@ button.active {
   95% {
     width: 95%;
   }
+}
+
+/*  External Links  */
+
+.external-link {
+  color: var(--color-focus);
+  text-decoration: underline;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition:
+    color 0.15s ease-in-out,
+    text-decoration-color 0.15s ease-in-out;
+  text-decoration-color: var(--color-focus);
+}
+
+.external-link:visited {
+  color: var(--color-visited);
+  text-decoration-color: var(--color-visited);
+  cursor: pointer;
+}
+
+.external-link:hover {
+  color: var(--color-focus);
+  text-decoration-color: var(--color-focus);
+  text-decoration: none;
+  cursor: pointer;
 }

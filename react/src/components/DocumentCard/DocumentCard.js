@@ -1,15 +1,21 @@
 import React from "react";
+import { getUrl } from "../Utils/Utils";
 
-/* TODO: Rename */
-const DocumentCard = ({ cell: cell }) => {
+const DocumentCard = ({ document: document }) => {
   return (
-    <div className="cell-item-list">
+    <div className="document-item-list">
       <fieldset>
         <legend>
-          {Array.isArray(cell.label) ? cell.label.join("+") : cell.label}
+          <a
+            href={getUrl(document)}
+            target={"blank"}
+            className={"external-link"}
+          >
+            {document._id.replace("/", "_")}
+          </a>
         </legend>
         <table>
-          {Object.entries(cell).map(([key, value]) => {
+          {Object.entries(document).map(([key, value]) => {
             if (!key.startsWith("_")) {
               return (
                 <tr>
