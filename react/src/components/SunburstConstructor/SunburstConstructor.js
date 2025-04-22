@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import {getLabel} from "../Utils/Utils";
 
 /**
  * Creates or updates a D3 Sunburst chart.
@@ -90,7 +91,7 @@ function SunburstConstructor(
     });
     console.log(
       "Constructor: Initial positions calculated. Centered on:",
-      pNode ? pNode.data.label : "Root",
+      pNode ? getLabel(pNode.data) : "Root",
     );
   } catch (error) {
     console.error(
@@ -145,7 +146,7 @@ function SunburstConstructor(
       .attr("fill", (d) => {
         let a = d;
         while (a.depth > 1) a = a.parent;
-        return color(a.data.label || a.data._id);
+        return color(getLabel(a.data) || a.data._key);
       })
       .attr("fill-opacity", 0) // Start invisible
       .attr("pointer-events", "none")
@@ -155,7 +156,7 @@ function SunburstConstructor(
       .attr("d", arc);
     pathEnter
       .append("title")
-      .text((d) => d.data.label || d.data._id || "Unknown");
+      .text((d) => getLabel(d.data) || d.data._key || "Unknown");
 
     pathUpdate = path.merge(pathEnter);
     pathUpdate
@@ -193,7 +194,7 @@ function SunburstConstructor(
       .attr("fill-opacity", 0) // Start invisible
       .attr("transform", (d) => labelTransform(d.current))
       .text((d) => {
-        const lbl = d.data.label || "";
+        const lbl = getLabel(d.data) || "";
         return lbl.length > 10 ? lbl.slice(0, 9) + "..." : lbl;
       });
     labelUpdate = label.merge(labelEnter);
@@ -222,7 +223,7 @@ function SunburstConstructor(
       .style("font-size", "14px")
       .style("font-weight", "bold")
       .style("cursor", "pointer")
-      .text(initialCenterNode.data.label || "Root")
+      .text(getLabel(initialCenterNode.data) || "Root")
       .on("click", (event) => {
         handleCenterClick();
       });
@@ -276,7 +277,7 @@ function SunburstConstructor(
       .attrTween("transform", (d) => () => labelTransform(d.current));
 
     // Transition Center Text & Cursor
-    centerText.transition(t).text(p.data.label);
+    centerText.transition(t).text(getLabel(p.data));
     updateCursor(p);
   }
 
