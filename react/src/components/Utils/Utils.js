@@ -103,7 +103,7 @@ export const getUrl = (item) => {
   const collectionMap = collectionsMap.get(itemCollection);
 
   const individualUrl = collectionMap?.["individual_url"];
-  let replacement = item[collectionMap["field_to_use"]].replace(
+  let replacement = item[collectionMap["field_to_use"]].replaceAll(
     collectionMap["to_be_replaced"],
     collectionMap["replace_with"],
   );

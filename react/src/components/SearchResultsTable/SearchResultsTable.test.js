@@ -6,11 +6,11 @@ import { MemoryRouter } from "react-router-dom";
 describe("SearchResultsTable", () => {
   const sampleResults = {
     fruits: [
-      { label: "Apple", term: "apple" },
-      { label: "Banana", term: "banana" },
+      { _id: "CL/0", label: "Apple", definition: "apple" },
+      { _id: "CL/1", label: "Banana", definition: "banana" },
     ],
-    vegetables: [{ label: "Carrot", term: "carrot" }],
-    dairy: [{ term: "milk" }],
+    vegetables: [{ _id: "CL/2", label: "Carrot", definition: "carrot" }],
+    dairy: [{ _id: "CL/0", definition: "milk" }],
     empty: [], // This key should be filtered out.
   };
 
@@ -73,8 +73,9 @@ describe("SearchResultsTable", () => {
     const applePlus = within(appleItem).getByText("+");
     fireEvent.click(applePlus);
     expect(handleSelectItem).toHaveBeenCalledWith({
+      _id: "CL/0",
       label: "Apple",
-      term: "apple",
+      definition: "apple",
     });
 
     // Expand the "vegetables" header and locate the "Carrot" container.
@@ -83,8 +84,9 @@ describe("SearchResultsTable", () => {
     const carrotPlus = within(carrotItem).getByText("+");
     fireEvent.click(carrotPlus);
     expect(handleSelectItem).toHaveBeenCalledWith({
+      _id: "CL/2",
       label: "Carrot",
-      term: "carrot",
+      definition: "carrot",
     });
   });
 });

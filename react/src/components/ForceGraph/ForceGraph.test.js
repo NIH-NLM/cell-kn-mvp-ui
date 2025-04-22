@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import ForceGraph from "./ForceGraph";
 
 describe("ForceGraph", () => {
@@ -7,7 +7,7 @@ describe("ForceGraph", () => {
 
     // Get the button that toggles the options visibility
     const toggleButton = screen.getByRole("button", {
-      name: "Toggle Options ▲",
+      name: "Show Options ▲",
     });
     // Get the graph-options div
     const optionsPanel = screen.getByTestId("graph-options");
