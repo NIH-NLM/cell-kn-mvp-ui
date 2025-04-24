@@ -920,6 +920,10 @@ button.active {
   z-index: 9999;
 }
 
+.loading-overlay {
+  position: absolute;
+}
+
 .progress {
   width: 95%;
   height: 100%;
