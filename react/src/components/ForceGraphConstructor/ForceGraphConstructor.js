@@ -427,7 +427,7 @@ function ForceGraphConstructor(
     .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
 
   // Create Legend
-      const legend = svg
+  const legend = svg
     .append("g")
     .attr("class", "legend")
     .attr("transform", `translate(${-(width / 2) + 20}, ${-(height / 2) + 20})`) // Top-left corner
@@ -439,50 +439,65 @@ function ForceGraphConstructor(
 
   // Function to update the legend based on currently displayed nodes
   function updateLegend(currentNodes) {
-      // Get unique collection IDs present in the current nodes
-      const presentCollectionIds = [...new Set(currentNodes.map(n => n.id?.split('/')[0]))]
-          .filter(id => id && id !== 'edges' && collectionsMap.has(id));
+    // Get unique collection IDs present in the current nodes
+    const presentCollectionIds = [
+      ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
+    ].filter((id) => id && id !== "edges" && collectionsMap.has(id));
 
-      // Sort alphabetically for consistent order
-      presentCollectionIds.sort();
+    // Sort alphabetically for consistent order
+    presentCollectionIds.sort();
 
-      // Data join for legend items
-      const legendItems = legend.selectAll(".legend-item")
-          .data(presentCollectionIds, d => d); // Use collection ID as key
+    // Data join for legend items
+    const legendItems = legend
+      .selectAll(".legend-item")
+      .data(presentCollectionIds, (d) => d); // Use collection ID as key
 
-      // Remove old legend items
-      legendItems.exit().remove();
+    // Remove old legend items
+    legendItems.exit().remove();
 
-      // Create new legend items group
-      const legendEnter = legendItems.enter()
-          .append("g")
-          .attr("class", "legend-item")
-          .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`); // Initial position
+    // Create new legend items group
+    const legendEnter = legendItems
+      .enter()
+      .append("g")
+      .attr("class", "legend-item")
+      .attr(
+        "transform",
+        (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`,
+      ); // Initial position
 
-      // Append rectangle
-      legendEnter.append("rect")
-          .attr("x", 0)
-          .attr("width", legendSize)
-          .attr("height", legendSize)
-          .style("fill", d => getColorForCollection(d)); // Use color service
+    // Append rectangle
+    legendEnter
+      .append("rect")
+      .attr("x", 0)
+      .attr("width", legendSize)
+      .attr("height", legendSize)
+      .style("fill", (d) => getColorForCollection(d)); // Use color service
 
-      // Append text
-      legendEnter.append("text")
-          .attr("x", legendSize + 5)
-          .attr("y", legendSize / 2)
-          .attr("dy", "0.35em")
-          .text(d => collectionsMap.get(d)?.["display_name"] || d); // Use abbreviation or ID
+    // Append text
+    legendEnter
+      .append("text")
+      .attr("x", legendSize + 5)
+      .attr("y", legendSize / 2)
+      .attr("dy", "0.35em");
 
-      // Adjust position for all items
-      const legendUpdate = legendEnter.merge(legendItems);
-      legendUpdate.transition()
-          .duration(200)
-          .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
+    // Adjust position for all items
+    const legendUpdate = legendEnter.merge(legendItems);
+    legendUpdate
+      .transition()
+      .duration(200)
+      .attr(
+        "transform",
+        (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`,
+      );
 
-      legendUpdate.select("rect")
-          .style("fill", d => getColorForCollection(d));
-      legendUpdate.select("text")
-          .text(d => collectionsMap.get(d)?.["abbreviated_name"] || d);
+    legendUpdate.select("rect").style("fill", (d) => getColorForCollection(d));
+    legendUpdate
+      .select("text")
+      .text(
+        (d) =>
+          `${collectionsMap.get(d)?.["display_name"]} (${collectionsMap.get(d)?.["abbreviated_name"]})` ||
+          d,
+      );
   }
 
   // Internal Data Storage
@@ -714,7 +729,7 @@ function ForceGraphConstructor(
       },
     );
     // Update legend
-   updateLegend(processedNodes);
+    updateLegend(processedNodes);
 
     // Wait for simulation to settle then disable it
     const newThreshold = Math.max(1 / processedNodes.length, 0.002);

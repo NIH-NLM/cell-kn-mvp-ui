@@ -1,4 +1,6 @@
 from itertools import chain
+from rest_framework.response import Response
+from rest_framework import status
 
 from arango_api.db import (
     db_ontologies,
@@ -313,21 +315,184 @@ def run_aql_query(query):
     return results
 
 
+def get_ontologies_sunburst(parent_id):
+    """
+    API endpoint for fetching sunburst data, supporting initial load (L0+L1)
+    and loading children + grandchildren (L N+1, L N+2) on demand.
+    """
+    db = db_ontologies
+    graph_name = GRAPH_NAME_ONTOLOGIES
+    label_filter = "subClassOf"
+    initial_root_ids = [
+        "CL/0000000",
+        "GO/0008150",  # biological_process
+        "GO/0003674",  # molecular_function
+        "GO/0005575",  # cellular_component
+        "PATO/0000001",
+        "MONDO/0000001",
+        "UBERON/0000000",
+    ]
+
+    if db is None:
+        return Response(
+            {"error": "Database connection not available."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    if parent_id:
+        # AQL Query: Fetches C nodes and their G children
+        query_children_grandchildren = """
+            LET start_node_id = @parent_id // P
+
+            // Find direct children (Level N+1, Nodes C)
+            FOR child_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                FILTER edge1.label == @label_filter
+
+                // For each child_node (C), find its children (Level N+2, Nodes G)
+                LET grandchildren = (
+                    FOR grandchild_node, edge2 IN 1..1 INBOUND child_node._id GRAPH @graph_name
+                        FILTER edge2.label == @label_filter
+
+                        // Check if grandchild (G) has children (Level N+3)
+                        LET grandchild_has_children = COUNT(
+                            FOR great_grandchild, edge3 IN 1..1 INBOUND grandchild_node._id GRAPH @graph_name
+                                FILTER edge3.label == @label_filter
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format grandchild (G)
+                            _id: grandchild_node._id,
+                            label: grandchild_node.label || grandchild_node.name || grandchild_node._key,
+                            value: 1,
+                            _hasChildren: grandchild_has_children,
+                            children: null // Level N+3 not loaded here
+                        }
+                ) // Collect grandchildren (G) into an array for this child (C)
+
+                // Check if the child_node (C) itself has children (G) loaded above
+                LET child_has_children = COUNT(grandchildren) > 0
+
+                RETURN { // Format child (C)
+                    _id: child_node._id,
+                    label: child_node.label || child_node.name || child_node._key,
+                    value: 1,
+                    _hasChildren: child_has_children, // Does C have children G?
+                    children: grandchildren // Attach the array of grandchildren (G)
+                }
+        """
+        bind_vars = {
+            "parent_id": parent_id,
+            "graph_name": graph_name,
+            "label_filter": label_filter,
+        }
+
+        try:
+            cursor = db.aql.execute(query_children_grandchildren, bind_vars=bind_vars)
+            results = list(cursor)
+
+            # The results list *is* the data we need to return
+            children_and_grandchildren_data = results
+
+            return Response(children_and_grandchildren_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to fetch nested children data for {parent_id}."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    else:
+        # === Fetch Initial Roots (Level 0) AND their Children (Level 1) ===
+        initial_nodes_with_children = []
+        graph_root_id = "root_nlm"  # Unique ID for the artificial root
+
+        # Loop through predefined starting nodes
+        for node_id in initial_root_ids:
+
+            # AQL Query: Fetches L0 node and its direct L1 children
+            query_initial = """
+                LET start_node_id = @node_id // This is L0
+
+                // 1. Get the L0 node details
+                LET start_node_doc = DOCUMENT(start_node_id)
+                FILTER start_node_doc != null // Ensure L0 exists
+
+                // 2. Check if L0 has children (L1)
+                LET start_node_has_children = COUNT(
+                    FOR c1, e1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER e1.label == @label_filter
+                        LIMIT 1 RETURN 1
+                ) > 0
+
+                // 3. Get L1 children
+                LET children_level1 = (
+                    FOR child1_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER edge1.label == @label_filter
+
+                        // 4. Check if each L1 child has children (L2)
+                        LET child1_has_children = COUNT(
+                            FOR c2, e2 IN 1..1 INBOUND child1_node._id GRAPH @graph_name
+                                FILTER e2.label == @label_filter
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format Level 1 node
+                            _id: child1_node._id,
+                            label: child1_node.label || child1_node.name || child1_node._key,
+                            value: 1,
+                            _hasChildren: child1_has_children, // Does L1 have L2 children?
+                            children: null // L2 not loaded here
+                        }
+                ) // Collect L1 children into an array
+
+                // 5. Return the formatted L0 node with its L1 children attached
+                RETURN { // Format Level 0 node
+                    _id: start_node_doc._id,
+                    label: start_node_doc.label || start_node_doc.name || start_node_doc._key,
+                    value: 1, // Could calculate SUM(children_level1[*].value) if needed
+                    _hasChildren: start_node_has_children, // Does L0 have L1 children?
+                    children: children_level1 // Attach array of formatted L1 children
+                }
+            """
+            bind_vars = {
+                "node_id": node_id,
+                "graph_name": graph_name,
+                "label_filter": label_filter,
+            }
+
+            try:
+                cursor = db.aql.execute(query_initial, bind_vars=bind_vars)
+                # Expect only one result document per initial node_id
+                node_data_list = list(cursor)
+                if node_data_list:
+                    node_data = node_data_list[0]
+                    initial_nodes_with_children.append(node_data)
+
+            except Exception as e:
+                print(f"ERROR: AQL Execution failed for initial node {node_id}: {e}")
+
+        # Create the final top-level root node structure
+        graph_root = {
+            "_id": graph_root_id,
+            "label": "NLM Cell Knowledge Network",  # Or your preferred root label
+            "_hasChildren": len(initial_nodes_with_children)
+            > 0,  # True if any L0 nodes were found
+            "children": initial_nodes_with_children,  # Assign the list of L0 nodes (containing L1)
+        }
+
+        return Response(graph_root, status=status.HTTP_200_OK)
+
+
 def get_collection_info(node_id, edge_collections):
     """Gets the edge collection based on the node ID prefix."""
     try:
         collection_type = node_id.split("/")[0]
         edge_col = edge_collections.get(collection_type)
         if not edge_col:
-            # Handle cases where the prefix doesn't match known collections
-            print(
-                f"Warning: No edge collection defined for prefix {collection_type} in node_id {node_id}"
-            )
             return None
         return edge_col
     except (IndexError, AttributeError):
         # Handle cases where node_id is None or not in the expected format
-        print(f"Warning: Could not parse collection type from node_id: {node_id}")
         return None
 
 

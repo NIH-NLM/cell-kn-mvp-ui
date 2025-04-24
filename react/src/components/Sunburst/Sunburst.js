@@ -1,6 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useContext,
+} from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 import { mergeChildren } from "../Utils/Utils";
+import { GraphContext } from "../Contexts/Contexts";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -16,6 +23,9 @@ const Sunburst = ({ addSelectedItem }) => {
   const svgNodeRef = useRef(null);
   const popupRef = useRef(null);
   const currentHierarchyRootRef = useRef(null);
+
+  // -- Contexts --
+  const { graphType, setGraphType } = useContext(GraphContext);
 
   // --- Data Fetching Logic ---
   const fetchSunburstData = useCallback(
@@ -37,7 +47,10 @@ const Sunburst = ({ addSelectedItem }) => {
         const response = await fetch(fetchUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parentId ? { parent_id: parentId } : {}),
+          body: JSON.stringify({
+            parent_id: parentId,
+            graph: graphType,
+          }),
         });
         if (!response.ok) {
           const err = await response.text();
@@ -73,8 +86,8 @@ const Sunburst = ({ addSelectedItem }) => {
         }
       }
     },
-    // No dependencies: isLoading checked via ref
-    [],
+    // isLoading checked via ref
+    [graphType],
   );
 
   const isLoadingRef = useRef(isLoading);
