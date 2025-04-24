@@ -28,8 +28,8 @@ function SunburstConstructor(
   const height = width;
   const radius = width / 6;
   const zoomDuration = 750;
-  const fadeInDelay = 100;
-  const fadeInDuration = 600;
+  const fadeInDelay = 0;
+  const fadeInDuration = 0;
 
   // --- Basic Data Check ---
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
