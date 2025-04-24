@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {getLabel} from "../Utils/Utils";
+import { getLabel } from "../Utils/Utils";
 
 /**
  * Creates or updates a D3 Sunburst chart.
@@ -31,18 +31,13 @@ function SunburstConstructor(
   const fadeInDelay = 100;
   const fadeInDuration = 600;
 
-  console.log(
-    "--- SunburstConstructor Executing (State: React Zoom + Hide Center) ---",
-  );
-  console.log("Constructor: Rendering with target center ID:", zoomedNodeId);
-
   // --- Basic Data Check ---
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
     console.error("Constructor Error: Invalid or missing data received!", data);
     return { svgNode: null, hierarchyRoot: null };
   }
 
-  // --- D3 Setup (Hierarchy, Partition, Initial Positions) ---
+  // --- D3 Setup ---
   let hierarchy,
     root,
     pNode = null;
@@ -89,10 +84,6 @@ function SunburstConstructor(
         d.current = { x0: d.x0, y0: d.y0, x1: d.x1, y1: d.y1 };
       }
     });
-    console.log(
-      "Constructor: Initial positions calculated. Centered on:",
-      pNode ? getLabel(pNode.data) : "Root",
-    );
   } catch (error) {
     console.error(
       "Constructor Error: Failed during D3 hierarchy/partition/position setup:",
@@ -182,7 +173,7 @@ function SunburstConstructor(
       .attr("pointer-events", "none")
       .attr("text-anchor", "middle")
       .style("user-select", "none");
-    const labelData = root.descendants().slice(1); // Exclude root from labels too
+    const labelData = root.descendants().slice(1); // Exclude root from labels
     const label = labelGroup
       .selectAll("text")
       .data(labelData, (d) => d.data._id);
@@ -232,10 +223,9 @@ function SunburstConstructor(
     return { svgNode: svg ? svg.node() : null, hierarchyRoot: root };
   }
 
-  // --- The `clicked` function (Handles ONLY zoom-IN animation on arcs) ---
+  // --- The `clicked` function ---
   function clicked(event, p) {
     // p = node to zoom into
-    console.log(`'clicked' (D3 Zoom Anim) called: Zooming into ${p.data._id}`);
     // Calculate target positions relative to 'p'
     root.each((d) => {
       d.target = {
@@ -254,7 +244,7 @@ function SunburstConstructor(
           d.current = i(time);
         };
       })
-      // *** HIDE center node (p) during zoom animation ***
+      // Hide center node (p) during zoom animation ***
       .attr("fill-opacity", (d) =>
         d.data._id === p.data._id
           ? 0
@@ -270,7 +260,7 @@ function SunburstConstructor(
     // Transition labels
     labelUpdate
       .transition(t)
-      // *** HIDE center node's (p) label during zoom animation ***
+      // Hide center node's (p) label during zoom animation ***
       .attr("fill-opacity", (d) =>
         d.data._id === p.data._id ? 0 : +labelVisible(d.target),
       )
@@ -330,10 +320,10 @@ function SunburstConstructor(
   }
 
   // --- Apply Initial State & Fade-In ---
+
   // This section sets the final appearance based on calculated d.current positions.
   try {
-    console.log("Constructor: Applying final state and initiating fade-in...");
-    // Select existing elements (those NOT in pathEnter selection)
+    // Select existing elements
     const pathExisting = pathUpdate.filter(function () {
       return pathEnter.nodes().indexOf(this) === -1;
     });
@@ -341,10 +331,10 @@ function SunburstConstructor(
       return labelEnter.nodes().indexOf(this) === -1;
     });
 
-    // Update existing paths instantly, HIDING the center one
+    // Update existing paths instantly, hiding the center one
     pathExisting
       .attr("d", arc)
-      // *** HIDE center node (zoomedNodeId) if it exists ***
+      // Hide center node (zoomedNodeId) if it exists
       .attr("fill-opacity", (d) =>
         d.data._id === zoomedNodeId
           ? 0
@@ -356,13 +346,13 @@ function SunburstConstructor(
       )
       .attr("pointer-events", (d) => (arcVisible(d.current) ? "auto" : "none"));
 
-    // Fade in new paths, HIDING the center one if it happens to be new (unlikely but safe)
+    // Fade in new paths, hiding the center one if it happens to be new
     if (pathEnter && !pathEnter.empty()) {
       pathEnter
         .transition("fadein")
         .delay(fadeInDelay)
         .duration(fadeInDuration)
-        // *** HIDE center node (zoomedNodeId) even during fade-in ***
+        // Hide center node (zoomedNodeId) even during fade-in
         .attr("fill-opacity", (d) =>
           d.data._id === zoomedNodeId
             ? 0
@@ -376,10 +366,9 @@ function SunburstConstructor(
           arcVisible(d.current) ? "auto" : "none",
         );
     } else {
-      console.log("Constructor: No entering paths found for fade-in.");
     }
 
-    // Update existing labels instantly, HIDING the center one
+    // Update existing labels instantly, hiding the center one
     labelExisting
       .attr("transform", (d) => labelTransform(d.current))
       // *** HIDE center node's (zoomedNodeId) label if it exists ***
@@ -387,22 +376,19 @@ function SunburstConstructor(
         d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
       );
 
-    // Fade in new labels, HIDING the center one
+    // Fade in new labels, hiding the center one
     if (labelEnter && !labelEnter.empty()) {
       labelEnter
         .transition("fadein_label")
         .delay(fadeInDelay)
         .duration(fadeInDuration)
-        // *** HIDE center node's (zoomedNodeId) label even during fade-in ***
         .attr("fill-opacity", (d) =>
           d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
         );
     } else {
-      console.log("Constructor: No entering labels found for fade-in.");
     }
 
     updateCursor(initialCenterNode);
-    console.log("Constructor: Final state and fade-in applied/initiated.");
   } catch (error) {
     console.error(
       "Constructor Error: Failed applying final state/fade-in:",
@@ -411,12 +397,10 @@ function SunburstConstructor(
   }
 
   // --- Return ---
-  console.log("--- SunburstConstructor Finished ---");
   const finalSvgNode = svg ? svg.node() : null;
   if (!finalSvgNode) {
     console.error("Constructor Error: Returning null SVG node!");
   } else {
-    console.log("Constructor: Returning valid SVGElement.");
   }
   return { svgNode: finalSvgNode, hierarchyRoot: root };
 }
