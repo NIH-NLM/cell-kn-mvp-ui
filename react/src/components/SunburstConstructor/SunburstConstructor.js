@@ -304,7 +304,7 @@ function SunburstConstructor(
     const x = (((d_pos.x0 + d_pos.x1) / 2) * 180) / Math.PI;
     const y = ((d_pos.y0 + d_pos.y1) / 2) * radius;
     if (isNaN(x) || isNaN(y)) return `translate(0,0)`;
-    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+    return `rotate(${x - 90}) translate(${y},0) rotate(0)`;
   }
   function updateCursor(p) {
     const cursorStyle =
