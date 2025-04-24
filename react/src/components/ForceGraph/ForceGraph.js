@@ -1003,12 +1003,11 @@ const ForceGraph = ({
           Expand from "{clickedNodeLabel}"
         </button>
         <button className="popup-button" onClick={handleCollapse}>
-          Collapse Neighbors
+          Collapse Satellite Nodes
         </button>
         <button className="popup-button" onClick={handleRemove}>
-          Remove Node & Neighbors
+          Remove Node & Satellites
         </button>
-        {/* Simple text 'X' button for closing */}
         <button
           className="popup-close-button"
           onClick={handlePopupClose}
