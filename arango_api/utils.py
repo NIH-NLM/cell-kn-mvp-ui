@@ -325,8 +325,8 @@ def get_phenotypes_sunburst(ignored_parent_id):
     NOTE: This ignores the parent_id and always loads the full structure.
           It may be slow or memory-intensive on larger datasets.
     """
-    db = db_phenotypes  # Replace with your actual db connection variable if different
-    graph_name = GRAPH_NAME_PHENOTYPES  # Replace with your actual graph name variable if different
+    db = db_phenotypes
+    graph_name = GRAPH_NAME_PHENOTYPES
 
     # --- Configuration inside the function ---
     # Still need these as bind variables for the query logic
@@ -426,7 +426,6 @@ def get_phenotypes_sunburst(ignored_parent_id):
         RETURN root_node
     """
 
-    # Bind variables now only contain dynamic values
     bind_vars = {
         "graph_name": graph_name,
         "initial_root_ids": initial_root_ids,
@@ -435,9 +434,6 @@ def get_phenotypes_sunburst(ignored_parent_id):
     }
 
     try:
-        # print(f"--- Querying Full Structure (Hardcoded Collections) ---")
-        # print(f"Query: {query_full_structure}") # Check the generated AQL string
-        # print(f"Bind Vars: {bind_vars}")
         cursor = db.aql.execute(query_full_structure, bind_vars=bind_vars, stream=False)
         result_list = list(cursor)
 
