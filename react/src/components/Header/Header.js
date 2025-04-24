@@ -39,7 +39,8 @@ const Header = () => {
             Schema
           </h4>
         </Link>
-        <Link to="/aql">
+        {/* Hide query page until it is useful */}
+        <Link to="/aql" style={{ display: "none" }}>
           <h4 className={activeNav === "/aql" ? "active-nav" : ""}>Query</h4>
         </Link>
         <div className="graph-context-toggle-container">

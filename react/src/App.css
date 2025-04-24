@@ -14,6 +14,7 @@
   --color-focus: #0071bc;
   --color-visited: #4c2c92;
   --color-green-light: #4aa564;
+  --color-secondary-red: #e31c3d;
 }
 
 .dark {
@@ -30,6 +31,7 @@
   --color-focus: #0071bc;
   --color-visited: #4c2c92;
   --color-green-light: #4aa564;
+  --color-secondary-red: #e31c3d;
 }
 
 /* Generic classes */
@@ -596,6 +598,10 @@ option {
   border-radius: 4px;
   padding: 10px;
   gap: 5px;
+  border: 1px solid var(--color-light);
+  padding: 10px;
+  borderradius: 4px;
+  boxshadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .popup-button {
@@ -605,6 +611,9 @@ option {
   text-align: center;
   padding: 1rem;
   border-radius: 0px;
+  display: block;
+  margin-bottom: 5px;
+  width: 100%;
 }
 
 .popup-close-button {
@@ -622,7 +631,8 @@ option {
 }
 
 .x-button {
-  background-color: red;
+  width: auto;
+  background-color: var(--color-secondary-red);
   position: absolute;
   top: 0px;
   right: 0px;
