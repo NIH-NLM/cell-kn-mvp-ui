@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { getColorForCollection } from "../../services/colorServices/colorServices";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 
 /* Pure Functions */
 
