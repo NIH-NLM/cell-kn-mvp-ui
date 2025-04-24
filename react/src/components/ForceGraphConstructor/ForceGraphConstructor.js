@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { getColorForCollection } from "../../services/colorServices/colorServices";
 
 /* Pure Functions */
 
@@ -7,7 +8,6 @@ export function processGraphData(
   newNodes,
   nodeId = (d) => d._id,
   labelFn = (d) => d.label,
-  color,
   nodeHover,
 ) {
   const filteredNewNodes = newNodes.filter(
@@ -18,7 +18,7 @@ export function processGraphData(
     newNode.id = nodeId(newNode);
     let collection = newNode.id.split("/")[0];
     newNode.nodeHover = nodeHover(newNode);
-    newNode.color = color ? color(collection) : null;
+    newNode.color = getColorForCollection(collection);
     newNode.nodeLabel = labelFn(newNode);
   });
   return existingNodes.concat(filteredNewNodes);
@@ -86,7 +86,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
-        .attr("fill", d.color ? d.color : "#ccc")
+        .attr("fill", d.color)
         .on("contextmenu", function (event, d) {
           event.preventDefault();
           options.onNodeClick(event, d);
@@ -105,7 +105,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
-        .attr("fill", d.color ? d.color : "#ccc")
+        .attr("fill", d.color)
         .on("contextmenu", function (event, d) {
           event.preventDefault();
           options.onNodeClick(event, d);
@@ -427,41 +427,63 @@ function ForceGraphConstructor(
     .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
 
   // Create Legend
-  const legend = svg
+      const legend = svg
     .append("g")
     .attr("class", "legend")
-    .attr("transform", `translate(${-(width / 2 - 20)}, ${-(height / 2 - 20)})`)
-    .style("display", "block");
+    .attr("transform", `translate(${-(width / 2) + 20}, ${-(height / 2) + 20})`) // Top-left corner
+    .style("font-family", "sans-serif")
+    .style("font-size", "10px"); // Base font size for legend
 
-  const legendSize = 20 * heightRatio;
-  legend
-    .selectAll(".legend-item")
-    .data([...new Set(nodeGroups)])
-    .enter()
-    .append("g")
-    .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(0, ${i * legendSize})`)
-    .each(function (d) {
-      const groupKey = d;
-      const gLegend = d3.select(this);
-      gLegend
-        .append("rect")
-        .attr("x", 0)
-        .attr("width", legendSize)
-        .attr("height", legendSize)
-        .style("fill", color ? color(groupKey) : "#ccc");
-      gLegend
-        .append("text")
-        .attr("x", legendSize * 1.5)
-        .attr("y", legendSize / 2)
-        .attr("dy", legendSize / 2 + "px")
-        .style("font-size", legendSize + "px")
-        .text((collection) =>
-          collectionsMap.has(collection)
-            ? collectionsMap.get(collection)["abbreviated_name"]
-            : collection,
-        );
-    });
+  const legendSize = 12; // Size of the color swatch
+  const legendSpacing = 4; // Vertical spacing between items
+
+  // Function to update the legend based on currently displayed nodes
+  function updateLegend(currentNodes) {
+      // Get unique collection IDs present in the current nodes
+      const presentCollectionIds = [...new Set(currentNodes.map(n => n.id?.split('/')[0]))]
+          .filter(id => id && id !== 'edges' && collectionsMap.has(id));
+
+      // Sort alphabetically for consistent order
+      presentCollectionIds.sort();
+
+      // Data join for legend items
+      const legendItems = legend.selectAll(".legend-item")
+          .data(presentCollectionIds, d => d); // Use collection ID as key
+
+      // Remove old legend items
+      legendItems.exit().remove();
+
+      // Create new legend items group
+      const legendEnter = legendItems.enter()
+          .append("g")
+          .attr("class", "legend-item")
+          .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`); // Initial position
+
+      // Append rectangle
+      legendEnter.append("rect")
+          .attr("x", 0)
+          .attr("width", legendSize)
+          .attr("height", legendSize)
+          .style("fill", d => getColorForCollection(d)); // Use color service
+
+      // Append text
+      legendEnter.append("text")
+          .attr("x", legendSize + 5)
+          .attr("y", legendSize / 2)
+          .attr("dy", "0.35em")
+          .text(d => collectionsMap.get(d)?.["display_name"] || d); // Use abbreviation or ID
+
+      // Adjust position for all items
+      const legendUpdate = legendEnter.merge(legendItems);
+      legendUpdate.transition()
+          .duration(200)
+          .attr("transform", (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`);
+
+      legendUpdate.select("rect")
+          .style("fill", d => getColorForCollection(d));
+      legendUpdate.select("text")
+          .text(d => collectionsMap.get(d)?.["abbreviated_name"] || d);
+  }
 
   // Internal Data Storage
   let processedNodes = [];
@@ -567,7 +589,7 @@ function ForceGraphConstructor(
     linkContainer.selectAll("text").style("font-size", newFontSize + "px");
   }
 
-  // Public update: process new data and re-render.
+  // Process new data and re-render.
   function updateGraph({
     newNodes = [],
     newLinks = [],
@@ -691,6 +713,9 @@ function ForceGraphConstructor(
         collectionsMap,
       },
     );
+    // Update legend
+   updateLegend(processedNodes);
+
     // Wait for simulation to settle then disable it
     const newThreshold = Math.max(1 / processedNodes.length, 0.002);
     waitForAlpha(simulation, newThreshold).then(() => {

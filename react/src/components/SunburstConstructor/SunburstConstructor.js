@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { getLabel } from "../Utils/Utils";
+import { getColorForCollection } from "../../services/colorServices/colorServices";
 
 /**
  * Creates or updates a D3 Sunburst chart.
@@ -41,9 +42,6 @@ function SunburstConstructor(
   let hierarchy,
     root,
     pNode = null;
-  const color = d3.scaleOrdinal(
-    d3.quantize(d3.interpolateRainbow, (data.children || []).length + 1),
-  );
 
   try {
     // Create hierarchy & partition
@@ -137,13 +135,13 @@ function SunburstConstructor(
       .attr("fill", (d) => {
         let a = d;
         while (a.depth > 1) a = a.parent;
-        return color(getLabel(a.data) || a.data._key);
+        const collectionId =
+          a.data?._id?.split("/")[0] || a.data?._key || "unknown";
+        return getColorForCollection(collectionId);
       })
       .attr("fill-opacity", 0) // Start invisible
       .attr("pointer-events", "none")
-      .style("cursor", (d) =>
-        d.children || d.data._hasChildren ? "pointer" : "default",
-      )
+      .style("cursor", (d) => (d.children ? "pointer" : "default"))
       .attr("d", arc);
     pathEnter
       .append("title")
