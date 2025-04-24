@@ -133,10 +133,8 @@ function SunburstConstructor(
       .enter()
       .append("path")
       .attr("fill", (d) => {
-        let a = d;
-        while (a.depth > 1) a = a.parent;
         const collectionId =
-          a.data?._id?.split("/")[0] || a.data?._key || "unknown";
+          d.data?._id?.split("/")[0] || d.data?._key || "unknown";
         return getColorForCollection(collectionId);
       })
       .attr("fill-opacity", 0) // Start invisible

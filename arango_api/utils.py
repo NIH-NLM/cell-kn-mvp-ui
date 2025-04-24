@@ -315,6 +315,169 @@ def run_aql_query(query):
     return results
 
 
+def get_phenotypes_sunburst(ignored_parent_id):
+    """
+    API endpoint for fetching the *entire* phenotype sunburst structure
+    in one query, starting from NCBITaxon roots and traversing the specific path:
+    NCBITaxon -> UBERON (filtered) -> CL -> GS -> MONDO/CHEMBL.
+    Uses hardcoded collection names and inline traversal options.
+
+    NOTE: This ignores the parent_id and always loads the full structure.
+          It may be slow or memory-intensive on larger datasets.
+    """
+    db = db_phenotypes  # Replace with your actual db connection variable if different
+    graph_name = GRAPH_NAME_PHENOTYPES  # Replace with your actual graph name variable if different
+
+    # --- Configuration inside the function ---
+    # Still need these as bind variables for the query logic
+    initial_root_ids = [
+        "NCBITaxon/9606",
+    ]
+    uberon_terms = [
+        "UBERON/0002048",  # lung
+    ]
+    # Artificial root ID for the response
+    graph_root_id = "root_phenotypes_full"
+    # --- End Configuration ---
+
+    # --- Hardcoded Names ---
+    HC_EDGE_NC_UB = "UBERON-NCBITaxon"
+    HC_EDGE_UB_CL = "UBERON-CL"
+    HC_EDGE_CL_UB = "CL-UBERON"
+    HC_EDGE_CL_GS = "CL-GS"
+    HC_EDGE_GS_MO = "GS-MONDO"
+    HC_EDGE_GS_CH = "GS-CHEMBL"
+
+    HC_VC_NCBITAXON = "NCBITaxon"
+    HC_VC_UBERON = "UBERON"
+    HC_VC_CL = "CL"
+    HC_VC_GS = "GS"
+    HC_VC_MONDO = "MONDO"
+    HC_VC_CHEMBL = "CHEMBL"
+
+    # Construct the edge collection list string for AQL
+    allowed_edges_aql_string = f'["{HC_EDGE_NC_UB}", "{HC_EDGE_UB_CL}", "{HC_EDGE_CL_UB}", "{HC_EDGE_CL_GS}", "{HC_EDGE_GS_MO}", "{HC_EDGE_GS_CH}"]'
+    # --- End Hardcoded Names ---
+
+    if db is None:
+        return Response(
+            {"error": "Database connection not available."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # AQL Query with hardcoded names and inline options
+    query_full_structure = f"""
+        LET ncbi_level_nodes = (
+            FOR ncbi_id IN @initial_root_ids
+                LET ncbi_node = DOCUMENT(ncbi_id)
+                FILTER ncbi_node != null AND IS_SAME_COLLECTION("{HC_VC_NCBITAXON}", ncbi_node)
+
+                LET uberon_level_nodes = (
+                    FOR uberon_node, edge1 IN 1..1 INBOUND ncbi_node._id GRAPH @graph_name
+                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                        FILTER IS_SAME_COLLECTION("{HC_VC_UBERON}", uberon_node)
+                        FILTER uberon_node._id IN @uberon_terms
+
+                        LET cl_level_nodes = (
+                            FOR cl_node, edge2 IN 1..1 INBOUND uberon_node._id GRAPH @graph_name
+                                OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                FILTER IS_SAME_COLLECTION("{HC_VC_CL}", cl_node)
+
+                                LET gs_level_nodes = (
+                                    FOR gs_node, edge3 IN 1..1 OUTBOUND cl_node._id GRAPH @graph_name
+                                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                        FILTER IS_SAME_COLLECTION("{HC_VC_GS}", gs_node)
+
+                                        LET terminal_nodes = (
+                                            FOR terminal_node, edge4 IN 1..1 OUTBOUND gs_node._id GRAPH @graph_name
+                                                OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                                FILTER IS_SAME_COLLECTION("{HC_VC_MONDO}", terminal_node) OR IS_SAME_COLLECTION("{HC_VC_CHEMBL}", terminal_node)
+
+                                                // MERGE Terminal node data
+                                                RETURN MERGE(terminal_node, {{ value: 1, _hasChildren: false, children: [] }})
+                                        ) // End Terminal nodes
+
+                                        // MERGE GS node data
+                                        RETURN MERGE(gs_node, {{ value: 1, _hasChildren: COUNT(terminal_nodes) > 0, children: terminal_nodes }})
+                                ) // End GS nodes
+
+                                // MERGE CL node data
+                                RETURN MERGE(cl_node, {{ value: 1, _hasChildren: COUNT(gs_level_nodes) > 0, children: gs_level_nodes }})
+                        ) // End CL nodes
+
+                        // MERGE UBERON node data
+                        RETURN MERGE(uberon_node, {{ value: 1, _hasChildren: COUNT(cl_level_nodes) > 0, children: cl_level_nodes }})
+                ) // End UBERON nodes
+
+                // MERGE NCBITaxon node data
+                RETURN MERGE(ncbi_node, {{ value: 1, _hasChildren: COUNT(uberon_level_nodes) > 0, children: uberon_level_nodes }})
+        ) // End NCBITaxon nodes
+
+        // Create the final top-level root object
+        LET root_node = {{
+            _id: @graph_root_id,
+            label: "NLM Cell Knowledge Network", // You might want a different root label
+            // Alternatively, create a dummy root doc or MERGE with a base object if needed
+            // value: SUM(ncbi_level_nodes[*].value) // Example: calculate root value if needed
+            _hasChildren: COUNT(ncbi_level_nodes) > 0,
+            children: ncbi_level_nodes
+        }}
+
+        RETURN root_node
+    """
+
+    # Bind variables now only contain dynamic values
+    bind_vars = {
+        "graph_name": graph_name,
+        "initial_root_ids": initial_root_ids,
+        "uberon_terms": uberon_terms,
+        "graph_root_id": graph_root_id,
+    }
+
+    try:
+        # print(f"--- Querying Full Structure (Hardcoded Collections) ---")
+        # print(f"Query: {query_full_structure}") # Check the generated AQL string
+        # print(f"Bind Vars: {bind_vars}")
+        cursor = db.aql.execute(query_full_structure, bind_vars=bind_vars, stream=False)
+        result_list = list(cursor)
+
+        if not result_list:
+            print("WARN: Full structure query returned no results.")
+            empty_root = {
+                "_id": graph_root_id,
+                "label": "Phenotype Associations (Full Load) - No Data",
+                "_hasChildren": False,
+                "children": [],
+            }
+            # Return the Response object directly
+            return Response(
+                data=empty_root,
+                status=status.HTTP_200_OK,
+                content_type="application/json",
+            )
+
+        full_structure = result_list[0]
+        # print(f"Result: {full_structure}")
+        # Return the Response object directly for FastAPI
+        return Response(
+            data=full_structure,
+            status=status.HTTP_200_OK,
+            content_type="application/json",
+        )
+
+    except Exception as e:
+        print(f"ERROR: AQL Execution failed for full structure load: {e}")
+        # import traceback
+        # print(traceback.format_exc())
+        # Return the Response object directly for FastAPI
+        error_content = {"error": "Failed to fetch full phenotype structure."}
+        return Response(
+            data=error_content,
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content_type="application/json",
+        )
+
+
 def get_ontologies_sunburst(parent_id):
     """
     API endpoint for fetching sunburst data, supporting initial load (L0+L1)
@@ -475,8 +638,7 @@ def get_ontologies_sunburst(parent_id):
         graph_root = {
             "_id": graph_root_id,
             "label": "NLM Cell Knowledge Network",  # Or your preferred root label
-            "_hasChildren": len(initial_nodes_with_children)
-            > 0,  # True if any L0 nodes were found
+            "_hasChildren": len(initial_nodes_with_children) > 0,
             "children": initial_nodes_with_children,  # Assign the list of L0 nodes (containing L1)
         }
 

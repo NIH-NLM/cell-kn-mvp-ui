@@ -99,6 +99,6 @@ def get_sunburst(request):
     graph = request.data.get("graph")
 
     if graph == "phenotypes":
-        return None
+        return utils.get_phenotypes_sunburst(parent_id)
     else:
         return utils.get_ontologies_sunburst(parent_id)
