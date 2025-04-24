@@ -244,7 +244,7 @@ function SunburstConstructor(
           d.current = i(time);
         };
       })
-      // Hide center node (p) during zoom animation ***
+      // Hide center node (p) during zoom animation
       .attr("fill-opacity", (d) =>
         d.data._id === p.data._id
           ? 0
@@ -260,7 +260,7 @@ function SunburstConstructor(
     // Transition labels
     labelUpdate
       .transition(t)
-      // Hide center node's (p) label during zoom animation ***
+      // Hide center node's (p) label during zoom animation
       .attr("fill-opacity", (d) =>
         d.data._id === p.data._id ? 0 : +labelVisible(d.target),
       )
@@ -371,7 +371,7 @@ function SunburstConstructor(
     // Update existing labels instantly, hiding the center one
     labelExisting
       .attr("transform", (d) => labelTransform(d.current))
-      // *** HIDE center node's (zoomedNodeId) label if it exists ***
+      //  HIDE center node's (zoomedNodeId) label if it exists
       .attr("fill-opacity", (d) =>
         d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
       );
