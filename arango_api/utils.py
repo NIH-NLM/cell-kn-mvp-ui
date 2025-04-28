@@ -328,36 +328,33 @@ def get_phenotypes_sunburst(ignored_parent_id):
     db = db_phenotypes
     graph_name = GRAPH_NAME_PHENOTYPES
 
-    # --- Configuration inside the function ---
-    # Still need these as bind variables for the query logic
     initial_root_ids = [
         "NCBITaxon/9606",
     ]
     uberon_terms = [
         "UBERON/0002048",  # lung
+        "UBERON/0000966", # retina
     ]
     # Artificial root ID for the response
     graph_root_id = "root_phenotypes_full"
-    # --- End Configuration ---
 
-    # --- Hardcoded Names ---
-    HC_EDGE_NC_UB = "UBERON-NCBITaxon"
-    HC_EDGE_UB_CL = "UBERON-CL"
-    HC_EDGE_CL_UB = "CL-UBERON"
-    HC_EDGE_CL_GS = "CL-GS"
-    HC_EDGE_GS_MO = "GS-MONDO"
-    HC_EDGE_GS_CH = "GS-CHEMBL"
+    # Collection names
+    EDGE_NC_UB = "UBERON-NCBITaxon"
+    EDGE_UB_CL = "UBERON-CL"
+    EDGE_CL_UB = "CL-UBERON"
+    EDGE_CL_GS = "CL-GS"
+    EDGE_GS_MO = "GS-MONDO"
+    EDGE_GS_CH = "GS-CHEMBL"
 
-    HC_VC_NCBITAXON = "NCBITaxon"
-    HC_VC_UBERON = "UBERON"
-    HC_VC_CL = "CL"
-    HC_VC_GS = "GS"
-    HC_VC_MONDO = "MONDO"
-    HC_VC_CHEMBL = "CHEMBL"
+    VC_NCBITAXON = "NCBITaxon"
+    VC_UBERON = "UBERON"
+    VC_CL = "CL"
+    VC_GS = "GS"
+    VC_MONDO = "MONDO"
+    VC_CHEMBL = "CHEMBL"
 
     # Construct the edge collection list string for AQL
-    allowed_edges_aql_string = f'["{HC_EDGE_NC_UB}", "{HC_EDGE_UB_CL}", "{HC_EDGE_CL_UB}", "{HC_EDGE_CL_GS}", "{HC_EDGE_GS_MO}", "{HC_EDGE_GS_CH}"]'
-    # --- End Hardcoded Names ---
+    allowed_edges_aql_string = f'["{EDGE_NC_UB}", "{EDGE_UB_CL}", "{EDGE_CL_UB}", "{EDGE_CL_GS}", "{EDGE_GS_MO}", "{EDGE_GS_CH}"]'
 
     if db is None:
         return Response(
@@ -370,28 +367,28 @@ def get_phenotypes_sunburst(ignored_parent_id):
         LET ncbi_level_nodes = (
             FOR ncbi_id IN @initial_root_ids
                 LET ncbi_node = DOCUMENT(ncbi_id)
-                FILTER ncbi_node != null AND IS_SAME_COLLECTION("{HC_VC_NCBITAXON}", ncbi_node)
+                FILTER ncbi_node != null AND IS_SAME_COLLECTION("{VC_NCBITAXON}", ncbi_node)
 
                 LET uberon_level_nodes = (
                     FOR uberon_node, edge1 IN 1..1 INBOUND ncbi_node._id GRAPH @graph_name
                         OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                        FILTER IS_SAME_COLLECTION("{HC_VC_UBERON}", uberon_node)
+                        FILTER IS_SAME_COLLECTION("{VC_UBERON}", uberon_node)
                         FILTER uberon_node._id IN @uberon_terms
 
                         LET cl_level_nodes = (
                             FOR cl_node, edge2 IN 1..1 INBOUND uberon_node._id GRAPH @graph_name
                                 OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                FILTER IS_SAME_COLLECTION("{HC_VC_CL}", cl_node)
+                                FILTER IS_SAME_COLLECTION("{VC_CL}", cl_node)
 
                                 LET gs_level_nodes = (
                                     FOR gs_node, edge3 IN 1..1 OUTBOUND cl_node._id GRAPH @graph_name
                                         OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                        FILTER IS_SAME_COLLECTION("{HC_VC_GS}", gs_node)
+                                        FILTER IS_SAME_COLLECTION("{VC_GS}", gs_node)
 
                                         LET terminal_nodes = (
                                             FOR terminal_node, edge4 IN 1..1 OUTBOUND gs_node._id GRAPH @graph_name
                                                 OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                                FILTER IS_SAME_COLLECTION("{HC_VC_MONDO}", terminal_node) OR IS_SAME_COLLECTION("{HC_VC_CHEMBL}", terminal_node)
+                                                FILTER IS_SAME_COLLECTION("{VC_MONDO}", terminal_node) OR IS_SAME_COLLECTION("{VC_CHEMBL}", terminal_node)
 
                                                 // MERGE Terminal node data
                                                 RETURN MERGE(terminal_node, {{ value: 1, _hasChildren: false, children: [] }})
@@ -441,7 +438,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
             print("WARN: Full structure query returned no results.")
             empty_root = {
                 "_id": graph_root_id,
-                "label": "Phenotype Associations (Full Load) - No Data",
+                "label": "Phenotype Associations - No Data",
                 "_hasChildren": False,
                 "children": [],
             }
@@ -453,8 +450,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
             )
 
         full_structure = result_list[0]
-        # print(f"Result: {full_structure}")
-        # Return the Response object directly for FastAPI
+        # Return the Response object directly
         return Response(
             data=full_structure,
             status=status.HTTP_200_OK,
@@ -463,9 +459,6 @@ def get_phenotypes_sunburst(ignored_parent_id):
 
     except Exception as e:
         print(f"ERROR: AQL Execution failed for full structure load: {e}")
-        # import traceback
-        # print(traceback.format_exc())
-        # Return the Response object directly for FastAPI
         error_content = {"error": "Failed to fetch full phenotype structure."}
         return Response(
             data=error_content,
@@ -561,7 +554,7 @@ def get_ontologies_sunburst(parent_id):
             )
 
     else:
-        # === Fetch Initial Roots (Level 0) AND their Children (Level 1) ===
+        # Fetch Initial Roots and their Children
         initial_nodes_with_children = []
         graph_root_id = "root_nlm"  # Unique ID for the artificial root
 
@@ -572,23 +565,23 @@ def get_ontologies_sunburst(parent_id):
             query_initial = """
                 LET start_node_id = @node_id // This is L0
 
-                // 1. Get the L0 node details
+                // Get the L0 node details
                 LET start_node_doc = DOCUMENT(start_node_id)
                 FILTER start_node_doc != null // Ensure L0 exists
 
-                // 2. Check if L0 has children (L1)
+                // Check if L0 has children (L1)
                 LET start_node_has_children = COUNT(
                     FOR c1, e1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
                         FILTER e1.label == @label_filter
                         LIMIT 1 RETURN 1
                 ) > 0
 
-                // 3. Get L1 children
+                // Get L1 children
                 LET children_level1 = (
                     FOR child1_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
                         FILTER edge1.label == @label_filter
 
-                        // 4. Check if each L1 child has children (L2)
+                        // Check if each L1 child has children (L2)
                         LET child1_has_children = COUNT(
                             FOR c2, e2 IN 1..1 INBOUND child1_node._id GRAPH @graph_name
                                 FILTER e2.label == @label_filter
@@ -604,7 +597,7 @@ def get_ontologies_sunburst(parent_id):
                         }
                 ) // Collect L1 children into an array
 
-                // 5. Return the formatted L0 node with its L1 children attached
+                // Return the formatted L0 node with its L1 children attached
                 RETURN { // Format Level 0 node
                     _id: start_node_doc._id,
                     label: start_node_doc.label || start_node_doc.name || start_node_doc._key,
