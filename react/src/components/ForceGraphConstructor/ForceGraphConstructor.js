@@ -17,7 +17,7 @@ export function processGraphData(
   filteredNewNodes.forEach((newNode) => {
     newNode.id = nodeId(newNode);
     let collection = newNode.id.split("/")[0];
-    newNode.nodeHover = nodeHover(newNode);
+    newNode.nodeHover = labelFn(newNode);
     newNode.color = getColorForCollection(collection);
     newNode.nodeLabel = labelFn(newNode);
   });
