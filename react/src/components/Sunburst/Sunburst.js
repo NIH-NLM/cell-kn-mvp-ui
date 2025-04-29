@@ -3,11 +3,9 @@ import React, {
   useRef,
   useState,
   useCallback,
-  useContext,
 } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 import { mergeChildren } from "../Utils/Utils";
-import { GraphContext } from "../Contexts/Contexts";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -27,7 +25,9 @@ const Sunburst = ({ addSelectedItem }) => {
   const isInitialMountRef = useRef(true);
 
   // -- Contexts --
-  const { graphType, setGraphType } = useContext(GraphContext);
+  // const { graphType, setGraphType } = useContext(GraphContext);
+  // Ignore context for focused queries
+  const graphType = "phenotypes"
 
   // --- Data Fetching Logic ---
   const fetchSunburstData = useCallback(

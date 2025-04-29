@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { useEffect, useState, useContext } from "react";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import { GraphContext } from "../Contexts/Contexts";
 
 const BrowseBox = ({ currentCollection }) => {
-  const { graphType, setGraphType } = useContext(GraphContext);
+  // -- Contexts --
+  // const { graphType, setGraphType } = useContext(GraphContext);
+  // Ignore context for focused queries
+  const graphType = "phenotypes"
 
   const [collections, setCollections] = useState([]);
   const collectionsMap = new Map(collectionsMapData);

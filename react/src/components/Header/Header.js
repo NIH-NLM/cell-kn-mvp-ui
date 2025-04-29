@@ -1,18 +1,10 @@
 import React, { useContext, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useActiveNav } from "../ActiveNavContext/ActiveNavContext";
-import { GraphContext } from "../Contexts/Contexts";
 
 const Header = () => {
-  const { graphType, setGraphType } = useContext(GraphContext);
   const { activeNav, setActive } = useActiveNav();
   const location = useLocation();
-
-  const handleGraphToggle = () => {
-    const newGraphValue =
-      graphType === "phenotypes" ? "ontologies" : "phenotypes";
-    setGraphType(newGraphValue);
-  };
 
   // Update activeNav whenever location changes
   useEffect(() => {
@@ -43,20 +35,6 @@ const Header = () => {
         <Link to="/aql" style={{ display: "none" }}>
           <h4 className={activeNav === "/aql" ? "active-nav" : ""}>Query</h4>
         </Link>
-        <div className="graph-context-toggle-container">
-          <div className="graph-context-toggle">
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={graphType === "ontologies"}
-                onChange={handleGraphToggle}
-                aria-label="Toggle between Phenotypes and Ontologies"
-              />
-              <span className="slider round"></span>
-            </label>
-            <span className="label-toggle-item">Full</span>
-          </div>
-        </div>
       </div>
     </div>
   );
