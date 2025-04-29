@@ -103,7 +103,7 @@
       "abbreviated_name": "GS",
       "display_name": "Gene symbol",
       "individual_labels": ["_key"],
-      "individual_url": "https://www.ncbi.nlm.nih.gov/gene/<FIELD_TO_USE>",
+      "individual_url": "https://www.ncbi.nlm.nih.gov/search/all/?term=<FIELD_TO_USE>",
       "field_to_use": "_key",
       "to_be_replaced": "",
       "replace_with": "",
