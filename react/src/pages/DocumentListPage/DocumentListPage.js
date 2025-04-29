@@ -3,11 +3,13 @@ import BrowseBox from "../../components/BrowseBox/BrowseBox";
 import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
 import Pagination from "../../components/Pagination/Pagination";
-import { GraphContext } from "../../components/Contexts/Contexts";
 import { getLabel } from "../../components/Utils/Utils";
 
 const DocumentListPage = () => {
-  const { graphType, setGraphType } = useContext(GraphContext);
+  // -- Contexts --
+  // const { graphType, setGraphType } = useContext(GraphContext);
+  // Ignore context for focused queries
+  const graphType = "phenotypes";
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);

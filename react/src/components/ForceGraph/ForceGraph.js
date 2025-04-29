@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
@@ -488,6 +488,12 @@ const ForceGraph = ({
     setPopupVisible(true);
   };
 
+  const handleGraphToggle = () => {
+    const newGraphValue =
+      graphType === "phenotypes" ? "ontologies" : "phenotypes";
+    setGraphType(newGraphValue);
+  };
+
   const handlePopupClose = () => {
     setPopupVisible(false);
   };
@@ -905,6 +911,24 @@ const ForceGraph = ({
                 <span className="slider round"></span>
               </label>
             </div>
+          </div>
+        </div>
+
+        {/* Graph Toggle Button */}
+        <div className="option-group labels-toggle-container">
+          <label>Toggle DB:</label>
+          <div className="labels-toggle">
+            Curated
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={graphType === "ontologies"}
+                onChange={handleGraphToggle}
+                aria-label="Toggle between Phenotypes and Ontologies"
+              />
+              <span className="slider round"></span>
+            </label>
+            Full
           </div>
         </div>
 
