@@ -457,9 +457,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
         // Create the final top-level root object
         LET root_node = {{
             _id: @graph_root_id,
-            label: "NLM Cell Knowledge Network", // You might want a different root label
-            // Alternatively, create a dummy root doc or MERGE with a base object if needed
-            // value: SUM(ncbi_level_nodes[*].value) // Example: calculate root value if needed
+            label: "NLM Cell Knowledge Network", 
             _hasChildren: COUNT(ncbi_level_nodes) > 0,
             children: ncbi_level_nodes
         }}
@@ -586,14 +584,11 @@ def get_ontologies_sunburst(parent_id):
             cursor = db.aql.execute(query_children_grandchildren, bind_vars=bind_vars)
             results = list(cursor)
 
-            # The results list *is* the data we need to return
-            children_and_grandchildren_data = results
-
-            return Response(children_and_grandchildren_data, status=status.HTTP_200_OK)
+            return Response(results, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(
-                {"error": f"Failed to fetch nested children data for {parent_id}."},
+                {"error": f"Failed to fetch nested children data for {parent_id} with error: {e}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -645,9 +640,9 @@ def get_ontologies_sunburst(parent_id):
                 RETURN { // Format Level 0 node
                     _id: start_node_doc._id,
                     label: start_node_doc.label || start_node_doc.name || start_node_doc._key,
-                    value: 1, // Could calculate SUM(children_level1[*].value) if needed
-                    _hasChildren: start_node_has_children, // Does L0 have L1 children?
-                    children: children_level1 // Attach array of formatted L1 children
+                    value: 1, 
+                    _hasChildren: start_node_has_children, 
+                    children: children_level1 
                 }
             """
             bind_vars = {
@@ -670,9 +665,9 @@ def get_ontologies_sunburst(parent_id):
         # Create the final top-level root node structure
         graph_root = {
             "_id": graph_root_id,
-            "label": "NLM Cell Knowledge Network",  # Or your preferred root label
+            "label": "NLM Cell Knowledge Network",
             "_hasChildren": len(initial_nodes_with_children) > 0,
-            "children": initial_nodes_with_children,  # Assign the list of L0 nodes (containing L1)
+            "children": initial_nodes_with_children,  # Assign the list of L0 nodes
         }
 
         return Response(graph_root, status=status.HTTP_200_OK)
