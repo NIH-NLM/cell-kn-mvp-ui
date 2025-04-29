@@ -252,50 +252,92 @@ def get_all():
 
     return flat_results
 
+def search_by_term(search_term, db):
+    db_name_lower = db.lower()
 
-def search_by_term(search_term):
     query = f"""
-            // Group results by collection
-            LET groupedResults = (
+            LET lowerSearchTerm = LOWER(@search_term) 
+            // Pre-calculate the token used in BOOST for efficiency & consistency
+            LET firstSearchToken = FIRST(TOKENS(@search_term, "text_en"))
+
+            // --- Subquery to Search, Sort, and Limit ---
+            LET sortedDocs = (
                 FOR doc IN indexed
-                SEARCH ANALYZER(
-                  // Search exact match - tokenize to match
-                  BOOST(doc.label == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Name == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Symbol == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.PMID == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Phase == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Genotype_annotation == TOKENS(@search_term, "text_en")[0], 10.0)
-                  // Search by n-gram similarity
-                  OR
-                  NGRAM_MATCH(doc._id, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Genotype_annotation, @search_term, 0.7, "bigram")
-                , "text_en")
-                SORT BM25(doc) DESC
-                // Extract the collection name from the _id field:
-                COLLECT coll = SPLIT(doc._id, "/")[0] INTO docs = doc
-                RETURN {{ [coll]: docs }}
+                    // This finds potential candidates using boosted pseudo-exacts and ngrams
+                    SEARCH ANALYZER(
+                      // Boost condition based on first token match
+                      BOOST(doc.label == firstSearchToken, 10.0) OR
+                      BOOST(doc.Name == firstSearchToken, 10.0) OR
+                      BOOST(doc.Symbol == firstSearchToken, 10.0) OR
+                      BOOST(doc.Label == firstSearchToken, 10.0) OR
+                      BOOST(doc.PMID == firstSearchToken, 10.0) OR
+                      BOOST(doc.Phase == firstSearchToken, 10.0) OR 
+                      BOOST(doc._key == firstSearchToken, 10.0)
+                      // OR NGRAM matching
+                      OR
+                      NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR 
+                      NGRAM_MATCH(doc._key, @search_term, 0.7, "bigram") 
+                    , "text_en") // Use text_en as the context analyzer for BOOST/TOKENS
+
+                    // --- Define STRICT Exact Match for Sorting ---
+                    LET isExactMatch = (
+                        (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lowerSearchTerm) OR
+                        (HAS(doc, 'Name') AND IS_STRING(doc.Name) AND LOWER(doc.Name) == lowerSearchTerm) OR
+                        (HAS(doc, 'Symbol') AND IS_STRING(doc.Symbol) AND LOWER(doc.Symbol) == lowerSearchTerm) OR
+                        (HAS(doc, 'Label') AND IS_STRING(doc.Label) AND LOWER(doc.Label) == lowerSearchTerm) OR
+                        (HAS(doc, 'PMID') AND IS_STRING(doc.PMID) AND LOWER(doc.PMID) == lowerSearchTerm) OR
+                        (HAS(doc, '_key') AND IS_STRING(doc._key) AND doc._key == @search_term) // Direct _key check is case-sensitive
+                        // Add other fields if they should count towards exact match sorting
+                    )
+
+                    // --- Multi-key Sort: Exact Matches FIRST, then by BM25 ---
+                    SORT isExactMatch DESC, BM25(doc) DESC
+
+                    RETURN doc
+            ) 
+
+
+            // --- Grouping and Extraction Logic ---
+            LET groupedResults = (
+                FOR doc IN sortedDocs // Iterate over the correctly sorted results
+                LET coll = SPLIT(doc._id, "/")[0]
+
+                // Collect, using KEEP doc explicitly
+                COLLECT collectionName = coll INTO group KEEP doc
+
+                LET extractedDocs = (
+                    FOR item IN group
+                    RETURN item.doc
+                )
+
+                RETURN {{ [collectionName]: extractedDocs }}
             )
-            
-            // Merge collection results
+
+            // Merge the Grouped Results
             RETURN MERGE(groupedResults)
         """
 
     bind_vars = {"search_term": search_term}
-    # Execute the query
     try:
-        cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-        results = list(cursor)[0]  # Collect the results
+        # db selection
+        db_connection = db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        print(db_connection)
+        cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
+        results = cursor.next()
+
+    except StopIteration:
+        print("Query executed successfully but returned no results.")
+        results = {}
     except Exception as e:
+        import traceback
         print(f"Error executing query: {e}")
-        results = []
+        traceback.print_exc()
+        results = {}
 
     return results
 

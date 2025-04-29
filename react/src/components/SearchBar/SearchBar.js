@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import {useContext, useEffect, useRef, useState} from "react";
 import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
+import {GraphContext} from "../Contexts/Contexts";
 
 const SearchBar = ({
   generateGraph,
@@ -15,16 +16,37 @@ const SearchBar = ({
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
 
-  const getSearchTerms = async (searchTerm, limit = 100) => {
-    let response = await fetch(
-      `/arango_api/search/${searchTerm}?limit=${limit}`,
+  const { graphType, setGraphType } = useContext(GraphContext);
+
+  const getSearchTerms = async (searchTerm, db) => {
+  try {
+    const response = await fetch(
+      `/arango_api/search/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          search_term: searchTerm,
+          db: db
+        })
+      }
     );
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorBody}`);
+    }
     return response.json();
-  };
+  } catch (error) {
+    console.error("Error fetching search terms:", error);
+    throw error;
+  }
+};
 
   useEffect(() => {
     const fetchSearchResults = async () => {
-      const data = await getSearchTerms(searchTerm);
+      const data = await getSearchTerms(searchTerm, graphType);
       setSearchResults(data);
     };
 
@@ -33,7 +55,7 @@ const SearchBar = ({
     } else {
       setSearchResults([]);
     }
-  }, [searchTerm]);
+  }, [searchTerm, graphType]);
 
   const handleSearch = (event) => {
     const value = event.target.value;

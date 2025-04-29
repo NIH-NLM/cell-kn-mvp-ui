@@ -38,9 +38,11 @@ def get_related_edges(request, edge_coll, dr, item_coll, pk):
     return JsonResponse(list(edges), safe=False)
 
 
-@api_view(["GET"])
-def get_search_items(request, st):
-    search_results = utils.search_by_term(st)
+@api_view(["POST"])
+def get_search_items(request):
+    graph = request.data.get("db")
+    search_term = request.data.get("search_term")
+    search_results = utils.search_by_term(search_term, graph)
     return JsonResponse(search_results, safe=False)
 
 
@@ -51,7 +53,7 @@ def get_graph(request):
     edge_direction = request.data.get("edge_direction")
     allowed_collections = request.data.get("allowed_collections")
     node_limit = request.data.get("node_limit", 100)
-    graph = request.data.get("graph", 100)
+    graph = request.data.get("graph")
 
     search_results = utils.get_graph(
         node_ids, depth, edge_direction, allowed_collections, node_limit, graph
