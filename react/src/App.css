@@ -252,6 +252,10 @@ td {
   padding: 0.5rem;
 }
 
+.selected-items-table td {
+  text-align: center;
+}
+
 .nowrap {
   text-wrap: nowrap;
 }

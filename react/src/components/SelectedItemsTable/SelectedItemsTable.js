@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { getLabel, getUrl } from "../Utils/Utils";
 
 const SelectedItemsTable = ({
   selectedItems,
@@ -20,16 +21,24 @@ const SelectedItemsTable = ({
         <table className="selected-items-table">
           <thead>
             <tr>
-              <th>Identifier</th>
               <th>Label</th>
+              <th>Source</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {selectedItems.map((item, index) => (
               <tr key={item._id || index}>
-                <td>{item.term || item._id}</td>
-                <td>{item.label}</td>
+                <td>{getLabel(item)}</td>
+                <td>
+                  <a
+                    href={getUrl(item)}
+                    target={"blank"}
+                    className={"external-link"}
+                  >
+                    {getUrl(item)}
+                  </a>
+                </td>
                 <td className="selected-items-table-actions">
                   <button onClick={() => handleRemoveItem(item)}>Remove</button>
                   <Link to={`/browse/${item._id}`} target="_blank">

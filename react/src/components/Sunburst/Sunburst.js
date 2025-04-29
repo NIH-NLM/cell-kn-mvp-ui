@@ -100,7 +100,7 @@ const Sunburst = ({ addSelectedItem }) => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // --- Initial Data Load useEffect (Runs once on mount) ---
+  // --- Initial Data Load useEffect ---
   useEffect(() => {
     // Fetch initial data only if it hasn't been fetched yet
     if (!graphData) {

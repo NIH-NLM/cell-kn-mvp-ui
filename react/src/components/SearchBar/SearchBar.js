@@ -1,7 +1,7 @@
-import {useContext, useEffect, useRef, useState} from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
-import {GraphContext} from "../Contexts/Contexts";
+import { GraphContext } from "../Contexts/Contexts";
 
 const SearchBar = ({
   generateGraph,
@@ -19,30 +19,29 @@ const SearchBar = ({
   const { graphType, setGraphType } = useContext(GraphContext);
 
   const getSearchTerms = async (searchTerm, db) => {
-  try {
-    const response = await fetch(
-      `/arango_api/search/`,
-      {
-        method: 'POST',
+    try {
+      const response = await fetch(`/arango_api/search/`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           search_term: searchTerm,
-          db: db
-        })
+          db: db,
+        }),
+      });
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorBody}`,
+        );
       }
-    );
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorBody}`);
+      return response.json();
+    } catch (error) {
+      console.error("Error fetching search terms:", error);
+      throw error;
     }
-    return response.json();
-  } catch (error) {
-    console.error("Error fetching search terms:", error);
-    throw error;
-  }
-};
+  };
 
   useEffect(() => {
     const fetchSearchResults = async () => {

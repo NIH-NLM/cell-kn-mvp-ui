@@ -348,7 +348,7 @@ function SunburstConstructor(
         .transition("fadein")
         .delay(fadeInDelay)
         .duration(fadeInDuration)
-        // Hide center node (zoomedNodeId) even during fade-in
+        // Hide center node (zoomedNodeId) during fade-in
         .attr("fill-opacity", (d) =>
           d.data._id === zoomedNodeId
             ? 0
@@ -367,7 +367,6 @@ function SunburstConstructor(
     // Update existing labels instantly, hiding the center one
     labelExisting
       .attr("transform", (d) => labelTransform(d.current))
-      //  HIDE center node's (zoomedNodeId) label if it exists
       .attr("fill-opacity", (d) =>
         d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
       );

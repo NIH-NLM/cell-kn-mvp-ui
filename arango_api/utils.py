@@ -252,6 +252,7 @@ def get_all():
 
     return flat_results
 
+
 def search_by_term(search_term, db):
     db_name_lower = db.lower()
 
@@ -325,7 +326,9 @@ def search_by_term(search_term, db):
     bind_vars = {"search_term": search_term}
     try:
         # db selection
-        db_connection = db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        db_connection = (
+            db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        )
         cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
         results = cursor.next()
 
@@ -334,6 +337,7 @@ def search_by_term(search_term, db):
         results = {}
     except Exception as e:
         import traceback
+
         print(f"Error executing query: {e}")
         traceback.print_exc()
         results = {}
@@ -373,7 +377,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
     ]
     uberon_terms = [
         "UBERON/0002048",  # lung
-        "UBERON/0000966", # retina
+        "UBERON/0000966",  # retina
     ]
     # Artificial root ID for the response
     graph_root_id = "root_phenotypes_full"
