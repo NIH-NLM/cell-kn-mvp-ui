@@ -19,15 +19,15 @@ const colors = [
   "#fabed4",
   "#469990",
   "#dcbeff",
+  "#a9a9a9",
   "#9A6324",
   "#fffac8",
   "#800000",
   "#aaffc3",
   "#808000",
-  "#ffd8b1",
   "#000075",
-  "#a9a9a9",
   "#000000",
+  "#ffd8b1",
 ];
 
 // Create the ordinal color scale
