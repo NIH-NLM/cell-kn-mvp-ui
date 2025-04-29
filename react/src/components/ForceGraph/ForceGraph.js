@@ -490,7 +490,7 @@ const ForceGraph = ({
 
   const handleGraphToggle = () => {
     const newGraphValue =
-        graphType === "phenotypes" ? "ontologies" : "phenotypes";
+      graphType === "phenotypes" ? "ontologies" : "phenotypes";
     setGraphType(newGraphValue);
   };
 
@@ -916,15 +916,15 @@ const ForceGraph = ({
 
         {/* Graph Toggle Button */}
         <div className="option-group labels-toggle-container">
-            <label>Toggle DB:</label>
+          <label>Toggle DB:</label>
           <div className="labels-toggle">
             Curated
             <label className="switch">
               <input
-                  type="checkbox"
-                  checked={graphType === "ontologies"}
-                  onChange={handleGraphToggle}
-                  aria-label="Toggle between Phenotypes and Ontologies"
+                type="checkbox"
+                checked={graphType === "ontologies"}
+                onChange={handleGraphToggle}
+                aria-label="Toggle between Phenotypes and Ontologies"
               />
               <span className="slider round"></span>
             </label>

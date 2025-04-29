@@ -7,7 +7,7 @@ const BrowseBox = ({ currentCollection }) => {
   // -- Contexts --
   // const { graphType, setGraphType } = useContext(GraphContext);
   // Ignore context for focused queries
-  const graphType = "phenotypes"
+  const graphType = "phenotypes";
 
   const [collections, setCollections] = useState([]);
   const collectionsMap = new Map(collectionsMapData);

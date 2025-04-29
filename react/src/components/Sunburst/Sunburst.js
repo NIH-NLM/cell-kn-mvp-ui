@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
 import { mergeChildren } from "../Utils/Utils";
 
@@ -27,7 +22,7 @@ const Sunburst = ({ addSelectedItem }) => {
   // -- Contexts --
   // const { graphType, setGraphType } = useContext(GraphContext);
   // Ignore context for focused queries
-  const graphType = "phenotypes"
+  const graphType = "phenotypes";
 
   // --- Data Fetching Logic ---
   const fetchSunburstData = useCallback(

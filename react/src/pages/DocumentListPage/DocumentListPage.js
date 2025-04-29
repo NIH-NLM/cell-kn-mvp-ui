@@ -9,7 +9,7 @@ const DocumentListPage = () => {
   // -- Contexts --
   // const { graphType, setGraphType } = useContext(GraphContext);
   // Ignore context for focused queries
-  const graphType = "phenotypes"
+  const graphType = "phenotypes";
   const { coll } = useParams();
   const [documentList, setDocumentList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
