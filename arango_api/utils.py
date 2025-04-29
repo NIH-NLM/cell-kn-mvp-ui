@@ -326,7 +326,6 @@ def search_by_term(search_term, db):
     try:
         # db selection
         db_connection = db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
-        print(db_connection)
         cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
         results = cursor.next()
 
@@ -343,7 +342,6 @@ def search_by_term(search_term, db):
 
 
 def run_aql_query(query):
-    print(query)
     # Execute the query
     try:
         cursor = db_ontologies.aql.execute(query)

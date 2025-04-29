@@ -117,7 +117,7 @@ const ForceGraph = ({
       )
         .then((data) => {
           if (isMounted) {
-            if (hasAnyNodes(data, originNodeIds[0])) {
+            if (originNodeIds.some(nodeId => hasAnyNodes(data, nodeId))) {
               setRawData(data);
             } else {
               setGraphType("ontologies");
