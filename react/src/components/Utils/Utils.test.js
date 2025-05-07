@@ -273,9 +273,9 @@ describe("Utils Module", () => {
       expect(getLabel(item)).toBe("Edge Label");
     });
 
-    it("should handle label values that are arrays by joining with ' + '", () => {
+    it("should handle label values that are arrays by joining with ' | '", () => {
       const item = { _id: "nodes_b/3", title: ["Part 1", "Part 2"] };
-      expect(getLabel(item)).toBe("Part 1 + Part 2");
+      expect(getLabel(item)).toBe("Part 1 | Part 2");
     });
 
     it("should handle numeric labels", () => {
@@ -311,7 +311,7 @@ describe("Utils Module", () => {
 
     it("should handle complex labels in title", () => {
       const item = { _id: "nodes_b/3", title: ["part 1", "part 2"] };
-      expect(getTitle(item)).toBe("Nodes B: Part 1 + Part 2");
+      expect(getTitle(item)).toBe("Nodes B: Part 1 | Part 2");
     });
   });
 
@@ -327,16 +327,16 @@ describe("Utils Module", () => {
       expect(capitalCase("")).toBe("");
     });
 
-    it("should capitalize words in each string of an array and join with '+'", () => {
+    it("should capitalize words in each string of an array and join with '|'", () => {
       expect(capitalCase(["hello world", "test case"])).toBe(
-        "Hello World+Test Case",
+        "Hello World|Test Case",
       );
       expect(capitalCase(["single"])).toBe("Single");
     });
 
     it("should handle arrays with non-string elements gracefully", () => {
       expect(capitalCase(["string one", 123, "string two"])).toBe(
-        "String One+123+String Two",
+        "String One|123|String Two",
       ); // Only strings are modified
     });
 

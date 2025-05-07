@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
@@ -117,7 +117,7 @@ const ForceGraph = ({
       )
         .then((data) => {
           if (isMounted) {
-            if (hasAnyNodes(data, originNodeIds[0])) {
+            if (originNodeIds.some((nodeId) => hasAnyNodes(data, nodeId))) {
               setRawData(data);
             } else {
               setGraphType("ontologies");
@@ -486,6 +486,12 @@ const ForceGraph = ({
       y: clientY + 10 + scrollY,
     });
     setPopupVisible(true);
+  };
+
+  const handleGraphToggle = () => {
+    const newGraphValue =
+      graphType === "phenotypes" ? "ontologies" : "phenotypes";
+    setGraphType(newGraphValue);
   };
 
   const handlePopupClose = () => {
@@ -908,6 +914,24 @@ const ForceGraph = ({
           </div>
         </div>
 
+        {/* Graph Toggle Button */}
+        <div className="option-group labels-toggle-container">
+          <label>Toggle DB:</label>
+          <div className="labels-toggle">
+            Curated
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={graphType === "ontologies"}
+                onChange={handleGraphToggle}
+                aria-label="Toggle between Phenotypes and Ontologies"
+              />
+              <span className="slider round"></span>
+            </label>
+            Full
+          </div>
+        </div>
+
         {/* Shortest Path Toggle */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
           <div className="option-group multi-node">
@@ -1003,12 +1027,11 @@ const ForceGraph = ({
           Expand from "{clickedNodeLabel}"
         </button>
         <button className="popup-button" onClick={handleCollapse}>
-          Collapse Neighbors
+          Collapse Satellite Nodes
         </button>
         <button className="popup-button" onClick={handleRemove}>
-          Remove Node & Neighbors
+          Remove Node & Satellites
         </button>
-        {/* Simple text 'X' button for closing */}
         <button
           className="popup-close-button"
           onClick={handlePopupClose}

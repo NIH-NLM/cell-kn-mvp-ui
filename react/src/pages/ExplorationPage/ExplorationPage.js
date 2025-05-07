@@ -42,7 +42,7 @@ const ExplorationPage = () => {
           nodeIds={nodeIds}
           settings={{
             defaultDepth: 1,
-            findShortestPaths: true,
+            findShortestPaths: false,
             collectionsToPrune: prunedCollections,
           }}
         />

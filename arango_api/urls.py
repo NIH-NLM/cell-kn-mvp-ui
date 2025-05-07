@@ -24,7 +24,7 @@ urlpatterns = [
         get_related_edges,
         name="get_related_edges",
     ),
-    path("search/<str:st>/", get_search_items, name="get_search_items"),
+    path("search/", get_search_items, name="get_search_items"),
     path("aql/", run_aql_query, name="run_aql_query"),
     path("get_all/", get_all, name="get_all"),
     path("sunburst/", get_sunburst, name="get_sunburst"),

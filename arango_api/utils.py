@@ -1,4 +1,6 @@
 from itertools import chain
+from rest_framework.response import Response
+from rest_framework import status
 
 from arango_api.db import (
     db_ontologies,
@@ -251,55 +253,99 @@ def get_all():
     return flat_results
 
 
-def search_by_term(search_term):
+def search_by_term(search_term, db):
+    db_name_lower = db.lower()
+
     query = f"""
-            // Group results by collection
-            LET groupedResults = (
+            LET lowerSearchTerm = LOWER(@search_term) 
+            // Pre-calculate the token used in BOOST for efficiency & consistency
+            LET firstSearchToken = FIRST(TOKENS(@search_term, "text_en"))
+
+            // --- Subquery to Search, Sort, and Limit ---
+            LET sortedDocs = (
                 FOR doc IN indexed
-                SEARCH ANALYZER(
-                  // Search exact match - tokenize to match
-                  BOOST(doc.label == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Name == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Symbol == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Label == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.PMID == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Phase == TOKENS(@search_term, "text_en")[0], 10.0) OR
-                  BOOST(doc.Genotype_annotation == TOKENS(@search_term, "text_en")[0], 10.0)
-                  // Search by n-gram similarity
-                  OR
-                  NGRAM_MATCH(doc._id, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR
-                  NGRAM_MATCH(doc.Genotype_annotation, @search_term, 0.7, "bigram")
-                , "text_en")
-                SORT BM25(doc) DESC
-                // Extract the collection name from the _id field:
-                COLLECT coll = SPLIT(doc._id, "/")[0] INTO docs = doc
-                RETURN {{ [coll]: docs }}
+                    // This finds potential candidates using boosted pseudo-exacts and ngrams
+                    SEARCH ANALYZER(
+                      // Boost condition based on first token match
+                      BOOST(doc.label == firstSearchToken, 10.0) OR
+                      BOOST(doc.Name == firstSearchToken, 10.0) OR
+                      BOOST(doc.Symbol == firstSearchToken, 10.0) OR
+                      BOOST(doc.Label == firstSearchToken, 10.0) OR
+                      BOOST(doc.PMID == firstSearchToken, 10.0) OR
+                      BOOST(doc.Phase == firstSearchToken, 10.0) OR 
+                      BOOST(doc._key == firstSearchToken, 10.0)
+                      // OR NGRAM matching
+                      OR
+                      NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
+                      NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR 
+                      NGRAM_MATCH(doc._key, @search_term, 0.7, "bigram") 
+                    , "text_en") // Use text_en as the context analyzer for BOOST/TOKENS
+
+                    // --- Define STRICT Exact Match for Sorting ---
+                    LET isExactMatch = (
+                        (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lowerSearchTerm) OR
+                        (HAS(doc, 'Name') AND IS_STRING(doc.Name) AND LOWER(doc.Name) == lowerSearchTerm) OR
+                        (HAS(doc, 'Symbol') AND IS_STRING(doc.Symbol) AND LOWER(doc.Symbol) == lowerSearchTerm) OR
+                        (HAS(doc, 'Label') AND IS_STRING(doc.Label) AND LOWER(doc.Label) == lowerSearchTerm) OR
+                        (HAS(doc, 'PMID') AND IS_STRING(doc.PMID) AND LOWER(doc.PMID) == lowerSearchTerm) OR
+                        (HAS(doc, '_key') AND IS_STRING(doc._key) AND doc._key == @search_term) // Direct _key check is case-sensitive
+                        // Add other fields if they should count towards exact match sorting
+                    )
+
+                    // --- Multi-key Sort: Exact Matches FIRST, then by BM25 ---
+                    SORT isExactMatch DESC, BM25(doc) DESC
+
+                    RETURN doc
+            ) 
+
+
+            // --- Grouping and Extraction Logic ---
+            LET groupedResults = (
+                FOR doc IN sortedDocs // Iterate over the correctly sorted results
+                LET coll = SPLIT(doc._id, "/")[0]
+
+                // Collect, using KEEP doc explicitly
+                COLLECT collectionName = coll INTO group KEEP doc
+
+                LET extractedDocs = (
+                    FOR item IN group
+                    RETURN item.doc
+                )
+
+                RETURN {{ [collectionName]: extractedDocs }}
             )
-            
-            // Merge collection results
+
+            // Merge the Grouped Results
             RETURN MERGE(groupedResults)
         """
 
     bind_vars = {"search_term": search_term}
-    # Execute the query
     try:
-        cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-        results = list(cursor)[0]  # Collect the results
+        # db selection
+        db_connection = (
+            db_phenotypes if db_name_lower == "phenotypes" else db_ontologies
+        )
+        cursor = db_connection.aql.execute(query, bind_vars=bind_vars)
+        results = cursor.next()
+
+    except StopIteration:
+        print("Query executed successfully but returned no results.")
+        results = {}
     except Exception as e:
+        import traceback
+
         print(f"Error executing query: {e}")
-        results = []
+        traceback.print_exc()
+        results = {}
 
     return results
 
 
 def run_aql_query(query):
-    print(query)
     # Execute the query
     try:
         cursor = db_ontologies.aql.execute(query)
@@ -313,85 +359,339 @@ def run_aql_query(query):
     return results
 
 
-def get_sunburst():
-    # Root node ids for each collection
-    # Note that NCBITaxon is starting from cellular organisms, and not root
-    node_ids = [
+def get_phenotypes_sunburst(ignored_parent_id):
+    """
+    API endpoint for fetching the *entire* phenotype sunburst structure
+    in one query, starting from NCBITaxon roots and traversing the specific path:
+    NCBITaxon -> UBERON (filtered) -> CL -> GS -> MONDO/CHEMBL.
+    Uses hardcoded collection names and inline traversal options.
+
+    NOTE: This ignores the parent_id and always loads the full structure.
+          It may be slow or memory-intensive on larger datasets.
+    """
+    db = db_phenotypes
+    graph_name = GRAPH_NAME_PHENOTYPES
+
+    initial_root_ids = [
+        "NCBITaxon/9606",
+    ]
+    uberon_terms = [
+        "UBERON/0002048",  # lung
+        "UBERON/0000966",  # retina
+    ]
+    # Artificial root ID for the response
+    graph_root_id = "root_phenotypes_full"
+
+    # Collection names
+    EDGE_NC_UB = "UBERON-NCBITaxon"
+    EDGE_UB_CL = "UBERON-CL"
+    EDGE_CL_UB = "CL-UBERON"
+    EDGE_CL_GS = "CL-GS"
+    EDGE_GS_MO = "GS-MONDO"
+    EDGE_GS_CH = "GS-CHEMBL"
+
+    VC_NCBITAXON = "NCBITaxon"
+    VC_UBERON = "UBERON"
+    VC_CL = "CL"
+    VC_GS = "GS"
+    VC_MONDO = "MONDO"
+    VC_CHEMBL = "CHEMBL"
+
+    # Construct the edge collection list string for AQL
+    allowed_edges_aql_string = f'["{EDGE_NC_UB}", "{EDGE_UB_CL}", "{EDGE_CL_UB}", "{EDGE_CL_GS}", "{EDGE_GS_MO}", "{EDGE_GS_CH}"]'
+
+    if db is None:
+        return Response(
+            {"error": "Database connection not available."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # AQL Query with hardcoded names and inline options
+    query_full_structure = f"""
+        LET ncbi_level_nodes = (
+            FOR ncbi_id IN @initial_root_ids
+                LET ncbi_node = DOCUMENT(ncbi_id)
+                FILTER ncbi_node != null AND IS_SAME_COLLECTION("{VC_NCBITAXON}", ncbi_node)
+
+                LET uberon_level_nodes = (
+                    FOR uberon_node, edge1 IN 1..1 INBOUND ncbi_node._id GRAPH @graph_name
+                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                        FILTER IS_SAME_COLLECTION("{VC_UBERON}", uberon_node)
+                        FILTER uberon_node._id IN @uberon_terms
+
+                        LET cl_level_nodes = (
+                            FOR cl_node, edge2 IN 1..1 INBOUND uberon_node._id GRAPH @graph_name
+                                OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                FILTER IS_SAME_COLLECTION("{VC_CL}", cl_node)
+
+                                LET gs_level_nodes = (
+                                    FOR gs_node, edge3 IN 1..1 OUTBOUND cl_node._id GRAPH @graph_name
+                                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                        FILTER IS_SAME_COLLECTION("{VC_GS}", gs_node)
+
+                                        LET terminal_nodes = (
+                                            FOR terminal_node, edge4 IN 1..1 OUTBOUND gs_node._id GRAPH @graph_name
+                                                OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                                FILTER IS_SAME_COLLECTION("{VC_MONDO}", terminal_node) OR IS_SAME_COLLECTION("{VC_CHEMBL}", terminal_node)
+
+                                                // MERGE Terminal node data
+                                                RETURN MERGE(terminal_node, {{ value: 1, _hasChildren: false, children: [] }})
+                                        ) // End Terminal nodes
+
+                                        // MERGE GS node data
+                                        RETURN MERGE(gs_node, {{ value: 1, _hasChildren: COUNT(terminal_nodes) > 0, children: terminal_nodes }})
+                                ) // End GS nodes
+
+                                // MERGE CL node data
+                                RETURN MERGE(cl_node, {{ value: 1, _hasChildren: COUNT(gs_level_nodes) > 0, children: gs_level_nodes }})
+                        ) // End CL nodes
+
+                        // MERGE UBERON node data
+                        RETURN MERGE(uberon_node, {{ value: 1, _hasChildren: COUNT(cl_level_nodes) > 0, children: cl_level_nodes }})
+                ) // End UBERON nodes
+
+                // MERGE NCBITaxon node data
+                RETURN MERGE(ncbi_node, {{ value: 1, _hasChildren: COUNT(uberon_level_nodes) > 0, children: uberon_level_nodes }})
+        ) // End NCBITaxon nodes
+
+        // Create the final top-level root object
+        LET root_node = {{
+            _id: @graph_root_id,
+            label: "NLM Cell Knowledge Network", 
+            _hasChildren: COUNT(ncbi_level_nodes) > 0,
+            children: ncbi_level_nodes
+        }}
+
+        RETURN root_node
+    """
+
+    bind_vars = {
+        "graph_name": graph_name,
+        "initial_root_ids": initial_root_ids,
+        "uberon_terms": uberon_terms,
+        "graph_root_id": graph_root_id,
+    }
+
+    try:
+        cursor = db.aql.execute(query_full_structure, bind_vars=bind_vars, stream=False)
+        result_list = list(cursor)
+
+        if not result_list:
+            print("WARN: Full structure query returned no results.")
+            empty_root = {
+                "_id": graph_root_id,
+                "label": "Phenotype Associations - No Data",
+                "_hasChildren": False,
+                "children": [],
+            }
+            # Return the Response object directly
+            return Response(
+                data=empty_root,
+                status=status.HTTP_200_OK,
+                content_type="application/json",
+            )
+
+        full_structure = result_list[0]
+        # Return the Response object directly
+        return Response(
+            data=full_structure,
+            status=status.HTTP_200_OK,
+            content_type="application/json",
+        )
+
+    except Exception as e:
+        print(f"ERROR: AQL Execution failed for full structure load: {e}")
+        error_content = {"error": "Failed to fetch full phenotype structure."}
+        return Response(
+            data=error_content,
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content_type="application/json",
+        )
+
+
+def get_ontologies_sunburst(parent_id):
+    """
+    API endpoint for fetching sunburst data, supporting initial load (L0+L1)
+    and loading children + grandchildren (L N+1, L N+2) on demand.
+    """
+    db = db_ontologies
+    graph_name = GRAPH_NAME_ONTOLOGIES
+    label_filter = "subClassOf"
+    initial_root_ids = [
         "CL/0000000",
-        "GO/0008150",
-        "GO/0003674",
-        "GO/0005575",
+        "GO/0008150",  # biological_process
+        "GO/0003674",  # molecular_function
+        "GO/0005575",  # cellular_component
         "PATO/0000001",
         "MONDO/0000001",
         "UBERON/0000000",
     ]
 
-    # Edge collections for each type
-    edge_collections = {
-        "CL": "CL-CL",
-        "GO": "GO-GO",
-        "PATO": "PATO-PATO",
-        "MONDO": "MONDO-MONDO",
-        "UBERON": "UBERON-UBERON",
-    }
+    if db is None:
+        return Response(
+            {"error": "Database connection not available."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
-    depth = 3
+    if parent_id:
+        # AQL Query: Fetches C nodes and their G children
+        query_children_grandchildren = """
+            LET start_node_id = @parent_id // P
 
-    # Initialize an empty list to collect the final results for the sunburst
-    root_nodes = []
+            // Find direct children (Level N+1, Nodes C)
+            FOR child_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                FILTER edge1.label == @label_filter
 
-    # Query to traverse the graph for each root node
-    # TODO: Check whether it is better to combine into one query
-    for node_id in node_ids:
-        collection_type = node_id.split("/")[0]
-        edge_col = edge_collections.get(collection_type)
+                // For each child_node (C), find its children (Level N+2, Nodes G)
+                LET grandchildren = (
+                    FOR grandchild_node, edge2 IN 1..1 INBOUND child_node._id GRAPH @graph_name
+                        FILTER edge2.label == @label_filter
 
-        # Query to get nodes for a specific root node and edge collection
-        query = f"""
-            FOR v, e IN 0..@depth INBOUND @node_id @edge_col
-                FILTER e.label == 'subClassOf' OR v._id == @node_id
-                RETURN {{v, e}}
+                        // Check if grandchild (G) has children (Level N+3)
+                        LET grandchild_has_children = COUNT(
+                            FOR great_grandchild, edge3 IN 1..1 INBOUND grandchild_node._id GRAPH @graph_name
+                                FILTER edge3.label == @label_filter
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format grandchild (G)
+                            _id: grandchild_node._id,
+                            label: grandchild_node.label || grandchild_node.name || grandchild_node._key,
+                            value: 1,
+                            _hasChildren: grandchild_has_children,
+                            children: null // Level N+3 not loaded here
+                        }
+                ) // Collect grandchildren (G) into an array for this child (C)
+
+                // Check if the child_node (C) itself has children (G) loaded above
+                LET child_has_children = COUNT(grandchildren) > 0
+
+                RETURN { // Format child (C)
+                    _id: child_node._id,
+                    label: child_node.label || child_node.name || child_node._key,
+                    value: 1,
+                    _hasChildren: child_has_children, // Does C have children G?
+                    children: grandchildren // Attach the array of grandchildren (G)
+                }
         """
+        bind_vars = {
+            "parent_id": parent_id,
+            "graph_name": graph_name,
+            "label_filter": label_filter,
+        }
 
-        bind_vars = {"node_id": node_id, "edge_col": edge_col, "depth": depth}
-
-        # Execute the query
         try:
-            cursor = db_ontologies.aql.execute(query, bind_vars=bind_vars)
-            results = list(cursor)  # Collect the results
+            cursor = db.aql.execute(query_children_grandchildren, bind_vars=bind_vars)
+            results = list(cursor)
 
-            # Process the results to form the sunburst structure
-            paths = {}  # Dictionary to store object by _id for quick lookup
-
-            # Initialize the first root object (the node we start with)
-            data = results.pop(0)["v"]
-            data["children"] = []  # Initialize the children attribute
-            paths[data["_id"]] = data  # Store the root node in paths
-
-            # Iterate through results to build the child hierarchy
-            for result in results:
-                v = result["v"]
-                e = result["e"]
-
-                parent_id = e["_to"]  # Parent's _id
-                parent = paths.get(parent_id)  # Look up the parent object
-
-                # If parent exists, append this object to the parent's children list
-                if parent:
-                    if "children" not in parent:
-                        parent["children"] = []  # Ensure the parent has a children list
-                    parent["children"].append(v)
-
-                # Store the current object in paths for future lookups
-                paths[v["_id"]] = v
-
-            # Append the processed data for this root node to root_nodes
-            root_nodes.append(data)
+            return Response(results, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Error processing node {node_id}: {e}")
+            return Response(
+                {"error": f"Failed to fetch nested children data for {parent_id} with error: {e}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-    # Create a Root node that links only to the root nodes in node_ids
-    graph_root = {"label": "NLM Cell Knowledge Network", "children": root_nodes}
+    else:
+        # Fetch Initial Roots and their Children
+        initial_nodes_with_children = []
+        graph_root_id = "root_nlm"  # Unique ID for the artificial root
 
-    return graph_root
+        # Loop through predefined starting nodes
+        for node_id in initial_root_ids:
+
+            # AQL Query: Fetches L0 node and its direct L1 children
+            query_initial = """
+                LET start_node_id = @node_id // This is L0
+
+                // Get the L0 node details
+                LET start_node_doc = DOCUMENT(start_node_id)
+                FILTER start_node_doc != null // Ensure L0 exists
+
+                // Check if L0 has children (L1)
+                LET start_node_has_children = COUNT(
+                    FOR c1, e1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER e1.label == @label_filter
+                        LIMIT 1 RETURN 1
+                ) > 0
+
+                // Get L1 children
+                LET children_level1 = (
+                    FOR child1_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
+                        FILTER edge1.label == @label_filter
+
+                        // Check if each L1 child has children (L2)
+                        LET child1_has_children = COUNT(
+                            FOR c2, e2 IN 1..1 INBOUND child1_node._id GRAPH @graph_name
+                                FILTER e2.label == @label_filter
+                                LIMIT 1 RETURN 1
+                        ) > 0
+
+                        RETURN { // Format Level 1 node
+                            _id: child1_node._id,
+                            label: child1_node.label || child1_node.name || child1_node._key,
+                            value: 1,
+                            _hasChildren: child1_has_children, // Does L1 have L2 children?
+                            children: null // L2 not loaded here
+                        }
+                ) // Collect L1 children into an array
+
+                // Return the formatted L0 node with its L1 children attached
+                RETURN { // Format Level 0 node
+                    _id: start_node_doc._id,
+                    label: start_node_doc.label || start_node_doc.name || start_node_doc._key,
+                    value: 1, 
+                    _hasChildren: start_node_has_children, 
+                    children: children_level1 
+                }
+            """
+            bind_vars = {
+                "node_id": node_id,
+                "graph_name": graph_name,
+                "label_filter": label_filter,
+            }
+
+            try:
+                cursor = db.aql.execute(query_initial, bind_vars=bind_vars)
+                # Expect only one result document per initial node_id
+                node_data_list = list(cursor)
+                if node_data_list:
+                    node_data = node_data_list[0]
+                    initial_nodes_with_children.append(node_data)
+
+            except Exception as e:
+                print(f"ERROR: AQL Execution failed for initial node {node_id}: {e}")
+
+        # Create the final top-level root node structure
+        graph_root = {
+            "_id": graph_root_id,
+            "label": "NLM Cell Knowledge Network",
+            "_hasChildren": len(initial_nodes_with_children) > 0,
+            "children": initial_nodes_with_children,  # Assign the list of L0 nodes
+        }
+
+        return Response(graph_root, status=status.HTTP_200_OK)
+
+
+def get_collection_info(node_id, edge_collections):
+    """Gets the edge collection based on the node ID prefix."""
+    try:
+        collection_type = node_id.split("/")[0]
+        edge_col = edge_collections.get(collection_type)
+        if not edge_col:
+            return None
+        return edge_col
+    except (IndexError, AttributeError):
+        # Handle cases where node_id is None or not in the expected format
+        return None
+
+
+def format_node_data(node_doc, has_children):
+    """Helper to format node data consistently."""
+    return {
+        "_id": node_doc["_id"],
+        "label": node_doc.get("label") or node_doc.get("name") or node_doc["_key"],
+        "value": 1,
+        "_hasChildren": has_children,
+        "children": None,  # Always start with null children unless fetching them explicitly
+    }

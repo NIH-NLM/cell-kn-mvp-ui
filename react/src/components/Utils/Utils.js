@@ -92,7 +92,7 @@ export const getLabel = (item) => {
     ?.toString()
     .split(",")
     .flatMap((value) => (Array.isArray(value) ? value : [value])) // Handle array
-    .join(" + ");
+    .join(" | ");
   return label;
 };
 
@@ -137,7 +137,7 @@ export const capitalCase = (input) => {
               .join(" ")
           : str,
       )
-      .join("+");
+      .join("|");
   } else if (typeof input === "string") {
     // If the input is a single string, capitalize each word
     return input
@@ -149,3 +149,35 @@ export const capitalCase = (input) => {
     return input;
   }
 };
+
+export function findNodeById(node, id) {
+  if (node._id === id) {
+    return node;
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeById(child, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+export function mergeChildren(graphData, parentId, childrenWithGrandchildren) {
+  const newData = JSON.parse(JSON.stringify(graphData)); // Deep copy
+  const parentNode = findNodeById(newData, parentId);
+
+  if (parentNode) {
+    console.log(
+      `Found parent ${parentId}, merging children:`,
+      childrenWithGrandchildren,
+    );
+    parentNode.children = childrenWithGrandchildren;
+    parentNode._childrenLoaded = true;
+  } else {
+    console.warn(`Parent node ${parentId} not found for merging children.`);
+  }
+  return newData;
+}

@@ -29,8 +29,8 @@ describe("ListDocuments Component", () => {
       </Router>,
     );
 
-    // Check if the labels are joined by '+'
-    expect(screen.getByText("Label1 + Label2")).toBeInTheDocument();
+    // Check if the labels are joined by '|'
+    expect(screen.getByText("Label1 | Label2")).toBeInTheDocument();
 
     const linkElement = screen.getByRole("link");
     expect(linkElement).toHaveAttribute("href", "/browse/CL/123");
