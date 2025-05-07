@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import { mergeChildren } from "../Utils/Utils";
+import {getLabel, mergeChildren} from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -379,8 +379,7 @@ const Sunburst = ({ addSelectedItem }) => {
               maxWidth: "200px",
             }}
           >
-            {clickedItem.label || clickedItem._id}{" "}
-            {/* Display label or fallback to ID */}
+            {getLabel(clickedItem)}{" "}
           </p>
           <a
             className="popup-button"
