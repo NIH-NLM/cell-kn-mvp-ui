@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { fetchCollections, parseCollections } from "../Utils/Utils";
 import collectionsMapData from "../../assets/collectionsMap.json";
+
+const collectionsMap = new Map(collectionsMapData);
 
 const BrowseBox = ({ currentCollection }) => {
   // -- Contexts --
@@ -10,7 +12,6 @@ const BrowseBox = ({ currentCollection }) => {
   const graphType = "phenotypes";
 
   const [collections, setCollections] = useState([]);
-  const collectionsMap = new Map(collectionsMapData);
 
   useEffect(() => {
     setCollections([]); // Clear old collections

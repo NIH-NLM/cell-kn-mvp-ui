@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import {getLabel, mergeChildren} from "../Utils/Utils";
+import { getLabel, mergeChildren } from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
