@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { getTitle } from "../../components/Utils/Utils";
 
 // Document as described in ArangoDB documentation
-const DocumentPage = ({}) => {
+const DocumentPage = () => {
   const { coll, id } = useParams();
   let [document, setDocument] = useState(null);
 
@@ -17,13 +17,23 @@ const DocumentPage = ({}) => {
     : prunedCollections;
 
   useEffect(() => {
-    getDocument().then((r) => setDocument(r));
-  }, [id, coll]);
+    const getDocument = async () => {
+      try {
+        const response = await fetch(`/arango_api/collection/${coll}/${id}/`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setDocument(data);
+      } catch (error) {
+        console.error("Failed to fetch document:", error);
+      }
+    };
 
-  let getDocument = async () => {
-    let response = await fetch(`/arango_api/collection/${coll}/${id}/`);
-    return response.json();
-  };
+    if (id && coll) {
+      getDocument();
+    }
+  }, [id, coll]);
 
   if (document) {
     return (

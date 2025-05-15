@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import * as Utils from "../Utils/Utils";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { getLabel } from "../Utils/Utils";
 

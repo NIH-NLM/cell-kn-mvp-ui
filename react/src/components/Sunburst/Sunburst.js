@@ -68,7 +68,7 @@ const Sunburst = ({ addSelectedItem }) => {
             throw new Error("API error for initial load/root");
           setGraphData(data);
           // Reset zoom only when fetching root data
-          if (graphType == "phenotypes") {
+          if (graphType === "phenotypes") {
             setZoomedNodeId("NCBITaxon/9606");
           } else {
             setZoomedNodeId(null);
