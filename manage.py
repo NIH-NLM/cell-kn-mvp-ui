@@ -3,9 +3,20 @@
 import os
 import sys
 
+REQUIRED_PYTHON_MAJOR = 3
+REQUIRED_PYTHON_MINOR = 13
+
 
 def main():
     """Run administrative tasks."""
+    if not (
+        sys.version_info.major == REQUIRED_PYTHON_MAJOR
+        and sys.version_info.minor >= REQUIRED_PYTHON_MINOR
+    ):
+        sys.exit(
+            f"ERROR: This project requires Python {REQUIRED_PYTHON_MAJOR}.{REQUIRED_PYTHON_MINOR} or newer.\n"
+            f"You are using Python {sys.version_info.major}.{sys.version_info.minor}."
+        )
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
     try:
         from django.core.management import execute_from_command_line
