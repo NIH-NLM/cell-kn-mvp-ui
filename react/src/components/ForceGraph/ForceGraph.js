@@ -44,7 +44,7 @@ const ForceGraph = ({
   const [findShortestPaths, setFindShortestPaths] = useState(
     "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
   );
-  const [useFocusNodes, setUseFocusNodes] = useState(
+  const [useFocusNodes] = useState(
     "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
   );
 
@@ -85,7 +85,7 @@ const ForceGraph = ({
         setAllowedCollections(tempCollections);
       }
     });
-  }, [graphType]);
+  }, [graphType, settings]);
 
   // Set event listeners for popup close
   useEffect(() => {
@@ -147,6 +147,7 @@ const ForceGraph = ({
     findShortestPaths,
     nodeLimit,
     graphType,
+    setGraphType,
   ]);
 
   useEffect(() => {

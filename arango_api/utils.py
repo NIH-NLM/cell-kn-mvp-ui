@@ -588,7 +588,9 @@ def get_ontologies_sunburst(parent_id):
 
         except Exception as e:
             return Response(
-                {"error": f"Failed to fetch nested children data for {parent_id} with error: {e}"},
+                {
+                    "error": f"Failed to fetch nested children data for {parent_id} with error: {e}"
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { getUrl } from "../Utils/Utils";
 
-const DocumentCard = ({ document: document }) => {
+const DocumentCard = ({ document }) => {
   return (
     <div className="document-item-list">
       <fieldset>

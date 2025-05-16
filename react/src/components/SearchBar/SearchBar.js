@@ -16,7 +16,7 @@ const SearchBar = ({
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
 
-  const { graphType, setGraphType } = useContext(GraphContext);
+  const { graphType } = useContext(GraphContext);
 
   const getSearchTerms = async (searchTerm, db) => {
     try {

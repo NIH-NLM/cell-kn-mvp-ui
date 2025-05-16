@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import BrowseBox from "../../components/BrowseBox/BrowseBox";
 import ListDocuments from "../../components/ListDocuments/ListDocuments";
 import { useParams } from "react-router-dom";
@@ -17,25 +17,39 @@ const DocumentListPage = () => {
   const itemsPerPage = 100;
 
   useEffect(() => {
-    // Reset page and clear filter when collection changes
+    const fetchDocumentList = async (currentGraphType) => {
+      if (!coll) {
+        return;
+      }
+      try {
+        const response = await fetch(`/arango_api/collection/${coll}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            graph: currentGraphType,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        sortDocumentList(data);
+      } catch (error) {
+        console.error("Failed to fetch document list:", error);
+      }
+    };
+
+    // Reset page and clear filter when coll or graphType changes
     setCurrentPage(1);
     setFilterText("");
-    getDocumentList(graphType);
-  }, [coll, graphType]);
 
-  const getDocumentList = async (graphType) => {
-    const response = await fetch(`/arango_api/collection/${coll}/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        graph: graphType,
-      }),
-    });
-    const data = await response.json();
-    sortDocumentList(data);
-  };
+    // Call the inner fetching function
+    fetchDocumentList(graphType); // Pass the current graphType from the effect's scope
+  }, [coll, graphType, setCurrentPage, setFilterText]);
 
   const sortDocumentList = (documents) => {
     const sortedList = Object.values(documents);

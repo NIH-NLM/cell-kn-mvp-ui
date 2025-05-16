@@ -2,6 +2,7 @@
   "name": "frontend",
   "proxy": "http://127.0.0.1:8000",
   "version": "0.1.0",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "d3": "^7.9.0",
@@ -48,6 +49,8 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@babel/plugin-transform-private-property-in-object": "^7.27.1",
     "@babel/preset-env": "^7.26.7",
     "@babel/preset-react": "^7.26.3",
     "@testing-library/jest-dom": "^6.6.3",

@@ -6,3 +6,4 @@ __pycache__
 arangodb
 db.sqlite3
 react/build
+venv/
