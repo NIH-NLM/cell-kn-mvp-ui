@@ -18,14 +18,18 @@
     "build": {
       "patterns": [
         "src",
-        "App.css"
+        "public"
       ],
-      "extensions": "js,jsx"
+      "extensions": "js,jsx,json,html,css",
+      "legacyWatch": true,
+      "delay": 500
     }
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build-react": "react-scripts build",
+    "collectstatic-django": "(cd .. && python manage.py collectstatic --noinput)",
+    "build": "npm run build-react && npm run collectstatic-django",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "watch": "npm-watch"
