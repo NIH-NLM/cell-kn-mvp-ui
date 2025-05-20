@@ -399,7 +399,7 @@ const ForceGraph = ({
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
         const linkKey = `${link._from}-${link._to}`;
 
-        if (seenLinks.has(linkKey)){
+        if (seenLinks.has(linkKey)) {
           return false;
         } else {
           seenLinks.add(linkKey);
