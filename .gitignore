@@ -1,9 +1,17 @@
+# Django
+staticfiles_collected/
+*.pyc
+__pycache__/
+db.sqlite3
+
+# React
+react/build/
+react/node_modules/
+react/coverage/
+
+# Environment
+venv/
 *.env
 .idea
 .venv
 .zshenv
-__pycache__
-arangodb
-db.sqlite3
-react/build
-venv/
