@@ -4,7 +4,7 @@ import schemaImage from "../../assets/schema.png";
 const SchemaPage = () => {
   return (
     <div>
-      <img src={schemaImage} alt="Schema" />
+      <img src={schemaImage} alt="Schema" className="schema-image" />
     </div>
   );
 };
