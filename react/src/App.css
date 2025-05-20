@@ -993,3 +993,9 @@ button.active {
   text-decoration: none;
   cursor: pointer;
 }
+
+.schema-image {
+  max-height: 80vh;
+  margin: auto;
+  display: block;
+}
