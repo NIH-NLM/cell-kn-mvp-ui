@@ -223,7 +223,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
 
   linkSelection.merge(linkEnter);
 
-  simulation.alpha(1).restart();
+  simulation.alpha(1.5).restart();
 }
 
 /* Utility Functions */
