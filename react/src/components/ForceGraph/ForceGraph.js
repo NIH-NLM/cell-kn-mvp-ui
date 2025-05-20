@@ -398,9 +398,8 @@ const ForceGraph = ({
 
       if (nodeIds.has(link._from) && nodeIds.has(link._to)) {
         const linkKey = `${link._from}-${link._to}`;
-        const reverseLinkKey = `${link._to}-${link._from}`;
 
-        if (seenLinks.has(linkKey) || seenLinks.has(reverseLinkKey)) {
+        if (seenLinks.has(linkKey)){
           return false;
         } else {
           seenLinks.add(linkKey);
