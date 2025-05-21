@@ -128,7 +128,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           options.onNodeClick(event, d);
         });
     } else {
-       // Regular single circle
+      // Regular single circle
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
@@ -140,7 +140,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     }
     // Append title for hover and hidden text for the label
     nodeG.append("title").text((d) => d.nodeHover);
-     // Append collection text
+    // Append collection text
     nodeG
       .append("text")
       .attr("class", "node-label")
@@ -390,7 +390,7 @@ function ForceGraphConstructor(
 
   const g = svg.append("g");
 
-   // Setup zoom behavior
+  // Setup zoom behavior
   const zoomHandler = d3
     .zoom()
     .on("zoom", (event) => {
