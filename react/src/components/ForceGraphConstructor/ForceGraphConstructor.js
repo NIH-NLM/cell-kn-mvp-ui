@@ -87,15 +87,19 @@ export function processGraphLinks(
 /* Rendering Functions */
 
 function renderGraph(simulation, nodes, links, d3, containers, options) {
+  // Update simulation nodes and links
   simulation.nodes(nodes);
   options.forceLink.links(links);
 
+  // Render nodes
   const nodeSelection = containers.nodeContainer
     .selectAll("g.node")
     .data(nodes, (d) => d.id);
 
+  // Remove nodes not in the new data
   nodeSelection.exit().remove();
 
+  // For each new node, decide whether to render it as a donut
   const nodeEnter = nodeSelection
     .enter()
     .append("g")
@@ -105,6 +109,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   nodeEnter.each(function (d) {
     const nodeG = d3.select(this);
     if (options.originNodeIds && options.originNodeIds.includes(d.id)) {
+      // Outer circle
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
@@ -113,6 +118,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           event.preventDefault();
           options.onNodeClick(event, d);
         });
+      // Inner circle for donut effect
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius * 0.7)
@@ -122,6 +128,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           options.onNodeClick(event, d);
         });
     } else {
+       // Regular single circle
       nodeG
         .append("circle")
         .attr("r", options.nodeRadius)
@@ -131,7 +138,9 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           options.onNodeClick(event, d);
         });
     }
+    // Append title for hover and hidden text for the label
     nodeG.append("title").text((d) => d.nodeHover);
+     // Append collection text
     nodeG
       .append("text")
       .attr("class", "node-label")
@@ -156,14 +165,18 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .text((d) => truncateString(d.nodeLabel, 15));
   });
 
+  // Render links
   const linkSelection = containers.linkContainer
     .selectAll("g.link")
     .data(links, (d) => d._id);
 
+  // Remove links that are no longer in the data
   linkSelection.exit().remove();
 
+  // Create new link elements
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
+  // For non self-links, add a line element
   linkEnter
     .filter((d) => d.source.id !== d.target.id)
     .append("path")
@@ -182,6 +195,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-end", "url(#arrow)");
 
+  // Append text for non self-links
   linkEnter
     .filter((d) => d.source.id !== d.target.id)
     .append("text")
@@ -192,6 +206,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("text-anchor", "middle")
     .attr("class", "link-label");
 
+  // For self-links, add a path element
   linkEnter
     .filter((d) => d.source.id === d.target.id)
     .append("path")
@@ -211,6 +226,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-mid", "url(#self-arrow)");
 
+  // Append text for self-links
   linkEnter
     .filter((d) => d.source.id === d.target.id)
     .append("text")
@@ -221,6 +237,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("text-anchor", "middle")
     .attr("class", "link-label");
 
+  // Merge enter selection with the update selection
   linkSelection.merge(linkEnter);
 
   simulation.alpha(1.5).restart();
@@ -356,6 +373,7 @@ function ForceGraphConstructor(
     .force("center", forceCenter)
     .on("tick", ticked);
 
+  // Create main SVG element
   let height = mergedOptions.width * mergedOptions.heightRatio;
 
   const svg = d3
@@ -372,6 +390,7 @@ function ForceGraphConstructor(
 
   const g = svg.append("g");
 
+   // Setup zoom behavior
   const zoomHandler = d3
     .zoom()
     .on("zoom", (event) => {
@@ -384,9 +403,11 @@ function ForceGraphConstructor(
     d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale), // Centered initial translate
   );
 
+  // Create containers for links and nodes
   const linkContainer = g.append("g").attr("class", "link-container");
   const nodeContainer = g.append("g").attr("class", "node-container");
 
+  // Create defs for arrow markers
   const defs = g.append("defs");
   defs
     .append("marker")
@@ -440,17 +461,20 @@ function ForceGraphConstructor(
   function updateLegend(currentNodes) {
     const presentCollectionIds = [
       ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
+      // Sort alphabetically for consistent order
     ].filter(
       (id) => id && id !== "edges" && mergedOptions.collectionsMap.has(id),
     );
     presentCollectionIds.sort();
 
+    // Data join for legend items
     const legendItems = legend
       .selectAll(".legend-item")
       .data(presentCollectionIds, (d) => d);
 
     legendItems.exit().remove();
 
+    // Append rectangle
     const legendEnter = legendItems
       .enter()
       .append("g")
@@ -466,12 +490,14 @@ function ForceGraphConstructor(
       .attr("width", legendSize)
       .attr("height", legendSize);
 
+    // Append text
     legendEnter
       .append("text")
       .attr("x", legendSize + 5)
       .attr("y", legendSize / 2)
       .attr("dy", "0.35em");
 
+    // Adjust position for all items
     const legendUpdate = legendEnter.merge(legendItems);
     legendUpdate
       .transition()
@@ -491,11 +517,14 @@ function ForceGraphConstructor(
       );
   }
 
+  // Internal Data Storage
   let processedNodes = [];
   let processedLinks = [];
 
+  // Call update graph for initial render
   updateGraph({ newNodes: initialNodes, newLinks: initialLinks });
 
+  // Handle movement
   function ticked() {
     const linkElements = linkContainer.selectAll("g.link");
 
@@ -597,6 +626,7 @@ function ForceGraphConstructor(
     });
   }
 
+  // Function to center on a given node id, with adjustable pan transition
   function centerOnNode(nodeId, transitionDuration = 1000) {
     let node = simulation.nodes().find((node) => node._id === nodeId);
     if (!node) {
@@ -605,9 +635,11 @@ function ForceGraphConstructor(
     }
     const currentTransform = d3.zoomTransform(svg.node());
     const k = currentTransform.k;
+    // Calculate a new transform so that centerNode.x, centerNode.y are moved to (0,0), center of viewbox
     const newTransform = d3.zoomIdentity
       .translate(-node.x * k, -node.y * k)
       .scale(k);
+    // Update the zoom transform on the svg element
     svg
       .transition()
       .duration(transitionDuration)
@@ -629,6 +661,7 @@ function ForceGraphConstructor(
     }
   }
 
+  // Update node font size
   function updateNodeFontSize(newFontSize) {
     mergedOptions.nodeFontSize = newFontSize;
     nodeContainer
@@ -636,6 +669,7 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
+  // Update link font size
   function updateLinkFontSize(newFontSize) {
     mergedOptions.linkFontSize = newFontSize;
     linkContainer
@@ -643,6 +677,7 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
+  // Process new data and re-render.
   function updateGraph({
     newNodes = [],
     newLinks = [],
@@ -651,9 +686,12 @@ function ForceGraphConstructor(
     centerNodeId = null,
     simulate = false,
   } = {}) {
+    // Determine whether new data is being added
     const hasNewData = newNodes.length > 0 || newLinks.length > 0;
 
+    // If there is new data, toggle on simulation and turn off labels so nodes can reposition
     if (hasNewData || simulate) {
+      // Toggle off labels
       Object.keys(mergedOptions.labelStates).forEach((key) => {
         toggleLabels(false, key, true);
       });
@@ -671,19 +709,23 @@ function ForceGraphConstructor(
     }
 
     if (collapseNodes.length) {
+      // Identify nodes that are connected only to a collapse node
       const nodesToRemove = [];
       processedNodes.forEach((node) => {
+        // Skip nodes that are in collapseNodes or are origin nodes
         if (
           collapseNodes.includes(node.id) ||
           mergedOptions.originNodeIds.includes(node.id)
         ) {
           return;
         }
+        // Get all links associated with this node
         const nodeLinks = processedLinks.filter(
           (link) =>
             (link.source.id || link.source) === node.id ||
             (link.target.id || link.target) === node.id,
         );
+        // Remove node if all links connect to collapse node
         if (nodeLinks.length > 0) {
           const allLinksToCollapseNodes = nodeLinks.every((link) => {
             const sourceId = link.source.id || link.source;
@@ -697,9 +739,11 @@ function ForceGraphConstructor(
         }
       });
 
+      // Remove the nodes that were marked
       processedNodes = processedNodes.filter(
         (node) => !nodesToRemove.includes(node.id),
       );
+      // Also remove any links associated with the nodes just removed
       processedLinks = processedLinks.filter((link) => {
         const sourceId = link.source.id || link.source;
         const targetId = link.target.id || link.target;
@@ -708,6 +752,7 @@ function ForceGraphConstructor(
         );
       });
 
+      // If removeNode is true, remove the collapseNodes themselves
       if (removeNode) {
         processedNodes = processedNodes.filter(
           (node) => !collapseNodes.includes(node.id),
@@ -723,6 +768,7 @@ function ForceGraphConstructor(
       }
     }
 
+    // Add nodes and links
     processedNodes = processGraphData(
       processedNodes,
       newNodes,
@@ -764,6 +810,7 @@ function ForceGraphConstructor(
     updateLegend(processedNodes);
 
     const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
+    // Wait for simulation to settle then disable it
     waitForAlpha(simulation, newThreshold).then(() => {
       if (centerNodeId) {
         centerOnNode(centerNodeId);
