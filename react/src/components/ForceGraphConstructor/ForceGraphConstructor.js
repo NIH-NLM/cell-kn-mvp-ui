@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { truncateString } from "../Utils/Utils";
 
 /* Pure Functions */
 
@@ -32,29 +33,55 @@ export function processGraphLinks(
   linkTarget = ({ _to }) => _to,
   labelFn = (d) => d.label,
 ) {
-  const filteredNewLinks = newLinks.filter((newLink) => {
-    // Find corresponding source and target nodes
-    const sourceNode = nodes.find((node) => node.id === linkSource(newLink));
-    const targetNode = nodes.find((node) => node.id === linkTarget(newLink));
+  const updatedExistingLinks = [...existingLinks]; // Work on a mutable copy
 
-    // Only keep the link if both nodes exist
-    if (!sourceNode || !targetNode) return false;
+  newLinks.forEach((newLink) => {
+    const sourceNodeId = linkSource(newLink);
+    const targetNodeId = linkTarget(newLink);
 
-    // Also ensure the link doesn't already exist
-    return !existingLinks.some(
-      (existing) =>
-        existing.source.id === linkSource(newLink) &&
-        existing.target.id === linkTarget(newLink),
-    );
+    const sourceNode = nodes.find((node) => node.id === sourceNodeId);
+    const targetNode = nodes.find((node) => node.id === targetNodeId);
+
+    if (!sourceNode || !targetNode) {
+      return;
+    }
+
+    // Check if this exact link (by _id) already exists
+    if (updatedExistingLinks.some((existing) => existing._id === newLink._id)) {
+      return;
+    }
+
+    // Prepare the new link object
+    const processedNewLink = {
+      ...newLink,
+      source: sourceNode,
+      target: targetNode,
+      label: labelFn(newLink),
+      isParallelPair: false,
+    };
+
+    // Check for its reverse partner among existing links
+    const keyParts = processedNewLink._key.split("-");
+    if (keyParts.length === 2) {
+      const reverseKey = `${keyParts[1]}-${keyParts[0]}`;
+      const reversePartner = updatedExistingLinks.find(
+        (existingLink) =>
+          existingLink._key === reverseKey &&
+          existingLink.source.id === targetNodeId && // Double check direction
+          existingLink.target.id === sourceNodeId,
+      );
+
+      if (reversePartner) {
+        // Found a parallel pair
+        processedNewLink.isParallelPair = true;
+        reversePartner.isParallelPair = true;
+      }
+    }
+    updatedExistingLinks.push(processedNewLink);
   });
 
-  filteredNewLinks.forEach((link) => {
-    link.source = nodes.find((node) => node.id === linkSource(link));
-    link.target = nodes.find((node) => node.id === linkTarget(link));
-    link.label = labelFn(link);
-  });
-
-  return existingLinks.concat(filteredNewLinks);
+  console.log(updatedExistingLinks);
+  return updatedExistingLinks;
 }
 
 /* Rendering Functions */
@@ -72,13 +99,13 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   // Remove nodes not in the new data
   nodeSelection.exit().remove();
 
+  // For each new node, decide whether to render it as a donut
   const nodeEnter = nodeSelection
     .enter()
     .append("g")
     .attr("class", "node")
     .call(options.drag);
 
-  // For each new node, decide whether to render it as a donut
   nodeEnter.each(function (d) {
     const nodeG = d3.select(this);
     if (options.originNodeIds && options.originNodeIds.includes(d.id)) {
@@ -113,6 +140,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     }
     // Append title for hover and hidden text for the label
     nodeG.append("title").text((d) => d.nodeHover);
+    // Append collection text
     nodeG
       .append("text")
       .attr("class", "node-label")
@@ -121,9 +149,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .style("font-size", options.nodeFontSize + "px")
       .style("display", "none")
       .text((d) => d.nodeLabel)
-      .call(wrap, 25);
-
-    // Append collection text
+      .text((d) => truncateString(d.nodeLabel, 15));
     nodeG
       .append("text")
       .attr("class", "collection-label")
@@ -136,24 +162,25 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
           ? options.collectionsMap.get(d._id.split("/")[0])["abbreviated_name"]
           : d._id.split("/")[0],
       )
-      .call(wrap, 25);
+      .text((d) => truncateString(d.nodeLabel, 15));
   });
 
   // Render links
   const linkSelection = containers.linkContainer
     .selectAll("g.link")
-    .data(links, (d) => `${d.source.id}-${d.target.id}`);
+    .data(links, (d) => d._id);
 
-  // Exit: Remove links that are no longer in the data
+  // Remove links that are no longer in the data
   linkSelection.exit().remove();
 
-  // Enter: Create new link elements
+  // Create new link elements
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
   // For non self-links, add a line element
   linkEnter
     .filter((d) => d.source.id !== d.target.id)
-    .append("line")
+    .append("path")
+    .attr("fill", "none")
     .attr(
       "stroke",
       typeof options.linkStroke !== "function" ? options.linkStroke : null,
@@ -177,8 +204,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
-    .attr("class", "link-label")
-    .call(wrap, 25);
+    .attr("class", "link-label");
 
   // For self-links, add a path element
   linkEnter
@@ -209,14 +235,12 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
-    .attr("class", "link-label")
-    .attr("y", options.nodeRadius * 1.5 * 2) // Offset label by self-link path size
-    .call(wrap, 25);
+    .attr("class", "link-label");
 
   // Merge enter selection with the update selection
   linkSelection.merge(linkEnter);
 
-  simulation.alpha(1).restart();
+  simulation.alpha(1.5).restart();
 }
 
 /* Utility Functions */
@@ -262,87 +286,56 @@ function toggleSimulation(
   }
 }
 
-function wrap(text, maxChars) {
-  text.each(function () {
-    let text = d3.select(this),
-      words = text.text().split(/\s+/).reverse(),
-      word,
-      line = [],
-      lineNumber = 0,
-      lineHeight = 1.1, // ems
-      y = text.attr("y"),
-      // dy = parseFloat(text.attr("dy")),
-      tspan = text
-        .text(null)
-        .append("tspan")
-        .attr("x", 0)
-        .attr("y", y)
-        .attr("dy", ".35em");
-
-    let i = 0;
-    while ((word = words.pop())) {
-      line.push(word);
-      tspan.text(line.join(" "));
-      if (tspan.text().length > maxChars && i > 0) {
-        lineNumber++;
-        line.pop();
-        tspan.text(line.join(" "));
-        line = [word];
-        tspan = text
-          .append("tspan")
-          .attr("x", 0)
-          .attr("y", y)
-          .attr("dy", lineHeight * lineNumber + "em")
-          .text(word);
-      }
-      i++;
-    }
-  });
-}
-
 /* ForceGraphConstructor */
 
 function ForceGraphConstructor(
   { nodes: initialNodes, links: initialLinks },
   options = {},
 ) {
-  // Create a unique colors array from the combined schemes to avoid duplicate colors.
   const combinedColors = [...d3.schemePaired, ...d3.schemeDark2];
   const uniqueColors = Array.from(new Set(combinedColors));
 
-  // Set up options with defaults
-  const {
-    nodeId = (d) => d._id,
-    label = (d) => d.label,
-    nodeGroup,
-    nodeGroups = [],
-    collectionsMap = new Map(), // Map of collection key to object with property abbreviated_name
-    originNodeIds = [],
-    nodeHover = (d) => `hover-${d._id}`,
-    nodeFontSize = 10,
-    linkFontSize = 10,
-    onNodeClick = () => {},
-    interactionCallback = () => {},
-    nodeRadius = 16,
-    linkSource = ({ _from }) => _from,
-    linkTarget = ({ _to }) => _to,
-    linkStroke = "#999",
-    linkStrokeOpacity = 0.6,
-    linkStrokeWidth = 1.5,
-    linkStrokeLinecap = "round",
-    initialScale = 1,
-    width = 640,
-    heightRatio = 0.5,
-    nodeForceStrength = -2500,
-    centerForceStrength = 1,
-    labelStates = {},
-    drag = d3
+  const defaultOptions = {
+    nodeId: (d) => d._id,
+    label: (d) => d.label || d._id, // Fallback label
+    nodeGroup: undefined,
+    nodeGroups: [],
+    collectionsMap: new Map(),
+    originNodeIds: [],
+    nodeHover: (d) => d.label || d._id, // Fallback hover
+    nodeFontSize: 10,
+    linkFontSize: 10,
+    onNodeClick: () => {},
+    interactionCallback: () => {},
+    nodeRadius: 16,
+    linkSource: ({ _from }) => _from,
+    linkTarget: ({ _to }) => _to,
+    linkStroke: "#999",
+    linkStrokeOpacity: 0.6,
+    linkStrokeWidth: 1.5,
+    linkStrokeLinecap: "round",
+    initialScale: 1,
+    width: 640,
+    heightRatio: 0.5,
+    nodeForceStrength: -1000,
+    targetLinkDistance: 175,
+    centerForceStrength: 1,
+    labelStates: {},
+    color: null,
+    parallelLinkCurvature: 0.25,
+  };
+
+  const mergedOptions = { ...defaultOptions, ...options };
+
+  mergedOptions.drag =
+    options.drag ||
+    d3
       .drag()
       .on("start", function (event, d) {
         if (!event.active) simulation.alphaTarget(0.1).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
-        interactionCallback();
+        mergedOptions.interactionCallback();
       })
       .on("drag", function (event, d) {
         event.subject.fx = event.x;
@@ -352,14 +345,25 @@ function ForceGraphConstructor(
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
-      }),
-    color = nodeGroup ? d3.scaleOrdinal(nodeGroups, uniqueColors) : null,
-  } = options;
+      });
 
-  // Create D3 simulation and forces
-  const forceNode = d3.forceManyBody().strength(nodeForceStrength);
-  const forceCenter = d3.forceCenter().strength(centerForceStrength);
+  if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
+    mergedOptions.color = d3.scaleOrdinal(
+      mergedOptions.nodeGroups,
+      uniqueColors,
+    );
+  } else {
+    mergedOptions.color = () => mergedOptions.nodeColor || "#999";
+  }
+
+  const forceNode = d3
+    .forceManyBody()
+    .strength(mergedOptions.nodeForceStrength);
+  const forceCenter = d3
+    .forceCenter()
+    .strength(mergedOptions.centerForceStrength);
   const forceLink = d3.forceLink().id((d) => d.id);
+  forceLink.distance(mergedOptions.targetLinkDistance);
   const linkForceStrength = forceLink.strength();
 
   const simulation = d3
@@ -370,13 +374,18 @@ function ForceGraphConstructor(
     .on("tick", ticked);
 
   // Create main SVG element
-  let height = width * heightRatio;
+  let height = mergedOptions.width * mergedOptions.heightRatio;
 
   const svg = d3
     .create("svg")
-    .attr("width", width)
+    .attr("width", mergedOptions.width)
     .attr("height", height)
-    .attr("viewBox", [-width / 2, -height / 2, width, height])
+    .attr("viewBox", [
+      -mergedOptions.width / 2,
+      -height / 2,
+      mergedOptions.width,
+      height,
+    ])
     .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
 
   const g = svg.append("g");
@@ -387,11 +396,11 @@ function ForceGraphConstructor(
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
     })
-    .on("start", interactionCallback);
+    .on("start", mergedOptions.interactionCallback);
   svg.call(zoomHandler);
   svg.call(
     zoomHandler.transform,
-    d3.zoomIdentity.translate(100, 100).scale(initialScale),
+    d3.zoomIdentity.translate(0, 0).scale(mergedOptions.initialScale), // Centered initial translate
   );
 
   // Create containers for links and nodes
@@ -411,7 +420,12 @@ function ForceGraphConstructor(
     .attr("orient", "auto")
     .append("polygon")
     .attr("points", "0,3.5 6,5 0,6.5 1,5")
-    .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
+    .style(
+      "fill",
+      typeof mergedOptions.linkStroke !== "function"
+        ? mergedOptions.linkStroke
+        : null,
+    );
 
   defs
     .append("marker")
@@ -424,38 +438,43 @@ function ForceGraphConstructor(
     .attr("orient", "auto")
     .append("polygon")
     .attr("points", "0,3.5 6,5 0,6.5 1,5")
-    .style("fill", typeof linkStroke !== "function" ? linkStroke : null);
+    .style(
+      "fill",
+      typeof mergedOptions.linkStroke !== "function"
+        ? mergedOptions.linkStroke
+        : null,
+    );
 
-  // Create Legend
   const legend = svg
     .append("g")
     .attr("class", "legend")
-    .attr("transform", `translate(${-(width / 2) + 20}, ${-(height / 2) + 20})`) // Top-left corner
+    .attr(
+      "transform",
+      `translate(${-(mergedOptions.width / 2) + 20}, ${-(height / 2) + 20})`,
+    )
     .style("font-family", "sans-serif")
-    .style("font-size", "10px"); // Base font size for legend
+    .style("font-size", "10px");
 
-  const legendSize = 12; // Size of the color swatch
-  const legendSpacing = 4; // Vertical spacing between items
+  const legendSize = 12;
+  const legendSpacing = 4;
 
-  // Function to update the legend based on currently displayed nodes
   function updateLegend(currentNodes) {
-    // Get unique collection IDs present in the current nodes
     const presentCollectionIds = [
       ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
-    ].filter((id) => id && id !== "edges" && collectionsMap.has(id));
-
-    // Sort alphabetically for consistent order
+      // Sort alphabetically for consistent order
+    ].filter(
+      (id) => id && id !== "edges" && mergedOptions.collectionsMap.has(id),
+    );
     presentCollectionIds.sort();
 
     // Data join for legend items
     const legendItems = legend
       .selectAll(".legend-item")
-      .data(presentCollectionIds, (d) => d); // Use collection ID as key
+      .data(presentCollectionIds, (d) => d);
 
-    // Remove old legend items
     legendItems.exit().remove();
 
-    // Create new legend items group
+    // Append rectangle
     const legendEnter = legendItems
       .enter()
       .append("g")
@@ -463,15 +482,13 @@ function ForceGraphConstructor(
       .attr(
         "transform",
         (d, i) => `translate(0, ${i * (legendSize + legendSpacing)})`,
-      ); // Initial position
+      );
 
-    // Append rectangle
     legendEnter
       .append("rect")
       .attr("x", 0)
       .attr("width", legendSize)
-      .attr("height", legendSize)
-      .style("fill", (d) => getColorForCollection(d)); // Use color service
+      .attr("height", legendSize);
 
     // Append text
     legendEnter
@@ -495,7 +512,7 @@ function ForceGraphConstructor(
       .select("text")
       .text(
         (d) =>
-          `${collectionsMap.get(d)?.["display_name"]} (${collectionsMap.get(d)?.["abbreviated_name"]})` ||
+          `${mergedOptions.collectionsMap.get(d)?.["display_name"]} (${mergedOptions.collectionsMap.get(d)?.["abbreviated_name"]})` ||
           d,
       );
   }
@@ -509,51 +526,113 @@ function ForceGraphConstructor(
 
   // Handle movement
   function ticked() {
-    // Update link position
-    const link = linkContainer.selectAll("line");
-    link
-      .attr("x1", (d) => d.source.x)
-      .attr("y1", (d) => d.source.y)
-      .attr("x2", (d) => d.target.x)
-      .attr("y2", (d) => d.target.y);
+    const linkElements = linkContainer.selectAll("g.link");
 
-    // Update positions for self-links
-    const selfLink = linkContainer.selectAll("path.self-link");
-    selfLink.attr("d", (d) => {
-      const radius = nodeRadius * 1.5; // Adjust this to control the size of the loop
+    // Update path.self-link for self-loops
+    linkElements.selectAll("path.self-link").attr("d", (d) => {
+      if (!d.source) return "";
       const x = d.source.x;
-      const y = d.source.y + nodeRadius * 1.5;
+      const y = d.source.y;
+      const nodeR = mergedOptions.nodeRadius;
+      const loopRadius = nodeR * 1.5;
 
-      // Create a circular path for self-links
-      return `M${x + radius},${y} A${radius},${radius} 0 1,1 ${x - radius},${y} A${radius},${radius} 0 1,1 ${x + radius},${y}`;
+      const dr = loopRadius * 2;
+      return `M${x},${y + nodeR} A${dr / 2},${dr / 2} 0 1,0 ${x + 0.1},${y + nodeR - 0.1}`; // Arc path
     });
 
-    let node = nodeContainer.selectAll("g");
-    node.attr("transform", function (d) {
-      return "translate(" + [d.x, d.y] + ")";
-    });
+    // Update path for non-self-links
+    linkElements
+      .selectAll("path:not(.self-link)") // Select paths that are not self-links
+      .attr("d", (d) => {
+        if (!d.source || !d.target) return ""; // Should have source and target
+        const sx = d.source.x;
+        const sy = d.source.y;
+        const tx = d.target.x;
+        const ty = d.target.y;
+
+        if (d.isParallelPair) {
+          const dx = tx - sx;
+          const dy = ty - sy;
+          const dr =
+            Math.sqrt(dx * dx + dy * dy) *
+            (1 / mergedOptions.parallelLinkCurvature);
+
+          // Using an arc path.
+          return `M${sx},${sy}A${dr},${dr} 0 0,1 ${tx},${ty}`;
+        } else {
+          // Straight line for non-parallel links
+          return `M${sx},${sy}L${tx},${ty}`;
+        }
+      });
+
+    nodeContainer
+      .selectAll("g.node")
+      .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
     // Update positions for link text
-    const linkText = linkContainer.selectAll("text");
-    linkText.attr("transform", (d) => {
-      const midX = (d.source.x + d.target.x) / 2;
-      const midY = (d.source.y + d.target.y) / 2;
+    linkElements.selectAll("text.link-label").attr("transform", (d) => {
+      if (!d.source || !d.target) return "";
 
-      const angle =
-        Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x) *
-        (180 / Math.PI);
+      if (d.source.id === d.target.id) {
+        // Self-link text
+        const x = d.source.x;
+        const y = d.source.y;
+        const nodeR = mergedOptions.nodeRadius;
+        const loopRadius = nodeR * 1.5;
+        // Position text below the apex of the self-loop
+        return `translate(${x}, ${y + nodeR + loopRadius + mergedOptions.linkFontSize * 0.5 + 5})`;
+      }
 
-      // Rotate text if the angle is more than 90 degrees or less than -90 degrees
-      const adjustedAngle = angle + (Math.abs(angle) > 90 ? 180 : 0);
+      // Non-self-link text
+      const sx = d.source.x;
+      const sy = d.source.y;
+      const tx = d.target.x;
+      const ty = d.target.y;
 
-      return `translate(${midX}, ${midY}) rotate(${adjustedAngle})`;
+      let midX, midY, angle;
+
+      if (d.isParallelPair) {
+        const mx = (sx + tx) / 2;
+        const my = (sy + ty) / 2;
+        const dx = tx - sx;
+        const dy = ty - sy;
+        angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const curvatureOffset =
+          dist * mergedOptions.parallelLinkCurvature * 0.3; // How far to offset text from center
+
+        const normX = dy / dist;
+        const normY = -dx / dist;
+
+        midX = mx + curvatureOffset * normX;
+        midY = my + curvatureOffset * normY;
+      } else {
+        // Straight line
+        midX = (sx + tx) / 2;
+        midY = (sy + ty) / 2;
+        angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
+      }
+
+      // Keep text upright
+      if (Math.abs(angle) > 90) angle += 180;
+
+      // Small vertical offset from the line/arc for text
+      const textVerticalOffset = 0; // Keep for later
+      const offsetX = textVerticalOffset * Math.sin((angle * Math.PI) / 180);
+      const offsetY = textVerticalOffset * -Math.cos((angle * Math.PI) / 180);
+
+      return `translate(${midX + offsetX}, ${midY + offsetY}) rotate(${angle})`;
     });
   }
 
   // Function to center on a given node id, with adjustable pan transition
   function centerOnNode(nodeId, transitionDuration = 1000) {
     let node = simulation.nodes().find((node) => node._id === nodeId);
-    // Get the current zoom transform
+    if (!node) {
+      console.warn("Node not found for centering:", nodeId);
+      return;
+    }
     const currentTransform = d3.zoomTransform(svg.node());
     const k = currentTransform.k;
     // Calculate a new transform so that centerNode.x, centerNode.y are moved to (0,0), center of viewbox
@@ -569,39 +648,33 @@ function ForceGraphConstructor(
 
   function toggleLabels(show, labelClass, frozenState = false) {
     let container;
-
     if (labelClass.includes("link")) {
       container = linkContainer;
     } else {
       container = nodeContainer;
     }
-    if (show) {
-      // Display Labels
-      container.selectAll(labelClass).style("display", "block");
-      if (!frozenState) {
-        options.labelStates[labelClass] = true;
-      }
-    } else {
-      // Hide Labels
-      container.selectAll(labelClass).style("display", "none");
-      if (!frozenState) {
-        options.labelStates[labelClass] = false;
-      }
+    container
+      .selectAll(`${labelClass}`)
+      .style("display", show ? "block" : "none");
+    if (!frozenState) {
+      mergedOptions.labelStates[labelClass] = show;
     }
   }
 
   // Update node font size
   function updateNodeFontSize(newFontSize) {
-    // Update node font size
-    options.nodeFontSize = newFontSize;
-    nodeContainer.selectAll("text").style("font-size", newFontSize + "px");
+    mergedOptions.nodeFontSize = newFontSize;
+    nodeContainer
+      .selectAll("text.node-label, text.collection-label")
+      .style("font-size", newFontSize + "px");
   }
 
   // Update link font size
   function updateLinkFontSize(newFontSize) {
-    // Update link font size
-    options.linkFontSize = newFontSize;
-    linkContainer.selectAll("text").style("font-size", newFontSize + "px");
+    mergedOptions.linkFontSize = newFontSize;
+    linkContainer
+      .selectAll("text.link-label")
+      .style("font-size", newFontSize + "px");
   }
 
   // Process new data and re-render.
@@ -609,7 +682,7 @@ function ForceGraphConstructor(
     newNodes = [],
     newLinks = [],
     collapseNodes = [],
-    removeNode = false, // if true, then collapseNodes themselves are removed
+    removeNode = false,
     centerNodeId = null,
     simulate = false,
   } = {}) {
@@ -619,19 +692,18 @@ function ForceGraphConstructor(
     // If there is new data, toggle on simulation and turn off labels so nodes can reposition
     if (hasNewData || simulate) {
       // Toggle off labels
-      Object.keys(labelStates).forEach((key) => {
+      Object.keys(mergedOptions.labelStates).forEach((key) => {
         toggleLabels(false, key, true);
       });
-
       toggleSimulation(
         true,
         simulation,
         forceNode,
         forceCenter,
         forceLink,
-        processedLinks,
-        nodeForceStrength,
-        centerForceStrength,
+        processedLinks, // Pass current links for forceLink to operate on
+        mergedOptions.nodeForceStrength,
+        mergedOptions.centerForceStrength,
         linkForceStrength,
       );
     }
@@ -643,19 +715,22 @@ function ForceGraphConstructor(
         // Skip nodes that are in collapseNodes or are origin nodes
         if (
           collapseNodes.includes(node.id) ||
-          originNodeIds.includes(node.id)
+          mergedOptions.originNodeIds.includes(node.id)
         ) {
           return;
         }
         // Get all links associated with this node
         const nodeLinks = processedLinks.filter(
-          (link) => link.source.id === node.id || link.target.id === node.id,
+          (link) =>
+            (link.source.id || link.source) === node.id ||
+            (link.target.id || link.target) === node.id,
         );
         // Remove node if all links connect to collapse node
         if (nodeLinks.length > 0) {
           const allLinksToCollapseNodes = nodeLinks.every((link) => {
-            const otherId =
-              link.source.id === node.id ? link.target.id : link.source.id;
+            const sourceId = link.source.id || link.source;
+            const targetId = link.target.id || link.target;
+            const otherId = sourceId === node.id ? targetId : sourceId;
             return collapseNodes.includes(otherId);
           });
           if (allLinksToCollapseNodes) {
@@ -668,23 +743,28 @@ function ForceGraphConstructor(
       processedNodes = processedNodes.filter(
         (node) => !nodesToRemove.includes(node.id),
       );
-      // Also remove any links associated with the nodes we just removed
-      processedLinks = processedLinks.filter(
-        (link) =>
-          !nodesToRemove.includes(link.source.id) &&
-          !nodesToRemove.includes(link.target.id),
-      );
+      // Also remove any links associated with the nodes just removed
+      processedLinks = processedLinks.filter((link) => {
+        const sourceId = link.source.id || link.source;
+        const targetId = link.target.id || link.target;
+        return (
+          !nodesToRemove.includes(sourceId) && !nodesToRemove.includes(targetId)
+        );
+      });
 
       // If removeNode is true, remove the collapseNodes themselves
       if (removeNode) {
         processedNodes = processedNodes.filter(
           (node) => !collapseNodes.includes(node.id),
         );
-        processedLinks = processedLinks.filter(
-          (link) =>
-            !collapseNodes.includes(link.source.id) &&
-            !collapseNodes.includes(link.target.id),
-        );
+        processedLinks = processedLinks.filter((link) => {
+          const sourceId = link.source.id || link.source;
+          const targetId = link.target.id || link.target;
+          return (
+            !collapseNodes.includes(sourceId) &&
+            !collapseNodes.includes(targetId)
+          );
+        });
       }
     }
 
@@ -692,18 +772,17 @@ function ForceGraphConstructor(
     processedNodes = processGraphData(
       processedNodes,
       newNodes,
-      nodeId,
-      label,
-      color,
-      nodeHover,
+      mergedOptions.nodeId,
+      mergedOptions.label,
+      mergedOptions.nodeHover,
     );
     processedLinks = processGraphLinks(
       processedLinks,
       newLinks,
       processedNodes,
-      linkSource,
-      linkTarget,
-      label,
+      mergedOptions.linkSource,
+      mergedOptions.linkTarget,
+      mergedOptions.label,
     );
 
     renderGraph(
@@ -713,43 +792,42 @@ function ForceGraphConstructor(
       d3,
       { nodeContainer, linkContainer },
       {
+        // Pass relevant options from mergedOptions
         forceLink,
-        nodeRadius,
-        nodeFontSize,
-        linkStroke,
-        linkStrokeOpacity,
-        linkStrokeWidth,
-        linkStrokeLinecap,
-        linkFontSize,
-        color,
-        onNodeClick,
-        drag,
-        originNodeIds,
-        collectionsMap,
+        nodeRadius: mergedOptions.nodeRadius,
+        nodeFontSize: mergedOptions.nodeFontSize,
+        linkStroke: mergedOptions.linkStroke,
+        linkStrokeOpacity: mergedOptions.linkStrokeOpacity,
+        linkStrokeWidth: mergedOptions.linkStrokeWidth,
+        linkStrokeLinecap: mergedOptions.linkStrokeLinecap,
+        linkFontSize: mergedOptions.linkFontSize,
+        onNodeClick: mergedOptions.onNodeClick,
+        drag: mergedOptions.drag,
+        originNodeIds: mergedOptions.originNodeIds,
+        collectionsMap: mergedOptions.collectionsMap,
       },
     );
-    // Update legend
     updateLegend(processedNodes);
 
+    const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
     // Wait for simulation to settle then disable it
-    const newThreshold = Math.max(1 / processedNodes.length, 0.002);
     waitForAlpha(simulation, newThreshold).then(() => {
       if (centerNodeId) {
         centerOnNode(centerNodeId);
       }
       toggleSimulation(
-        false,
+        false, // Turn off simulation
         simulation,
         forceNode,
         forceCenter,
         forceLink,
-        processedLinks,
-        nodeForceStrength,
-        centerForceStrength,
+        processedLinks, // Pass links so force can be disassociated if needed
+        mergedOptions.nodeForceStrength,
+        mergedOptions.centerForceStrength,
       );
-      Object.keys(labelStates).forEach((key) => {
-        const value = labelStates[key];
-        toggleLabels(value, key);
+      Object.keys(mergedOptions.labelStates).forEach((key) => {
+        const value = mergedOptions.labelStates[key];
+        toggleLabels(value, key, false); // Unfreeze and restore label state
       });
     });
   }
@@ -759,6 +837,7 @@ function ForceGraphConstructor(
     updateNodeFontSize,
     updateLinkFontSize,
     toggleLabels,
+    centerOnNode,
   });
 }
 
