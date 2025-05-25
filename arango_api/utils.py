@@ -363,7 +363,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
     """
     API endpoint for fetching the *entire* phenotype sunburst structure
     in one query, starting from NCBITaxon roots and traversing the specific path:
-    NCBITaxon -> UBERON (filtered) -> CL -> GS -> MONDO/CHEMBL.
+    NCBITaxon -> UBERON (filtered) -> CL -> GS -> (MONDO or (PR -> CHEMBL)).
     Uses hardcoded collection names and inline traversal options.
 
     NOTE: This ignores the parent_id and always loads the full structure.
@@ -372,9 +372,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
     db = db_phenotypes
     graph_name = GRAPH_NAME_PHENOTYPES
 
-    initial_root_ids = [
-        "NCBITaxon/9606",
-    ]
+    initial_root_ids = ["NCBITaxon/9606"]
     uberon_terms = [
         "UBERON/0002048",  # lung
         "UBERON/0000966",  # retina
@@ -382,13 +380,14 @@ def get_phenotypes_sunburst(ignored_parent_id):
     # Artificial root ID for the response
     graph_root_id = "root_phenotypes_full"
 
-    # Collection names
+    # Collection and Edge Names
     EDGE_NC_UB = "UBERON-NCBITaxon"
     EDGE_UB_CL = "UBERON-CL"
     EDGE_CL_UB = "CL-UBERON"
     EDGE_CL_GS = "CL-GS"
     EDGE_GS_MO = "GS-MONDO"
-    EDGE_GS_CH = "GS-CHEMBL"
+    EDGE_GS_PR = "GS-PR"
+    EDGE_PR_CH = "CHEMBL-PR"
 
     VC_NCBITAXON = "NCBITaxon"
     VC_UBERON = "UBERON"
@@ -396,9 +395,13 @@ def get_phenotypes_sunburst(ignored_parent_id):
     VC_GS = "GS"
     VC_MONDO = "MONDO"
     VC_CHEMBL = "CHEMBL"
+    VC_PR = "PR"
 
     # Construct the edge collection list string for AQL
-    allowed_edges_aql_string = f'["{EDGE_NC_UB}", "{EDGE_UB_CL}", "{EDGE_CL_UB}", "{EDGE_CL_GS}", "{EDGE_GS_MO}", "{EDGE_GS_CH}"]'
+    allowed_edges_aql_string = (
+        f'["{EDGE_NC_UB}", "{EDGE_UB_CL}", "{EDGE_CL_UB}", "{EDGE_CL_GS}", '
+        f'"{EDGE_GS_MO}", "{EDGE_GS_PR}", "{EDGE_PR_CH}"]'
+    )
 
     if db is None:
         return Response(
@@ -408,62 +411,88 @@ def get_phenotypes_sunburst(ignored_parent_id):
 
     # AQL Query with hardcoded names and inline options
     query_full_structure = f"""
-        LET ncbi_level_nodes = (
-            FOR ncbi_id IN @initial_root_ids
-                LET ncbi_node = DOCUMENT(ncbi_id)
-                FILTER ncbi_node != null AND IS_SAME_COLLECTION("{VC_NCBITAXON}", ncbi_node)
+                LET ncbi_level_nodes = (
+                    FOR ncbi_id IN @initial_root_ids
+                        LET ncbi_node = DOCUMENT(ncbi_id)
+                        FILTER ncbi_node != null AND IS_SAME_COLLECTION("{VC_NCBITAXON}", ncbi_node)
 
-                LET uberon_level_nodes = (
-                    FOR uberon_node, edge1 IN 1..1 INBOUND ncbi_node._id GRAPH @graph_name
-                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                        FILTER IS_SAME_COLLECTION("{VC_UBERON}", uberon_node)
-                        FILTER uberon_node._id IN @uberon_terms
-
-                        LET cl_level_nodes = (
-                            FOR cl_node, edge2 IN 1..1 INBOUND uberon_node._id GRAPH @graph_name
+                        LET uberon_level_nodes = (
+                            FOR uberon_node, edge1 IN 1..1 INBOUND ncbi_node._id GRAPH @graph_name
                                 OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                FILTER IS_SAME_COLLECTION("{VC_CL}", cl_node)
+                                FILTER IS_SAME_COLLECTION("{VC_UBERON}", uberon_node)
+                                FILTER uberon_node._id IN @uberon_terms
 
-                                LET gs_level_nodes = (
-                                    FOR gs_node, edge3 IN 1..1 OUTBOUND cl_node._id GRAPH @graph_name
+                                LET cl_level_nodes = (
+                                    FOR cl_node, edge2 IN 1..1 INBOUND uberon_node._id GRAPH @graph_name
                                         OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                        FILTER IS_SAME_COLLECTION("{VC_GS}", gs_node)
+                                        FILTER IS_SAME_COLLECTION("{VC_CL}", cl_node)
 
-                                        LET terminal_nodes = (
-                                            FOR terminal_node, edge4 IN 1..1 OUTBOUND gs_node._id GRAPH @graph_name
+                                        LET gs_level_nodes = (
+                                            FOR gs_node, edge3 IN 1..1 OUTBOUND cl_node._id GRAPH @graph_name
                                                 OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
-                                                FILTER IS_SAME_COLLECTION("{VC_MONDO}", terminal_node) OR IS_SAME_COLLECTION("{VC_CHEMBL}", terminal_node)
+                                                FILTER IS_SAME_COLLECTION("{VC_GS}", gs_node)
 
-                                                // MERGE Terminal node data
-                                                RETURN MERGE(terminal_node, {{ value: 1, _hasChildren: false, children: [] }})
-                                        ) // End Terminal nodes
+                                                LET gs_children_processed = (
+                                                    FOR gs_child_node, edge_gs_to_child IN 1..1 OUTBOUND gs_node._id GRAPH @graph_name
+                                                        OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                                        FILTER IS_SAME_COLLECTION("{VC_MONDO}", gs_child_node) OR 
+                                                               IS_SAME_COLLECTION("{VC_PR}", gs_child_node)
 
-                                        // MERGE GS node data
-                                        RETURN MERGE(gs_node, {{ value: 1, _hasChildren: COUNT(terminal_nodes) > 0, children: terminal_nodes }})
-                                ) // End GS nodes
+                                                        LET processed_node_details = (
+                                                            IS_SAME_COLLECTION("{VC_MONDO}", gs_child_node)
+                                                            ? // gs_child_node is MONDO
+                                                                // MERGE MONDO node data (as leaf in this path)
+                                                                MERGE(gs_child_node, {{ value: 1, _hasChildren: false, children: [] }})
+                                                            : // gs_child_node is PR
+                                                                (
+                                                                    NOOPT((
+                                                                        LET pr_node_intermediate = gs_child_node // This is the PR node
+                                                                        LET chembl_children_of_pr = (
+                                                                            FOR chembl_node, edge_pr_to_chembl IN 1..1 INBOUND pr_node_intermediate._id GRAPH @graph_name
+                                                                                OPTIONS {{ edgeCollections: {allowed_edges_aql_string} }}
+                                                                                FILTER IS_SAME_COLLECTION("{VC_CHEMBL}", chembl_node)
+                                                                                AND IS_SAME_COLLECTION("{EDGE_PR_CH}", edge_pr_to_chembl)
+                                                                            // MERGE CHEMBL node data
+                                                                            RETURN MERGE(chembl_node, {{ value: 1, _hasChildren: false, children: [] }})
+                                                                        ) // End CHEMBL children of PR nodes
+                                                                        // MERGE PR node data
+                                                                        RETURN MERGE(pr_node_intermediate, {{ 
+                                                                            value: 1, 
+                                                                            _hasChildren: COUNT(chembl_children_of_pr) > 0, 
+                                                                            children: chembl_children_of_pr 
+                                                                        }})
+                                                                    ))
+                                                                )[0] // Get the single document from the subquery's result array
+                                                        )
+                                                        RETURN processed_node_details
+                                                ) // End gs_children_processed nodes
 
-                                // MERGE CL node data
-                                RETURN MERGE(cl_node, {{ value: 1, _hasChildren: COUNT(gs_level_nodes) > 0, children: gs_level_nodes }})
-                        ) // End CL nodes
+                                                // MERGE GS node data
+                                                RETURN MERGE(gs_node, {{ value: 1, _hasChildren: COUNT(gs_children_processed) > 0, children: gs_children_processed }})
+                                        ) // End GS nodes
 
-                        // MERGE UBERON node data
-                        RETURN MERGE(uberon_node, {{ value: 1, _hasChildren: COUNT(cl_level_nodes) > 0, children: cl_level_nodes }})
-                ) // End UBERON nodes
+                                        // MERGE CL node data
+                                        RETURN MERGE(cl_node, {{ value: 1, _hasChildren: COUNT(gs_level_nodes) > 0, children: gs_level_nodes }})
+                                ) // End CL nodes
 
-                // MERGE NCBITaxon node data
-                RETURN MERGE(ncbi_node, {{ value: 1, _hasChildren: COUNT(uberon_level_nodes) > 0, children: uberon_level_nodes }})
-        ) // End NCBITaxon nodes
+                                // MERGE UBERON node data
+                                RETURN MERGE(uberon_node, {{ value: 1, _hasChildren: COUNT(cl_level_nodes) > 0, children: cl_level_nodes }})
+                        ) // End UBERON nodes
 
-        // Create the final top-level root object
-        LET root_node = {{
-            _id: @graph_root_id,
-            label: "NLM Cell Knowledge Network", 
-            _hasChildren: COUNT(ncbi_level_nodes) > 0,
-            children: ncbi_level_nodes
-        }}
+                        // MERGE NCBITaxon node data
+                        RETURN MERGE(ncbi_node, {{ value: 1, _hasChildren: COUNT(uberon_level_nodes) > 0, children: uberon_level_nodes }})
+                ) // End NCBITaxon nodes
 
-        RETURN root_node
-    """
+                // Create the final top-level root object
+                LET root_node = {{
+                    _id: @graph_root_id,
+                    label: "NLM Cell Knowledge Network", 
+                    _hasChildren: COUNT(ncbi_level_nodes) > 0,
+                    children: ncbi_level_nodes
+                }}
+
+                RETURN root_node
+            """
 
     bind_vars = {
         "graph_name": graph_name,
@@ -502,6 +531,8 @@ def get_phenotypes_sunburst(ignored_parent_id):
     except Exception as e:
         print(f"ERROR: AQL Execution failed for full structure load: {e}")
         error_content = {"error": "Failed to fetch full phenotype structure."}
+        if hasattr(e, "response") and hasattr(e.response, "text"):
+            error_content["db_error"] = e.response.text
         return Response(
             data=error_content,
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
