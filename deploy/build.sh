@@ -5,10 +5,10 @@ usage() {
     cat << EOF
 
 NAME
-    build - Build the Cell KN MVP
+    build - Build the Cell KN MVP ArangoDB archive
 
 SYNOPSIS
-    build
+    build 
 
 DESCRIPTION
     Build the Cell KN MVP.
@@ -24,7 +24,9 @@ run_ontology=0
 force_ontology=0
 run_results=0
 force_results=0
-while getopts ":oOrRh" opt; do
+make_archive=0
+force_archive=0
+while getopts ":oOrRaAh" opt; do
     case $opt in
         o)
             run_ontology=1
@@ -37,6 +39,12 @@ while getopts ":oOrRh" opt; do
             ;;
         R)
             force_results=1
+            ;;
+        a)
+            make_archive=1
+            ;;
+        A)
+            force_archive=1
             ;;
 	h)
 	    usage
@@ -64,9 +72,10 @@ fi
 
 CELL_KN_ETL_ONTOLOGIES_VERSION="v0.1.1"
 CELL_KN_ETL_RESULTS_VERSION="v0.3.0"
-SPRINGBOK_CELL_KN_MVP_VERSION="v0.3.0"
 
-SPRINGBOK_CELL_KN_MVP_BRANCH="ralatsdc/add-build-and-deploy-scripts"
+# TODO: Use or remove
+# SPRINGBOK_CELL_KN_MVP_VERSION="v0.3.0"
+# SPRINGBOK_CELL_KN_MVP_BRANCH="ralatsdc/add-build-and-deploy-scripts"
 
 set -e
 
@@ -74,7 +83,8 @@ set -e
 
 pushd "../../cell-kn-etl-results/cell-kn-etl-ontologies"
 
-if [ ! -f ".built" ] && [ $run_ontology == 1 ] || [ $force_ontology == 1 ]; then
+if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
+       || [ $force_ontology == 1 ]; then
 
     pushd "src/main/shell"
     ./stop-arangodb.sh
@@ -93,13 +103,19 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] || [ $force_ontology == 1 ]; then
     git checkout $CELL_KN_ETL_ONTOLOGIES_VERSION
 
     mvn clean package -DskipTests
-    CLASSPATH=target/cell-kn-etl-ontologies-1.0.jar
+
+    CLASSPATH="target/cell-kn-etl-ontologies-1.0.jar"
+
     java -cp $CLASSPATH gov.nih.nlm.OntologyGraphBuilder
 
     git checkout $CURRENT_BRANCH
     git stash apply
 
-    echo "Built cell-kn-etl-ontologies $CELL_KN_ETL_ONTOLOGIES_VERSION on $(date)" > ".built"
+    LOG="Built cell-kn-etl-ontologies"
+    LOG="$LOG using $CELL_KN_ETL_ONTOLOGIES_VERSION"
+    LOG="$LOG on $(date)"
+
+    echo $LOG > ".built"
 
 fi
 
@@ -109,7 +125,8 @@ popd
 
 pushd "../../cell-kn-etl-results"
 
-if [ ! -f ".built" ] && [ $run_results == 1 ] || [ $force_results == 1 ]; then
+if [ ! -f ".built" ] && [ $run_results == 1 ] \
+       || [ $force_results == 1 ]; then
 
     CURRENT_BRANCH=$(git branch --show-current)
     git stash
@@ -126,15 +143,17 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] || [ $force_results == 1 ]; then
     python NSForestResultsTupleWriter.py
     python AuthorToClResultsTupleWriter.py
     python ExternalApiResultsTupleWriter.py
-
     # python AnnotationResultsTupleWriter.py
 
     popd
 
     mvn clean package -DskipTests
-    CLASSPATH=target/cell-kn-etl-results-1.0.jar
-    CLASSPATH=$CLASSPATH:cell-kn-etl-ontologies/target/cell-kn-etl-ontologies-1.0.jar
+
+    CLASSPATH="target/cell-kn-etl-results-1.0.jar"
+    CLASSPATH="$CLASSPATH:cell-kn-etl-ontologies/target/cell-kn-etl-ontologies-1.0.jar"
+
     java -cp $CLASSPATH gov.nih.nlm.ResultsGraphBuilder
+    java -cp $CLASSPATH gov.nih.nlm.PhenotypeGraphBuilder
 
     pushd src/main/python
 
@@ -147,9 +166,43 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] || [ $force_results == 1 ]; then
     git checkout $CURRENT_BRANCH
     git stash apply
 
-    echo "Built cell-kn-etl-results $CELL_KN_ETL_RESULTS_VERSION on $(date)" > ".built"
+    LOG="Built cell-kn-etl-results"
+    LOG="$LOG using $CELL_KN_ETL_RESULTS_VERSION"
+    LOG="$LOG on $(date)"
+
+    echo $LOG > ".built"
 
 fi
 
 popd
 
+# Make ArangoDB archive
+
+pushd "../../cell-kn-etl-results/cell-kn-etl-ontologies"
+
+if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
+       || [ $force_archive == 1 ]; then
+
+    pushd data
+
+    ARCHIVE="arangodb"
+    ARCHIVE="$ARCHIVE-$CELL_KN_ETL_ONTOLOGIES_VERSION"
+    ARCHIVE="$ARCHIVE-$CELL_KN_ETL_RESULTS_VERSION"
+    ARCHIVE="$ARCHIVE-$(date "+%Y-%m-%d").tar.gz"
+
+    tar -czvf $ARCHIVE arangodb
+
+    scp $ARCHIVE mvp:~
+
+    LOG="Archived ArangoDB using"
+    LOG="$LOG $CELL_KN_ETL_ONTOLOGIES_VERSION"
+    LOG="$LOG and $CELL_KN_ETL_RESULTS_VERSION"
+    LOG="$LOG on $(date)"
+
+    echo $LOG > ".archived"
+
+    popd
+
+fi
+
+popd
