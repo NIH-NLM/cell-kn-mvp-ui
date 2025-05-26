@@ -105,7 +105,7 @@ if [ "$#" -ne 0 ]; then
 fi
 
 # Build ontology graph, if specified
-pushd "../../cell-kn-etl-results/cell-kn-etl-ontologies"
+pushd "../../../cell-kn-etl-results/cell-kn-etl-ontologies"
 if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
        || [ $force_ontology == 1 ]; then
 
@@ -146,7 +146,7 @@ fi
 popd
 
 # Build results and phenotype graphs, if specified
-pushd "../../cell-kn-etl-results"
+pushd "../../../cell-kn-etl-results"
 if [ ! -f ".built" ] && [ $run_results == 1 ] \
        || [ $force_results == 1 ]; then
 
@@ -200,9 +200,16 @@ fi
 popd
 
 # Make ArangoDB archive, if specified
-pushd "../../cell-kn-etl-results/cell-kn-etl-ontologies"
+pushd "../../../cell-kn-etl-results/cell-kn-etl-ontologies"
 if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
        || [ $force_archive == 1 ]; then
+
+    # Ensure versions are set
+    if [ -z "$CELL_KN_ETL_ONTOLOGIES_VERSION" ] \
+           || [ -z "$CELL_KN_ETL_RESULTS_VERSION" ]; then
+        echo "Options must be used to set versions"
+        exit 1
+    fi
 
     # Make the archive, and copy it to cell-kn-mvp.org
     pushd data
@@ -222,4 +229,3 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
     echo $log_message > ".archived"
 
 fi
-popd
