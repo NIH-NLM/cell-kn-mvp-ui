@@ -70,12 +70,9 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
+# TODO: Set in environment by requiring conf file argument
 CELL_KN_ETL_ONTOLOGIES_VERSION="v0.1.1"
 CELL_KN_ETL_RESULTS_VERSION="v0.3.0"
-
-# TODO: Use or remove
-# SPRINGBOK_CELL_KN_MVP_VERSION="v0.3.0"
-# SPRINGBOK_CELL_KN_MVP_BRANCH="ralatsdc/add-build-and-deploy-scripts"
 
 set -e
 
@@ -98,24 +95,24 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     ./start-arangodb.sh
     popd
 
-    CURRENT_BRANCH=$(git branch --show-current)
+    current_branch=$(git branch --show-current)
     git stash
     git checkout $CELL_KN_ETL_ONTOLOGIES_VERSION
 
     mvn clean package -DskipTests
 
-    CLASSPATH="target/cell-kn-etl-ontologies-1.0.jar"
+    classpath="target/cell-kn-etl-ontologies-1.0.jar"
 
-    java -cp $CLASSPATH gov.nih.nlm.OntologyGraphBuilder
+    java -cp $classpath gov.nih.nlm.OntologyGraphBuilder
 
-    git checkout $CURRENT_BRANCH
+    git checkout $current_branch
     git stash apply
 
-    LOG="Built cell-kn-etl-ontologies"
-    LOG="$LOG using $CELL_KN_ETL_ONTOLOGIES_VERSION"
-    LOG="$LOG on $(date)"
+    log_message="Built cell-kn-etl-ontologies"
+    log_message+=" using $CELL_KN_ETL_ONTOLOGIES_VERSION"
+    log_message+=" on $(date)"
 
-    echo $LOG > ".built"
+    echo $log_message > ".built"
 
 fi
 
@@ -128,7 +125,7 @@ pushd "../../cell-kn-etl-results"
 if [ ! -f ".built" ] && [ $run_results == 1 ] \
        || [ $force_results == 1 ]; then
 
-    CURRENT_BRANCH=$(git branch --show-current)
+    current_branch=$(git branch --show-current)
     git stash
     git checkout $CELL_KN_ETL_RESULTS_VERSION
 
@@ -149,11 +146,11 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
 
     mvn clean package -DskipTests
 
-    CLASSPATH="target/cell-kn-etl-results-1.0.jar"
-    CLASSPATH="$CLASSPATH:cell-kn-etl-ontologies/target/cell-kn-etl-ontologies-1.0.jar"
+    classpath="target/cell-kn-etl-results-1.0.jar"
+    classpath+=":cell-kn-etl-ontologies/target/cell-kn-etl-ontologies-1.0.jar"
 
-    java -cp $CLASSPATH gov.nih.nlm.ResultsGraphBuilder
-    java -cp $CLASSPATH gov.nih.nlm.PhenotypeGraphBuilder
+    java -cp $classpath gov.nih.nlm.ResultsGraphBuilder
+    java -cp $classpath gov.nih.nlm.PhenotypeGraphBuilder
 
     pushd src/main/python
 
@@ -163,14 +160,14 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
 
     deactivate
 
-    git checkout $CURRENT_BRANCH
+    git checkout $current_branch
     git stash apply
 
-    LOG="Built cell-kn-etl-results"
-    LOG="$LOG using $CELL_KN_ETL_RESULTS_VERSION"
-    LOG="$LOG on $(date)"
+    log_message="Built cell-kn-etl-results"
+    log_message+=" using $CELL_KN_ETL_RESULTS_VERSION"
+    log_message+=" on $(date)"
 
-    echo $LOG > ".built"
+    echo $log_message > ".built"
 
 fi
 
@@ -185,21 +182,21 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
 
     pushd data
 
-    ARCHIVE="arangodb"
-    ARCHIVE="$ARCHIVE-$CELL_KN_ETL_ONTOLOGIES_VERSION"
-    ARCHIVE="$ARCHIVE-$CELL_KN_ETL_RESULTS_VERSION"
-    ARCHIVE="$ARCHIVE-$(date "+%Y-%m-%d").tar.gz"
+    archive="arangodb"
+    archive+="-$CELL_KN_ETL_ONTOLOGIES_VERSION"
+    archive+="-$CELL_KN_ETL_RESULTS_VERSION"
+    archive+="-$(date "+%Y-%m-%d").tar.gz"
 
-    tar -czvf $ARCHIVE arangodb
+    tar -czvf $archive arangodb
 
-    scp $ARCHIVE mvp:~
+    scp $archive mvp:~
 
-    LOG="Archived ArangoDB using"
-    LOG="$LOG $CELL_KN_ETL_ONTOLOGIES_VERSION"
-    LOG="$LOG and $CELL_KN_ETL_RESULTS_VERSION"
-    LOG="$LOG on $(date)"
+    log_message="Archived ArangoDB using"
+    log_message+=" $CELL_KN_ETL_ONTOLOGIES_VERSION"
+    log_message+=" and $CELL_KN_ETL_RESULTS_VERSION"
+    log_message+=" on $(date)"
 
-    echo $LOG > ".archived"
+    echo $log_message > ".archived"
 
     popd
 
