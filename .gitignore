@@ -10,8 +10,9 @@ react/node_modules/
 react/coverage/
 
 # Environment
-venv/
+*.DS_Store
 *.env
 .idea
 .venv
 .zshenv
+venv/
