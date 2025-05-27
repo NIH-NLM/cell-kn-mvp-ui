@@ -10,11 +10,14 @@ SYNOPSIS
 
 DESCRIPTION
     Deploy the Cell KN MVP by deploying each configuration in the conf
-    directory. All sites are first disabled, then the configured
-    ArangoDB archive is extracted, renamed, and symbolically linked
-    using the specified port. The site configuration template is
-    updated, then installed into the Apache sites-available directory,
-    and the site enabled.
+    directory. All sites are first disabled, and all ArangoDB
+    instances stopped. The Cell KN MVP repository is cloned into a
+    versioned directory, Python and JavaScript dependencies installed,
+    the Django application migrated, and the React application
+    built. Then the configured ArangoDB archive is extracted, renamed,
+    and symbolically linked using the specified port. The site
+    configuration template is updated, then installed into the Apache
+    sites-available directory, and the site enabled.
 
 OPTIONS 
     -h    Help
@@ -87,6 +90,42 @@ for conf in $confs; do
     # SERVER_ADMIN
     . $conf
 
+    # Clone Cell KN MVP repository into a versioned directory
+    pushd ~
+    mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION
+    rm -rf $mvp_directory
+    git clone git@github.com:spearw/springbok-cell-kn-mvp.git $mvp_directory
+    popd
+
+    # Copy in the environment for the ArangoDB API
+    cp env/.env-$CELL_KN_MVP_VERSION ~/$mvp_directory/arango_api/.env
+
+    # Checkout the specified CELL KN MVP version
+    pushd ~/$mvp_directory
+    git checkout $CELL_KN_MVP_VERSION
+
+    # Install Python dependencies, and migrate
+    python3.13 -m venv .venv
+    . .venv/bin/activate
+    python -m pip install -r requirements.txt
+    rm -f db.sqlite3
+    python manage.py migrate
+
+    # Install JavaScript dependencies, and build
+    pushd react
+    npm install
+    npm run build
+    popd
+    deactivate
+
+    # Update allowed hosts
+    pushd core
+    sed -i \
+	's/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = ["cell-kn-mvp.org", ".cell-kn-mvp.org"]/' \
+	settings.py
+    popd
+    popd
+
     # Extract, rename, and symbolically link the ArangoDB archive
     pushd ~
     arango_db_file=$(echo $ARANGO_DB_FILE | sed s/.tar.gz/-$CELL_KN_MVP_VERSION/)
@@ -106,9 +145,10 @@ for conf in $confs; do
 	sed s/{subdomain}/$SUBDOMAIN/ | \
 	sed s/{server_admin}/$SERVER_ADMIN/ \
 	    > $SITE
-    sed -i \
-	"s%.*ARANGO_DB_HOST.*%ARANGO_DB_HOST=http://127.0.0.1:$ARANGO_DB_PORT%" \
-	~/springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION/arango_api/.env
+    # TODO: Remove
+    # sed -i \
+    # 	"s%.*ARANGO_DB_HOST.*%ARANGO_DB_HOST=http://127.0.0.1:$ARANGO_DB_PORT%" \
+    # 	~/springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION/arango_api/.env
     if [ $IS_DEFAULT == 1 ]; then
 	sed -i "s/.*ServerName.*/    ServerName $DOMAIN/" $SITE
     fi
