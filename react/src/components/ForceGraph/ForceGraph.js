@@ -33,7 +33,7 @@ const ForceGraph = ({
   const [edgeFontSize, setEdgeFontSize] = useState(
     settings["edgeFontSize"] || 8,
   );
-  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 250);
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 5000);
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] || {
       ".collection-label": false,
@@ -767,39 +767,39 @@ const ForceGraph = ({
           </select>
         </div>
 
-        {/* Edge Direction Picker */}
-        <div className="option-group">
-          <label htmlFor="edge-direction-select">
-            Edge traversal direction:
-          </label>
-          <select
-            id="edge-direction-select"
-            value={edgeDirection}
-            onChange={handleEdgeDirectionChange}
-          >
-            {["OUTBOUND", "INBOUND", "ANY"].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/*/!* Edge Direction Picker *!/*/}
+        {/*<div className="option-group">*/}
+        {/*  <label htmlFor="edge-direction-select">*/}
+        {/*    Edge traversal direction:*/}
+        {/*  </label>*/}
+        {/*  <select*/}
+        {/*    id="edge-direction-select"*/}
+        {/*    value={edgeDirection}*/}
+        {/*    onChange={handleEdgeDirectionChange}*/}
+        {/*  >*/}
+        {/*    {["OUTBOUND", "INBOUND", "ANY"].map((value) => (*/}
+        {/*      <option key={value} value={value}>*/}
+        {/*        {value}*/}
+        {/*      </option>*/}
+        {/*    ))}*/}
+        {/*  </select>*/}
+        {/*</div>*/}
 
-        {/* Node Limit Picker */}
-        <div className="option-group">
-          <label htmlFor="node-limit-select">Path Traversal Limit:</label>
-          <select
-            id="node-limit-select"
-            value={nodeLimit}
-            onChange={handleNodeLimitChange}
-          >
-            {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/*/!* Node Limit Picker *!/*/}
+        {/*<div className="option-group">*/}
+        {/*  <label htmlFor="node-limit-select">Path Traversal Limit:</label>*/}
+        {/*  <select*/}
+        {/*    id="node-limit-select"*/}
+        {/*    value={nodeLimit}*/}
+        {/*    onChange={handleNodeLimitChange}*/}
+        {/*  >*/}
+        {/*    {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (*/}
+        {/*      <option key={value} value={value}>*/}
+        {/*        {value}*/}
+        {/*      </option>*/}
+        {/*    ))}*/}
+        {/*  </select>*/}
+        {/*</div>*/}
 
         {/* Graph Operation (Set Operation) */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
@@ -949,9 +949,9 @@ const ForceGraph = ({
 
         {/* Graph Toggle Button */}
         <div className="option-group labels-toggle-container">
-          <label>Toggle DB:</label>
+          <label>Graph Source:</label>
           <div className="labels-toggle">
-            Curated
+            Evidence
             <label className="switch">
               <input
                 type="checkbox"
@@ -961,7 +961,7 @@ const ForceGraph = ({
               />
               <span className="slider round"></span>
             </label>
-            Full
+            Knowledge
           </div>
         </div>
 
@@ -981,9 +981,9 @@ const ForceGraph = ({
         )}
 
         {/* Simulation Restart Button */}
-        <div className="option-group">
+        <div className="option-group checkbox-container">
           <button
-            className="simulation-toggle"
+            className="simulation-toggle background-color-bg"
             onClick={handleSimulationRestart}
           >
             Restart Simulation
