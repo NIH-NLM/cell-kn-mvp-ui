@@ -515,6 +515,10 @@ option {
   margin-bottom: 0.5rem;
 }
 
+.graph-options label {
+  text-align: center;
+}
+
 .toggle-button {
   margin: 20px;
 }

@@ -19,7 +19,7 @@ const ForceGraph = ({
   const chartContainerRef = useRef();
 
   // Init setting states
-  const [depth, setDepth] = useState(settings["defaultDepth"] || 1);
+  const [depth, setDepth] = useState(settings["defaultDepth"] || 3);
   const [edgeDirection, setEdgeDirection] = useState(
     settings["edgeDirection"] || "ANY",
   );
@@ -33,7 +33,7 @@ const ForceGraph = ({
   const [edgeFontSize, setEdgeFontSize] = useState(
     settings["edgeFontSize"] || 8,
   );
-  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 250);
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 5000);
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] || {
       ".collection-label": false,
@@ -62,6 +62,7 @@ const ForceGraph = ({
   const collectionsMap = new Map(collectionsMapData);
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [collapseOnStart, setCollapseOnStart] = useState(true);
 
   const { graphType, setGraphType } = useContext(GraphContext);
 
@@ -216,6 +217,38 @@ const ForceGraph = ({
     };
     updateGraph();
   }, [graphData]);
+
+  // Effect for collapsing nodes after graph is ready and if collapseOnStart is true
+  useEffect(() => {
+    if (
+      collapseOnStart &&
+      graph &&
+      typeof graph.updateGraph === "function" &&
+      graphData &&
+      graphData.nodes &&
+      graphData.nodes.length > 0
+    ) {
+      const nodeIds = graphData.nodes
+        // Ensure node and _id exist and avoid collapsing origin node on single origin graphs for depth 1
+        .filter(
+          (node) =>
+            node &&
+            typeof node._id !== "undefined" &&
+            ((originNodeIds.length == 1 && !originNodeIds.includes(node._id)) || depth !== 1 ||
+              originNodeIds.length > 1),
+        )
+        .map((node) => node._id);
+
+      const nodesToCollapse = new Set(nodeIds);
+
+      if (nodesToCollapse.size > 0) {
+        graph.updateGraph({
+          collapseNodes: [...nodesToCollapse], // Convert set to array to pass into updateGraph
+        });
+      }
+      setIsLoading(false); // Stop loading after graph is initialized and (potentially) collapsed
+    }
+  }, [graph]);
 
   useEffect(() => {
     const chartContainer = d3.select(chartContainerRef.current);
@@ -734,39 +767,39 @@ const ForceGraph = ({
           </select>
         </div>
 
-        {/* Edge Direction Picker */}
-        <div className="option-group">
-          <label htmlFor="edge-direction-select">
-            Edge traversal direction:
-          </label>
-          <select
-            id="edge-direction-select"
-            value={edgeDirection}
-            onChange={handleEdgeDirectionChange}
-          >
-            {["OUTBOUND", "INBOUND", "ANY"].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/*/!* Edge Direction Picker *!/*/}
+        {/*<div className="option-group">*/}
+        {/*  <label htmlFor="edge-direction-select">*/}
+        {/*    Edge traversal direction:*/}
+        {/*  </label>*/}
+        {/*  <select*/}
+        {/*    id="edge-direction-select"*/}
+        {/*    value={edgeDirection}*/}
+        {/*    onChange={handleEdgeDirectionChange}*/}
+        {/*  >*/}
+        {/*    {["OUTBOUND", "INBOUND", "ANY"].map((value) => (*/}
+        {/*      <option key={value} value={value}>*/}
+        {/*        {value}*/}
+        {/*      </option>*/}
+        {/*    ))}*/}
+        {/*  </select>*/}
+        {/*</div>*/}
 
-        {/* Node Limit Picker */}
-        <div className="option-group">
-          <label htmlFor="node-limit-select">Path Traversal Limit:</label>
-          <select
-            id="node-limit-select"
-            value={nodeLimit}
-            onChange={handleNodeLimitChange}
-          >
-            {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/*/!* Node Limit Picker *!/*/}
+        {/*<div className="option-group">*/}
+        {/*  <label htmlFor="node-limit-select">Path Traversal Limit:</label>*/}
+        {/*  <select*/}
+        {/*    id="node-limit-select"*/}
+        {/*    value={nodeLimit}*/}
+        {/*    onChange={handleNodeLimitChange}*/}
+        {/*  >*/}
+        {/*    {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (*/}
+        {/*      <option key={value} value={value}>*/}
+        {/*        {value}*/}
+        {/*      </option>*/}
+        {/*    ))}*/}
+        {/*  </select>*/}
+        {/*</div>*/}
 
         {/* Graph Operation (Set Operation) */}
         {graphNodeIds && graphNodeIds.length >= 2 && (
@@ -916,9 +949,9 @@ const ForceGraph = ({
 
         {/* Graph Toggle Button */}
         <div className="option-group labels-toggle-container">
-          <label>Toggle DB:</label>
+          <label>Graph Source:</label>
           <div className="labels-toggle">
-            Curated
+            Evidence
             <label className="switch">
               <input
                 type="checkbox"
@@ -928,7 +961,7 @@ const ForceGraph = ({
               />
               <span className="slider round"></span>
             </label>
-            Full
+            Knowledge
           </div>
         </div>
 
@@ -948,9 +981,9 @@ const ForceGraph = ({
         )}
 
         {/* Simulation Restart Button */}
-        <div className="option-group">
+        <div className="option-group checkbox-container">
           <button
-            className="simulation-toggle"
+            className="simulation-toggle background-color-bg"
             onClick={handleSimulationRestart}
           >
             Restart Simulation
