@@ -1,5 +1,4 @@
 #!/opt/local/bin/bash
-
 # Print usage
 usage() {
     cat << EOF
@@ -33,6 +32,10 @@ OPTIONS
 
     -R    CELL_KN_ETL_RESULTS_VERSION
           Force -r
+
+    -a    Make ArangoDB archive, and copy it to cell-kn-mvp.org
+
+    -A    Force -a
 
     -h    Help
 
