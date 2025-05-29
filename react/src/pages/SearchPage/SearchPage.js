@@ -1,5 +1,5 @@
 import SearchBar from "../../components/SearchBar/SearchBar";
-import { useContext, useState } from "react";
+import { useContext, useState, useRef, useEffect } from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
 
@@ -7,9 +7,18 @@ const SearchPage = () => {
   const [nodeIds, setNodeIds] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const prunedCollections = useContext(PrunedCollections);
+  const graphDisplayAreaRef = useRef(null);
+  const [graphJustGenerated, setGraphJustGenerated] = useState(false);
 
   const generateGraph = (items) => {
-    setNodeIds(items.map((item) => item._id));
+    const newNodeIds = items.map((item) => item._id);
+    setNodeIds(newNodeIds);
+    if (items && items.length > 0) {
+      setGraphJustGenerated(true);
+    } else {
+      // If generating with no items do not try to scroll
+      setGraphJustGenerated(false);
+    }
   };
 
   const addSelectedItem = (item) => {
@@ -22,10 +31,26 @@ const SearchPage = () => {
     setSelectedItems((prev) => prev.filter((d) => d._id !== item._id));
   };
 
+  // useEffect to handle scrolling
+  useEffect(() => {
+    // Scroll if the flag is true, nodeIds are present, and the ref is available
+    if (
+      graphJustGenerated &&
+      nodeIds.length > 0 &&
+      graphDisplayAreaRef.current
+    ) {
+      graphDisplayAreaRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      setGraphJustGenerated(false);
+    }
+  }, [graphJustGenerated, nodeIds]);
+
   return (
     <div className="search-page-layout">
       <div className="main-search-box">
-        <h1 className="search-page-title">Search the Knowledge Network</h1>
+        <h1 className="search-page-title">Knowledge Exploration</h1>
         <div className="sunburst-search-container">
           <SearchBar
             generateGraph={() => generateGraph(selectedItems)}
@@ -37,6 +62,7 @@ const SearchPage = () => {
       </div>
 
       <div className="about-section-container">
+        {/* ... about content ... */}
         <h2 className="about-title">About This Search</h2>
         <p>
           This tool enables the exploration of interconnected biological data.
@@ -50,10 +76,8 @@ const SearchPage = () => {
         </p>
       </div>
 
-      {nodeIds.length > 0 && ( // Changed from Object.keys(nodeIds).length
-        <div className="graph-display-area">
-          {" "}
-          {/* Wrapper for the graph */}
+      {nodeIds.length > 0 && (
+        <div className="graph-display-area" ref={graphDisplayAreaRef}>
           <ForceGraph
             nodeIds={nodeIds}
             settings={{
