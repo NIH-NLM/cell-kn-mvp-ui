@@ -21,9 +21,11 @@ const Header = () => {
         <Link to="/">
           <h4 className={activeNav === "/" ? "active-nav" : ""}>Explore</h4>
         </Link>
-        <Link to="/browse">
-          <h4 className={activeNav.startsWith("/browse") ? "active-nav" : ""}>
-            Browse
+        <Link to="/collections">
+          <h4
+            className={activeNav.startsWith("/collections") ? "active-nav" : ""}
+          >
+            Collections
           </h4>
         </Link>
         <Link to="/schema">

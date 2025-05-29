@@ -1,6 +1,6 @@
-import BrowsePage from "./BrowsePage";
+import SearchPage from "./SearchPage";
 
-describe("BrowsePage", () => {
+describe("SearchPage", () => {
   it("Should have tests", () => {
     // TODO: Finish testing
   });

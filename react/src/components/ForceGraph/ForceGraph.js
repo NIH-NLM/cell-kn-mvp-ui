@@ -234,7 +234,8 @@ const ForceGraph = ({
           (node) =>
             node &&
             typeof node._id !== "undefined" &&
-            ((originNodeIds.length == 1 && !originNodeIds.includes(node._id)) || depth !== 1 ||
+            ((originNodeIds.length == 1 && !originNodeIds.includes(node._id)) ||
+              depth !== 1 ||
               originNodeIds.length > 1),
         )
         .map((node) => node._id);
