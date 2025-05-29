@@ -1,10 +1,15 @@
 import BrowseBox from "../../components/BrowseBox/BrowseBox";
-import { useContext } from "react";
-import { GraphContext } from "../../components/Contexts/Contexts";
 
-const CollectionsPage = () => {
-  const graph = useContext(GraphContext);
-  return <BrowseBox graph={graph} />;
+const CollectionsPage = (currentCollection) => {
+  return (
+    <div className="collections-page-layout">
+      <div className="collections-content-box">
+        <div className="browsebox-container">
+          <BrowseBox currentCollection={currentCollection} />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default CollectionsPage;
