@@ -5,6 +5,9 @@
   "homepage": ".",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
     "d3": "^7.9.0",
     "jspdf": "^2.5.2",
     "npm-watch": "^0.13.0",

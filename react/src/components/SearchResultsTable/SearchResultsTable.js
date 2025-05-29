@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { getLabel } from "../Utils/Utils";
 import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 /**
  * SearchResultsTable component.
@@ -111,45 +113,54 @@ const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
           : "var(--color-text, #212121)";
 
         return (
-          <div key={item._id || index} className="result-item-row">
-            {/* Link to the detailed view of the item. */}
-            <Link
-              to={`/collections/${item._id}`} // Assumes _id is suitable for URL.
-              target="_blank"
-              className="item-main-link"
-            >
-              {getLabel(item)}
-            </Link>
-            {/* Link to the overview page for the item's collection. */}
-            <Link
-              to={`/collections/${collectionKey}`} // Link using the derived collectionKey.
-              target="_blank"
-              className="item-collection-tag"
-              style={{
-                backgroundColor: tagBackgroundColor,
-                color: tagTextColor,
-                textDecoration: "none", // Remove default link underline for tag appearance.
-              }}
-              onClick={(e) => e.stopPropagation()} // Prevent event bubbling if row is clickable.
-            >
-              {collectionDisplayName}
-            </Link>
-            {/* Button to add the item to a selection. */}
-            <button
-              type="button"
-              className="item-add-button"
-              onClick={() => handleSelectItem(item)}
-              aria-label={`Add ${getLabel(item)} to selection`}
-            >
-              +
-            </button>
+          // Main clickable row to select the item
+          <div
+            key={item._id || index}
+            className="result-item-row selectable"
+            onClick={() => handleSelectItem(item)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter" || e.key === " ") handleSelectItem(item);
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`Select ${getLabel(item)}`}
+          >
+            <div className="item-label-area">{getLabel(item)}</div>
+
+            <div className="item-meta-actions">
+              {/* Link to the overview page for the item's collection. */}
+              <Link
+                to={`/collections/${collectionKey}`}
+                target="_blank"
+                className="item-collection-tag"
+                style={{
+                  backgroundColor: tagBackgroundColor,
+                  color: tagTextColor,
+                  textDecoration: "none",
+                }}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`View collection ${collectionDisplayName}`}
+              >
+                {collectionDisplayName}
+              </Link>
+
+              <Link
+                to={`/collections/${item._id}`}
+                target="_blank"
+                className="item-action-button goto-button"
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`View details for ${getLabel(item)}`}
+              >
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Link>
+            </div>
           </div>
         );
       })}
-      {/* Display a "Loading more..." message if more items can be loaded. */}
-      {searchResults && displayLimit < searchResults.length && (
-        <div className="loading-more-results">Loading more...</div>
-      )}
+      {/*/!* Display a "Loading more..." message if more items can be loaded. *!/*/}
+      {/*{searchResults && displayLimit < searchResults.length && (*/}
+      {/*  <div className="loading-more-results">Loading more...</div>*/}
+      {/*)}*/}
     </div>
   );
 };

@@ -545,6 +545,10 @@ tr:nth-of-type(odd) {
   gap: 10px;
 }
 
+.result-item-row.selectable {
+  cursor: pointer;
+}
+
 .result-item-row:last-child {
   border-bottom: none;
 }
@@ -572,12 +576,15 @@ tr:nth-of-type(odd) {
 /* Tag displaying the collection name */
 .item-collection-tag {
   font-size: 0.8em;
-  color: var(--color-gray);
-  background-color: var(--color-light);
   padding: 3px 8px;
   border-radius: 4px;
   white-space: nowrap;
-  flex-shrink: 0;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.item-collection-tag:hover {
+  filter: brightness(90%);
 }
 
 /* Button for adding the item */
@@ -687,6 +694,41 @@ tr:nth-of-type(odd) {
   gap: 8px;
   justify-content: flex-end;
   align-items: center;
+}
+
+.item-action-button {
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--color-gray);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.item-action-button:hover {
+  background-color: var(--color-light);
+  border-color: var(--color-border);
+  color: var(--color-focus);
+}
+
+.item-action-button:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.item-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Common style for action buttons  */
