@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import { getLabel, truncateString } from "../Utils/Utils";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 
 const TreeConstructor = ({ data }) => {
   const svgRef = useRef(null);
@@ -16,11 +18,13 @@ const TreeConstructor = ({ data }) => {
     const marginTop = 10;
     const marginRight = 10;
     const marginBottom = 10;
-    const marginLeft = 40;
+    const marginLeft = 120;
 
     const root = d3.hierarchy(data);
     const dx = 10;
     const dy = (width - marginRight - marginLeft) / (1 + root.height);
+
+    const maxLabelLength = 12;
 
     const tree = d3.tree().nodeSize([dx, dy]);
     const diagonal = d3
@@ -94,7 +98,17 @@ const TreeConstructor = ({ data }) => {
       nodeEnter
         .append("circle")
         .attr("r", 2.5)
-        .attr("fill", (d) => (d._children ? "#555" : "#999"))
+        .attr("fill", (d) => {
+          if (d.data && d.data._id) {
+            // Ensure _id exists in the original data
+            const parts = d.data._id.split("/");
+            if (parts.length > 0) {
+              const collectionName = parts[0];
+              return getColorForCollection(collectionName);
+            }
+          }
+          return getColorForCollection(null);
+        })
         .attr("stroke-width", 10); // Stroke for circle itself is not set, this is more like padding
 
       nodeEnter
@@ -102,11 +116,16 @@ const TreeConstructor = ({ data }) => {
         .attr("dy", "0.31em")
         .attr("x", (d) => (d._children ? -6 : 6))
         .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-        .text((d) => d.data.name)
+        .text((d) => {
+          const fullName = getLabel(d.data) || d.data._key || "Unknown";
+          return truncateString(fullName, maxLabelLength);
+        })
         .attr("stroke-linejoin", "round")
         .attr("stroke-width", 3)
         .attr("stroke", "white")
-        .attr("paint-order", "stroke");
+        .attr("paint-order", "stroke")
+        .append("title")
+        .text((d) => getLabel(d.data) || d.data._key || "Unknown");
 
       node
         .merge(nodeEnter)
@@ -155,8 +174,11 @@ const TreeConstructor = ({ data }) => {
     root.descendants().forEach((d, i) => {
       d.id = i;
       d._children = d.children;
-      // Original logic to collapse some nodes initially
-      if (d.depth && d.data.name && d.data.name.length !== 7) d.children = null;
+
+      // Collapse all nodes that have children by default
+      if (d.children) {
+        d.children = null;
+      }
     });
 
     update(null, root);

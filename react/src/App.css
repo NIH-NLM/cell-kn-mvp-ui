@@ -1830,3 +1830,8 @@ button.active {
   display: block;
   border-radius: 5px;
 }
+
+.tree-constructor-container {
+  min-height: 60vh;
+  display: flex;
+}

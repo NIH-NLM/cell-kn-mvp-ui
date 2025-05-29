@@ -51,7 +51,8 @@ const Tree = () => {
         );
       }
 
-      setTreeData(data);
+      // Use Homo sapiens as root instead of NLM root node
+      setTreeData(data["children"][0]);
     } catch (fetchError) {
       console.error("Fetch/Process Error for Tree Data:", fetchError);
       setError(fetchError.message);
@@ -68,7 +69,7 @@ const Tree = () => {
   }, [fetchTreeData]);
 
   if (isLoading) {
-    return <p>Loading tree data...</p>;
+    return <p>Loading...</p>;
   }
 
   if (error) {
@@ -86,7 +87,6 @@ const Tree = () => {
 
   return (
     <div className="tree-container">
-      <h1>Interactive D3 Tree in React</h1>
       <TreeConstructor data={treeData} />
     </div>
   );
