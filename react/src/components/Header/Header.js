@@ -15,7 +15,7 @@ const Header = () => {
     <div>
       <div className="app-header background-color-main">
         <h1>NLM Cell Knowledge Network</h1>
-        <div>Login</div>
+        {/*<div>Login</div>*/}
       </div>
       <div className="navbar background-color-light-bg">
         <Link to="/">
