@@ -12,7 +12,7 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import { ActiveNavProvider } from "./components/ActiveNavContext/ActiveNavContext";
 import Footer from "./components/Footer/Footer";
 import { GraphProvider } from "./components/Contexts/Contexts";
-import SunburstPage from "./pages/ExplorationPage/SunburstPage";
+import SunburstPage from "./pages/SunburstPage/SunburstPage";
 
 function App() {
   return (
