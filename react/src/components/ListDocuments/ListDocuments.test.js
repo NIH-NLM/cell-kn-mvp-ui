@@ -17,7 +17,7 @@ describe("ListDocuments Component", () => {
 
     // Check if the link has the correct href based on _id
     const linkElement = screen.getByRole("link");
-    expect(linkElement).toHaveAttribute("href", "/browse/CL/123");
+    expect(linkElement).toHaveAttribute("href", "/collections/CL/123");
   });
 
   it("renders an array label correctly", () => {
@@ -33,6 +33,6 @@ describe("ListDocuments Component", () => {
     expect(screen.getByText("Label1 | Label2")).toBeInTheDocument();
 
     const linkElement = screen.getByRole("link");
-    expect(linkElement).toHaveAttribute("href", "/browse/CL/123");
+    expect(linkElement).toHaveAttribute("href", "/collections/CL/123");
   });
 });

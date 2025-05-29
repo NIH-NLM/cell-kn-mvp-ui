@@ -19,7 +19,12 @@ const Header = () => {
       </div>
       <div className="navbar background-color-light-bg">
         <Link to="/">
-          <h4 className={activeNav === "/" ? "active-nav" : ""}>Explore</h4>
+          <h4 className={activeNav === "/" ? "active-nav" : ""}>Search</h4>
+        </Link>
+        <Link to="/sunburst">
+          <h4 className={activeNav === "/sunburst" ? "active-nav" : ""}>
+            Browse
+          </h4>
         </Link>
         <Link to="/collections">
           <h4

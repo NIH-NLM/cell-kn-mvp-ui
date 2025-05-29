@@ -1,114 +1,108 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { getLabel } from "../Utils/Utils";
+import {getColorForCollection} from "../../services/ColorServices/ColorServices";
 
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
-  const collectionsMap = new Map(collectionsMapData);
-  // Get only the headers that have results
-  const filteredHeaders = Object.keys(searchResults).filter(
-    (key) => searchResults[key].length > 0,
-  );
+  const collectionsMap = useMemo(() => new Map(collectionsMapData), []);
+  const expandAmount = 20;
 
-  // State for which headers are expanded
-  const [expandedHeaders, setExpandedHeaders] = useState({});
-  // State for how many items are currently shown per header
-  const [displayLimits, setDisplayLimits] = useState({});
+  const flatResults = useMemo(() => {
+    if (!searchResults || Object.keys(searchResults).length === 0) {
+      return [];
+    }
+    return Object.entries(searchResults).flatMap(([header, items]) =>
+      items.map((item) => ({
+        ...item,
+        collectionKey: header, // The 'header' is the collectionId
+        collectionDisplayName:
+          collectionsMap.get(header)?.display_name || header,
+      })),
+    );
+  }, [searchResults, collectionsMap]);
 
-  const expandAmount = 50;
+  const [displayLimit, setDisplayLimit] = useState(expandAmount);
 
-  // Toggle header expansion; when expanding, set initial display limit to expandAmount or the total if less.
-  const toggleExpand = (header) => {
-    setExpandedHeaders((prev) => {
-      const newExpanded = { ...prev, [header]: !prev[header] };
-      // When expanding, initialize the display limit
-      if (newExpanded[header] && !displayLimits[header]) {
-        setDisplayLimits((prevLimits) => ({
-          ...prevLimits,
-          [header]:
-            searchResults[header].length > expandAmount
-              ? expandAmount
-              : searchResults[header].length,
-        }));
-      }
-      return newExpanded;
-    });
-  };
+  useEffect(() => {
+    setDisplayLimit(expandAmount);
+  }, [searchResults]);
 
-  // Function to check if the user scrolled to the bottom
-  const handleScroll = (e, header) => {
+  const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
-    const threshold = 5;
-    // User scrolled to bottom of list
+    const threshold = 10;
     if (scrollHeight - scrollTop - clientHeight < threshold) {
-      // Increase the limit by expandAmount, up to the total number of results
-      const currentLimit = displayLimits[header] || expandAmount;
-      const newLimit = Math.min(
-        currentLimit + expandAmount,
-        searchResults[header].length,
-      );
-      if (newLimit > currentLimit) {
-        setDisplayLimits((prevLimits) => ({
-          ...prevLimits,
-          [header]: newLimit,
-        }));
+      if (displayLimit < flatResults.length) {
+        const newLimit = Math.min(
+          displayLimit + expandAmount,
+          flatResults.length,
+        );
+        setDisplayLimit(newLimit);
       }
     }
   };
 
+  if (flatResults.length === 0) {
+    return <div className="no-results-message">No results found.</div>;
+  }
+
   return (
-    <div className="search-results-wrapper">
-      {filteredHeaders.map((header) => (
-        <div className="result-list-column" key={header}>
-          <h3
-            className="result-list-header"
-            onClick={() => toggleExpand(header)}
-          >
-            <span className="arrow-icon">
-              {expandedHeaders[header] ? "▼ " : "▶ "}
-            </span>
-            <span data-testid={`header-${header}`}>
-              {collectionsMap.get(header) &&
-              collectionsMap.get(header)["display_name"]
-                ? collectionsMap.get(header)["display_name"]
-                : header}
-            </span>
-            <span className="item-count">
-              {" "}
-              ({searchResults[header].length})
-            </span>
-          </h3>
-          {expandedHeaders[header] && (
-            <div
-              className="result-list"
-              onScroll={(e) => handleScroll(e, header)}
+    <div className="unified-search-results-list" onScroll={handleScroll}>
+      {flatResults.slice(0, displayLimit).map((item, index) => {
+        // Get the color for the current item's collection
+        const tagBackgroundColor = getColorForCollection(item.collectionKey);
+
+        // Determine text color for contrast
+        const isDarkBackground = (color) => {
+          if (!color) return false;
+          // parse the color  and calculate luminance.
+          const hex = color.replace("#", "");
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          return (r * 0.299 + g * 0.587 + b * 0.114) < 140;
+        };
+
+        const tagTextColor = isDarkBackground(tagBackgroundColor)
+          ? "var(--color-text-on-dark, #ffffff)"
+          : "var(--color-text, #212121)";
+
+return (
+          <div key={item._id || index} className="result-item-row">
+            <Link
+              to={`/collections/${item._id}`}
+              target="_blank"
+              className="item-main-link"
             >
-              {searchResults[header]
-                .slice(0, displayLimits[header] || expandAmount)
-                .map((item, index) => (
-                  <div key={index} className="result-list-item">
-                    <Link
-                      to={`/browse/${item._id}`}
-                      target="_blank"
-                      className="item-link"
-                    >
-                      {getLabel(item)}
-                    </Link>
-                    <span
-                      className="plus-icon"
-                      onClick={(e) => {
-                        e.stopPropagation(); // prevent the Link from triggering
-                        handleSelectItem(item);
-                      }}
-                    >
-                      +
-                    </span>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      ))}
+              {getLabel(item)}
+            </Link>
+            <Link
+              to={`/collections/${item.collectionKey}`}
+              target="_blank" // Open in new tab
+              className="item-collection-tag"
+              style={{
+                backgroundColor: tagBackgroundColor,
+                color: tagTextColor,
+                textDecoration: 'none',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {item.collectionDisplayName}
+            </Link>
+            <button
+              type="button"
+              className="item-add-button"
+              onClick={() => handleSelectItem(item)}
+              aria-label={`Add ${getLabel(item)} to selection`}
+            >
+              +
+            </button>
+          </div>
+        );
+      })}
+      {displayLimit < flatResults.length && (
+        <div className="loading-more-results">Loading more...</div>
+      )}
     </div>
   );
 };

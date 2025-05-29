@@ -384,7 +384,7 @@ const Sunburst = ({ addSelectedItem }) => {
           <a
             className="popup-button"
             data-testid="popup-button-goto"
-            href={`/#/browse/${clickedItem._id}`}
+            href={`/#/collections/${clickedItem._id}`}
             target="_blank" // Open in new tab
             rel="noopener noreferrer"
             onClick={handlePopupClose}

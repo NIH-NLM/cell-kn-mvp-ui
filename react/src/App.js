@@ -7,11 +7,12 @@ import DocumentListPage from "./pages/DocumentListPage/DocumentListPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import AQLQueryPage from "./pages/AQLQueryPage/AQLQueryPage";
-import ExplorationPage from "./pages/ExplorationPage/ExplorationPage";
 import SchemaPage from "./pages/SchemaPage/SchemaPage";
+import SearchPage from "./pages/SearchPage/SearchPage";
 import { ActiveNavProvider } from "./components/ActiveNavContext/ActiveNavContext";
 import Footer from "./components/Footer/Footer";
 import { GraphProvider } from "./components/Contexts/Contexts";
+import SunburstPage from "./pages/ExplorationPage/SunburstPage";
 
 function App() {
   return (
@@ -33,7 +34,8 @@ function App() {
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/aql" element={<AQLQueryPage />} />
                 <Route path="/schema" element={<SchemaPage />} />
-                <Route path="/" element={<ExplorationPage />} />
+                <Route path="/sunburst" element={<SunburstPage />} />
+                <Route path="/" element={<SearchPage />} />
               </Routes>
             </div>
             <Footer />

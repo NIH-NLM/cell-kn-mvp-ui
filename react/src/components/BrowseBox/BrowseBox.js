@@ -27,7 +27,7 @@ const BrowseBox = ({ currentCollection }) => {
           {collections.map((coll) => (
             <li key={coll}>
               <Link
-                to={`/browse/${coll}`}
+                to={`/collections/${coll}`}
                 className={coll === currentCollection ? "active" : ""}
                 title={
                   collectionsMap.has(coll)

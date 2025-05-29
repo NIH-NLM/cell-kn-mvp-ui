@@ -1051,7 +1051,7 @@ const ForceGraph = ({
       >
         <a
           className="popup-button"
-          href={`/#/browse/${clickedNodeId}`}
+          href={`/#/collections/${clickedNodeId}`}
           target="_blank"
           rel="noopener noreferrer"
         >

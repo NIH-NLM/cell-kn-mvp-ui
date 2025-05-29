@@ -51,15 +51,15 @@ describe("BrowseBox", () => {
     await waitFor(() => {
       expect(screen.getByText(/Collection 1/).closest("a")).toHaveAttribute(
         "href",
-        "/browse/Collection 1",
+        "/collections/Collection 1",
       );
       expect(screen.getByText(/Collection 2/).closest("a")).toHaveAttribute(
         "href",
-        "/browse/Collection 2",
+        "/collections/Collection 2",
       );
       expect(screen.getByText(/Collection 3/).closest("a")).toHaveAttribute(
         "href",
-        "/browse/Collection 3",
+        "/collections/Collection 3",
       );
     });
   });
