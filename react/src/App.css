@@ -489,7 +489,6 @@ tr:nth-of-type(odd) {
   font-weight: 600;
 }
 
-
 /* About Section Styling */
 .about-section-container {
   background-color: var(--color-white);
@@ -528,7 +527,7 @@ tr:nth-of-type(odd) {
   background-color: var(--color-white);
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* Container for the unified list of search results */
@@ -671,7 +670,6 @@ tr:nth-of-type(odd) {
   text-align: right;
 }
 
-
 /* External source link styling */
 .external-source-link {
   color: var(--color-focus);
@@ -715,7 +713,7 @@ tr:nth-of-type(odd) {
 
 .remove-button:hover {
   filter: brightness(90%);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .view-button {
@@ -727,9 +725,8 @@ tr:nth-of-type(odd) {
 .view-button:hover {
   background-color: var(--color-border);
   border-color: var(--color-gray);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-
 
 /* Generate Graph button area and button */
 .generate-graph-action-area {
@@ -746,12 +743,14 @@ tr:nth-of-type(odd) {
   font-weight: 600;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .primary-action-button.generate-graph-button:hover {
   filter: brightness(110%);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .result-list-header {

@@ -13,7 +13,7 @@ const SearchPage = () => {
   };
 
   const addSelectedItem = (item) => {
-    if (!selectedItems.find(selected => selected._id === item._id)) {
+    if (!selectedItems.find((selected) => selected._id === item._id)) {
       setSelectedItems((prev) => [...prev, item]);
     }
   };
@@ -40,18 +40,20 @@ const SearchPage = () => {
         <h2 className="about-title">About This Search</h2>
         <p>
           This tool enables the exploration of interconnected biological data.
-          Use the search bar above to find genes, cells, diseases, chemical compounds,
-          and other relevant entities.
+          Use the search bar above to find genes, cells, diseases, chemical
+          compounds, and other relevant entities.
         </p>
         <p>
-          Select items from your search results to build a list. Once you have your
-          items of interest, you can generate a network graph to visualize their
-          relationships and discover new connections.
+          Select items from your search results to build a list. Once you have
+          your items of interest, you can generate a network graph to visualize
+          their relationships and discover new connections.
         </p>
       </div>
 
       {nodeIds.length > 0 && ( // Changed from Object.keys(nodeIds).length
-        <div className="graph-display-area"> {/* Wrapper for the graph */}
+        <div className="graph-display-area">
+          {" "}
+          {/* Wrapper for the graph */}
           <ForceGraph
             nodeIds={nodeIds}
             settings={{

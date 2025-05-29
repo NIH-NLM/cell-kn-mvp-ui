@@ -19,8 +19,11 @@ const SelectedItemsTable = ({
     if (!url) return "";
     try {
       const parsedUrl = new URL(url);
-      let displayUrl = parsedUrl.hostname + (parsedUrl.pathname === '/' ? '' : parsedUrl.pathname);
-      if (displayUrl.length > 40) { // Truncate if too long
+      let displayUrl =
+        parsedUrl.hostname +
+        (parsedUrl.pathname === "/" ? "" : parsedUrl.pathname);
+      if (displayUrl.length > 40) {
+        // Truncate if too long
         return displayUrl.substring(0, 37) + "...";
       }
       return displayUrl;
@@ -28,7 +31,6 @@ const SelectedItemsTable = ({
       return url.length > 40 ? url.substring(0, 37) + "..." : url;
     }
   };
-
 
   return (
     selectedItems.length > 0 && (

@@ -302,25 +302,7 @@ def search_by_term(search_term, db):
                     RETURN doc
             ) 
 
-
-            // --- Grouping and Extraction Logic ---
-            LET groupedResults = (
-                FOR doc IN sortedDocs // Iterate over the correctly sorted results
-                LET coll = SPLIT(doc._id, "/")[0]
-
-                // Collect, using KEEP doc explicitly
-                COLLECT collectionName = coll INTO group KEEP doc
-
-                LET extractedDocs = (
-                    FOR item IN group
-                    RETURN item.doc
-                )
-
-                RETURN {{ [collectionName]: extractedDocs }}
-            )
-
-            // Merge the Grouped Results
-            RETURN MERGE(groupedResults)
+            RETURN sortedDocs
         """
 
     bind_vars = {"search_term": search_term}

@@ -2,93 +2,139 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import { getLabel } from "../Utils/Utils";
-import {getColorForCollection} from "../../services/ColorServices/ColorServices";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
 
+/**
+ * SearchResultsTable component.
+ * Displays a list of search results with lazy loading on scroll.
+ * Expects `searchResults` to be a flat array of item objects.
+ */
 const SearchResultsTable = ({ searchResults, handleSelectItem }) => {
+  // Memoized map for collection display names, created once
   const collectionsMap = useMemo(() => new Map(collectionsMapData), []);
+  // Number of items to load/display initially and on each subsequent load
   const expandAmount = 20;
 
-  const flatResults = useMemo(() => {
-    if (!searchResults || Object.keys(searchResults).length === 0) {
-      return [];
-    }
-    return Object.entries(searchResults).flatMap(([header, items]) =>
-      items.map((item) => ({
-        ...item,
-        collectionKey: header, // The 'header' is the collectionId
-        collectionDisplayName:
-          collectionsMap.get(header)?.display_name || header,
-      })),
-    );
-  }, [searchResults, collectionsMap]);
-
+  // State to keep track of the number of items currently displayed from the searchResults
   const [displayLimit, setDisplayLimit] = useState(expandAmount);
 
+  // Effect to reset the display limit when the searchResults array changes (e.g., new search)
   useEffect(() => {
     setDisplayLimit(expandAmount);
   }, [searchResults]);
 
+  /**
+   * Handles scroll events on the list container.
+   * If the user scrolls near the bottom and more items are available,
+   * it increases the displayLimit to load more items.
+   * @param {React.SyntheticEvent} e - The scroll event.
+   */
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
-    const threshold = 10;
-    if (scrollHeight - scrollTop - clientHeight < threshold) {
-      if (displayLimit < flatResults.length) {
+    const threshold = 10; // Pixels from bottom to trigger loading more.
+
+    // Check if searchResults is valid and if more items can be loaded.
+    if (
+      searchResults &&
+      searchResults.length > 0 &&
+      displayLimit < searchResults.length
+    ) {
+      // Check if scroll position is near the bottom.
+      if (scrollHeight - scrollTop - clientHeight < threshold) {
         const newLimit = Math.min(
           displayLimit + expandAmount,
-          flatResults.length,
+          searchResults.length,
         );
         setDisplayLimit(newLimit);
       }
     }
   };
 
-  if (flatResults.length === 0) {
+  if (!Array.isArray(searchResults) || searchResults.length === 0) {
     return <div className="no-results-message">No results found.</div>;
   }
 
   return (
     <div className="unified-search-results-list" onScroll={handleScroll}>
-      {flatResults.slice(0, displayLimit).map((item, index) => {
-        // Get the color for the current item's collection
-        const tagBackgroundColor = getColorForCollection(item.collectionKey);
+      {/* Render only the items up to the current displayLimit. */}
+      {searchResults.slice(0, displayLimit).map((item, index) => {
+        let collectionKey = "";
+        let collectionDisplayName = "Unknown"; // Default display name
 
-        // Determine text color for contrast
+        // Derive collectionKey and collectionDisplayName
+        if (item._id && typeof item._id === "string") {
+          const parts = item._id.split("/");
+          if (parts.length > 0) {
+            collectionKey = parts[0];
+            collectionDisplayName =
+              collectionsMap.get(collectionKey)?.display_name || collectionKey;
+          }
+        }
+
+        // Get dynamic background color for the collection tag.
+        const tagBackgroundColor = getColorForCollection(collectionKey);
+
+        /**
+         * Determines if a background color is dark to apply contrasting text.
+         * @param {string} color - The background color (hex format assumed).
+         * @returns {boolean} True if the background is considered dark.
+         */
         const isDarkBackground = (color) => {
           if (!color) return false;
-          // parse the color  and calculate luminance.
           const hex = color.replace("#", "");
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          return (r * 0.299 + g * 0.587 + b * 0.114) < 140;
+          // Basic validation for hex length (3 or 6 chars)
+          if (hex.length !== 3 && hex.length !== 6) return false;
+          const r = parseInt(
+            hex.length === 3
+              ? hex.substring(0, 1).repeat(2)
+              : hex.substring(0, 2),
+            16,
+          );
+          const g = parseInt(
+            hex.length === 3
+              ? hex.substring(1, 2).repeat(2)
+              : hex.substring(2, 4),
+            16,
+          );
+          const b = parseInt(
+            hex.length === 3
+              ? hex.substring(2, 3).repeat(2)
+              : hex.substring(4, 6),
+            16,
+          );
+          return r * 0.299 + g * 0.587 + b * 0.114 < 140;
         };
 
+        // Determine text color for the tag based on background brightness for accessibility.
         const tagTextColor = isDarkBackground(tagBackgroundColor)
           ? "var(--color-text-on-dark, #ffffff)"
           : "var(--color-text, #212121)";
 
-return (
+        return (
           <div key={item._id || index} className="result-item-row">
+            {/* Link to the detailed view of the item. */}
             <Link
-              to={`/collections/${item._id}`}
+              to={`/collections/${item._id}`} // Assumes _id is suitable for URL.
               target="_blank"
               className="item-main-link"
             >
               {getLabel(item)}
             </Link>
+            {/* Link to the overview page for the item's collection. */}
             <Link
-              to={`/collections/${item.collectionKey}`}
-              target="_blank" // Open in new tab
+              to={`/collections/${collectionKey}`} // Link using the derived collectionKey.
+              target="_blank"
               className="item-collection-tag"
               style={{
                 backgroundColor: tagBackgroundColor,
                 color: tagTextColor,
-                textDecoration: 'none',
+                textDecoration: "none", // Remove default link underline for tag appearance.
               }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()} // Prevent event bubbling if row is clickable.
             >
-              {item.collectionDisplayName}
+              {collectionDisplayName}
             </Link>
+            {/* Button to add the item to a selection. */}
             <button
               type="button"
               className="item-add-button"
@@ -100,7 +146,8 @@ return (
           </div>
         );
       })}
-      {displayLimit < flatResults.length && (
+      {/* Display a "Loading more..." message if more items can be loaded. */}
+      {searchResults && displayLimit < searchResults.length && (
         <div className="loading-more-results">Loading more...</div>
       )}
     </div>

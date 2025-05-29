@@ -139,7 +139,7 @@ const SearchBar = ({
         </div>
         <div
           className={`search-results-dropdown ${
-            shouldDropdownBeVisible ? "show" : "" 
+            shouldDropdownBeVisible ? "show" : ""
           }`}
         >
           <SearchResultsTable
@@ -150,9 +150,9 @@ const SearchBar = ({
       </div>
       {selectedItems && selectedItems.length > 0 && (
         <SelectedItemsTable
-            selectedItems={selectedItems}
-            generateGraph={generateGraph}
-            removeSelectedItem={removeSelectedItem}
+          selectedItems={selectedItems}
+          generateGraph={generateGraph}
+          removeSelectedItem={removeSelectedItem}
         />
       )}
     </div>
