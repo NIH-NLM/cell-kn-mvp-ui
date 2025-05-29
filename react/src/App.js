@@ -12,6 +12,7 @@ import { ActiveNavProvider } from "./components/ActiveNavContext/ActiveNavContex
 import Footer from "./components/Footer/Footer";
 import { GraphProvider } from "./components/Contexts/Contexts";
 import SunburstPage from "./pages/SunburstPage/SunburstPage";
+import TreePage from "./pages/TreePage/TreePage";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/aql" element={<AQLQueryPage />} />
                 <Route path="/schema" element={<SchemaPage />} />
+                <Route path="/tree" element={<TreePage />} />
                 <Route path="/sunburst" element={<SunburstPage />} />
                 <Route path="/" element={<SearchPage />} />
               </Routes>

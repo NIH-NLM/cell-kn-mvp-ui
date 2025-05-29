@@ -1779,7 +1779,6 @@ button.active {
   justify-content: center;
 }
 
-
 /* --- Generic Content Page Layout  --- */
 .content-page-layout {
   display: flex;
@@ -1803,7 +1802,6 @@ button.active {
   align-items: center;
 }
 
-
 .schema-display-box {
   max-width: 1200px;
 }
@@ -1825,12 +1823,10 @@ button.active {
   justify-content: center;
 }
 
-
 /* General responsive image styling */
 .responsive-image {
   max-width: 100%;
   height: auto;
   display: block;
   border-radius: 5px;
-
 }
