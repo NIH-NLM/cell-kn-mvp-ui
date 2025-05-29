@@ -1,43 +1,36 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { fetchCollections, parseCollections, getLabel } from "../Utils/Utils";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import ListDocuments from "../ListDocuments/ListDocuments";
-import Pagination from "../Pagination/Pagination";
 
 const collectionsMap = new Map(collectionsMapData);
+const ITEMS_PER_LOAD = 50;
 
 const BrowseBox = () => {
   const { coll: currentCollectionFromUrl } = useParams();
   const currentCollection = currentCollectionFromUrl;
-
-  // -- Contexts --
-  // const { graphType, setGraphType } = useContext(GraphContext);
   const graphType = "phenotypes";
 
-  // State for collections list
   const [collections, setCollections] = useState([]);
-
-  // State for document list of the current collection
   const [documentList, setDocumentList] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
   const [filterText, setFilterText] = useState("");
-  const itemsPerPage = 100;
+  const [documentDisplayLimit, setDocumentDisplayLimit] =
+    useState(ITEMS_PER_LOAD);
 
-  // Fetch collections list
+  const documentListScrollRef = useRef(null);
+
   useEffect(() => {
-    setCollections([]); // Clear old collections
+    setCollections([]);
     fetchCollections(graphType).then((data) => {
       setCollections(parseCollections(data, collectionsMap));
     });
   }, [graphType]);
 
-  // Memoized function for sorting
   const sortDocumentList = useCallback((documents) => {
     const sortedList = Object.values(documents);
     const labeledItems = sortedList.filter((item) => getLabel(item));
     const keyItems = sortedList.filter((item) => !getLabel(item));
-
     labeledItems.sort((a, b) => {
       const labelA = Array.isArray(getLabel(a)) ? getLabel(a)[0] : getLabel(a);
       const labelB = Array.isArray(getLabel(b)) ? getLabel(b)[0] : getLabel(b);
@@ -47,7 +40,6 @@ const BrowseBox = () => {
     setDocumentList([...labeledItems, ...keyItems]);
   }, []);
 
-  // Fetch document list for the currentCollection
   useEffect(() => {
     const fetchDocuments = async () => {
       if (!currentCollection) {
@@ -73,12 +65,14 @@ const BrowseBox = () => {
       }
     };
 
-    setCurrentPage(1); // Reset page when collection changes
     setFilterText(""); // Clear filter when collection changes
+    setDocumentDisplayLimit(ITEMS_PER_LOAD);
+    if (documentListScrollRef.current) {
+      documentListScrollRef.current.scrollTop = 0;
+    }
     fetchDocuments();
   }, [currentCollection, graphType, sortDocumentList]);
 
-  // Filtering logic
   const filteredDocuments = documentList.filter((doc) => {
     const searchLower = filterText.toLowerCase();
     const label = (
@@ -108,22 +102,35 @@ const BrowseBox = () => {
 
   const handleFilterChange = (e) => {
     setFilterText(e.target.value);
-    setCurrentPage(1);
+    setDocumentDisplayLimit(ITEMS_PER_LOAD);
+    if (documentListScrollRef.current) {
+      documentListScrollRef.current.scrollTop = 0;
+    }
   };
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItemsToDisplay = sortedFilteredDocuments.slice(
-    indexOfFirstItem,
-    indexOfLastItem,
+    0,
+    documentDisplayLimit,
   );
-  const totalPages = Math.ceil(sortedFilteredDocuments.length / itemsPerPage);
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Scroll handler for the document list
+  const handleDocumentListScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const threshold = 10; // pixels from bottom
+
+    if (scrollHeight - scrollTop - clientHeight < threshold) {
+      if (documentDisplayLimit < sortedFilteredDocuments.length) {
+        setDocumentDisplayLimit((prevLimit) =>
+          Math.min(prevLimit + ITEMS_PER_LOAD, sortedFilteredDocuments.length),
+        );
+      }
+    }
+  };
 
   return (
     <div className="browse-box-component-wrapper">
       <div className="browse-box-description">
-        <h2 className="browse-box-title">Explore Data Collections</h2>
+        <h1 className="page-title">Inspect Data Collections</h1>
         <p>Select a collection from the list below to view its members.</p>
         <p>
           Once a collection is selected, you can filter its members further.
@@ -131,7 +138,6 @@ const BrowseBox = () => {
       </div>
 
       <div className="browse-box-content">
-        {/* Left Panel: Collections List */}
         <div className="collections-list-panel">
           {collections.length === 0 ? (
             <p className="loading-collections-message">
@@ -165,7 +171,6 @@ const BrowseBox = () => {
           )}
         </div>
 
-        {/* Right Panel: Document List for Selected Collection */}
         <div className="document-list-panel">
           {currentCollection ? (
             <>
@@ -182,27 +187,29 @@ const BrowseBox = () => {
                 </p>
               </header>
               {currentItemsToDisplay.length > 0 ? (
-                <div className="document-list-items-container">
+                <div
+                  className="document-list-items-container"
+                  ref={documentListScrollRef}
+                  onScroll={handleDocumentListScroll}
+                >
                   {currentItemsToDisplay.map((document, index) => (
                     <ListDocuments
                       key={document._id || index}
                       document={document}
                     />
                   ))}
+                  {documentDisplayLimit < sortedFilteredDocuments.length && (
+                    <div className="loading-more-documents">
+                      Loading more...
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="no-documents-message">
-                  {filterText
+                  {documentList.length > 0 && filterText
                     ? "No matching documents found for your filter."
-                    : "No documents in this collection, or still loading."}
+                    : "Loading..."}
                 </p>
-              )}
-              {totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  paginate={paginate}
-                />
               )}
             </>
           ) : (

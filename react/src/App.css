@@ -820,7 +820,7 @@ tr:nth-of-type(odd) {
   align-items: center;
 }
 
-.visualization-page-title {
+.page-title {
   font-size: 2em;
   color: var(--color-main);
   margin-top: 0;

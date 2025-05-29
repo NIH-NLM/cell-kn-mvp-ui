@@ -4,7 +4,7 @@ const SunburstPage = () => {
   return (
     <div className="visualization-page-layout">
       <div className="visualization-content-box">
-        <h1 className="visualization-page-title">Browse the Database</h1>
+        <h1 className="page-title">Browse the Database</h1>
         <div className="sunburst-visualization-container">
           <Sunburst />
         </div>
