@@ -795,6 +795,55 @@ tr:nth-of-type(odd) {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
+/* --- Sunburst --- */
+.visualization-page-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  gap: 30px;
+  background-color: var(--color-light-bg);
+  min-height: 100vh;
+}
+
+/* Main content box for the visualization */
+.visualization-content-box {
+  background-color: var(--color-white);
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.visualization-page-title {
+  font-size: 2em;
+  color: var(--color-main);
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+/* Container specifically for the Sunburst component */
+.sunburst-visualization-container {
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.visualization-description {
+  font-size: 0.95em;
+  line-height: 1.6;
+  color: var(--color-gray);
+  margin-top: 25px;
+  max-width: 700px;
+  text-align: left;
+}
+
 .result-list-header {
   cursor: pointer;
   userselect: none;
