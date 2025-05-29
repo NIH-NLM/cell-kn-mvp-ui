@@ -3,7 +3,6 @@ import { HashRouter as Router, Route, Routes } from "react-router-dom";
 /* TODO: get favicon in public working */
 import "./App.css";
 import Header from "./components/Header/Header";
-import DocumentListPage from "./pages/DocumentListPage/DocumentListPage";
 import DocumentPage from "./pages/DocumentPage/DocumentPage";
 import CollectionsPage from "./pages/CollectionsPage/CollectionsPage";
 import AQLQueryPage from "./pages/AQLQueryPage/AQLQueryPage";
@@ -29,7 +28,7 @@ function App() {
                 />
                 <Route
                   path="/collections/:coll"
-                  element={<DocumentListPage />}
+                  element={<CollectionsPage />}
                 />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/aql" element={<AQLQueryPage />} />
