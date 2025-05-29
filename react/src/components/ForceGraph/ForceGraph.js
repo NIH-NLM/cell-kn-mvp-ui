@@ -19,7 +19,7 @@ const ForceGraph = ({
   const chartContainerRef = useRef();
 
   // Init setting states
-  const [depth, setDepth] = useState(settings["defaultDepth"] || 3);
+  const [depth, setDepth] = useState(settings["defaultDepth"] || 2);
   const [edgeDirection, setEdgeDirection] = useState(
     settings["edgeDirection"] || "ANY",
   );

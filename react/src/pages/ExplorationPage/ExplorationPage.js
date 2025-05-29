@@ -41,7 +41,7 @@ const ExplorationPage = () => {
         <ForceGraph
           nodeIds={nodeIds}
           settings={{
-            defaultDepth: 1,
+            defaultDepth: 2,
             findShortestPaths: false,
             collectionsToPrune: prunedCollections,
           }}
