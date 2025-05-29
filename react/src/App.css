@@ -1778,3 +1778,59 @@ button.active {
   display: flex;
   justify-content: center;
 }
+
+
+/* --- Generic Content Page Layout  --- */
+.content-page-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: var(--color-light-bg);
+  min-height: 100vh;
+}
+
+/* Main content box for simple content pages */
+.content-box {
+  background-color: var(--color-white);
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.schema-display-box {
+  max-width: 1200px;
+}
+
+.content-page-title {
+  font-size: 2em;
+  color: var(--color-main);
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Container for images */
+.image-container {
+  width: 100%;
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+
+/* General responsive image styling */
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 5px;
+
+}
