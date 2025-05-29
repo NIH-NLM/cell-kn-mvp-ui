@@ -50,7 +50,7 @@ const SearchPage = () => {
   return (
     <div className="search-page-layout">
       <div className="main-search-box">
-        <h1 className="search-page-title">Knowledge Exploration</h1>
+        <h1 className="search-page-title">Search the Knowledge Network</h1>
         <div className="sunburst-search-container">
           <SearchBar
             generateGraph={() => generateGraph(selectedItems)}
