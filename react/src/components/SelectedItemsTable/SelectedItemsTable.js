@@ -59,13 +59,6 @@ const SelectedItemsTable = ({
                   </a>
                 </td>
                 <td data-label="Actions" className="selected-item-actions-cell">
-                  <button
-                    onClick={() => handleRemoveItem(item)}
-                    className="action-button remove-button"
-                    aria-label={`Remove ${getLabel(item)}`}
-                  >
-                    Remove
-                  </button>
                   <Link
                     to={`/collections/${item._id}`}
                     target="_blank"
@@ -74,6 +67,13 @@ const SelectedItemsTable = ({
                   >
                     View
                   </Link>
+                  <button
+                      onClick={() => handleRemoveItem(item)}
+                      className="action-button remove-button"
+                      aria-label={`Remove ${getLabel(item)}`}
+                  >
+                    Remove
+                  </button>
                 </td>
               </tr>
             ))}
