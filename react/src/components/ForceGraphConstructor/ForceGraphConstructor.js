@@ -713,10 +713,7 @@ function ForceGraphConstructor(
       const nodesToRemove = [];
       processedNodes.forEach((node) => {
         // Skip nodes that are in collapseNodes or are origin nodes
-        if (
-          collapseNodes.includes(node.id) ||
-          mergedOptions.originNodeIds.includes(node.id)
-        ) {
+        if (mergedOptions.originNodeIds.includes(node.id)) {
           return;
         }
         // Get all links associated with this node
@@ -725,16 +722,42 @@ function ForceGraphConstructor(
             (link.source.id || link.source) === node.id ||
             (link.target.id || link.target) === node.id,
         );
-        // Remove node if all links connect to collapse node
+        // Remove node if all links connect to the same collapse node
         if (nodeLinks.length > 0) {
-          const allLinksToCollapseNodes = nodeLinks.every((link) => {
+          // Node must have at least one link to be considered
+          let firstNeighborId = null;
+          let allLinksToSameNeighbor = true;
+
+          // Determine the ID of the neighbor connected by the first link
+          const firstLink = nodeLinks[0];
+          const sourceIdFirst = firstLink.source.id || firstLink.source;
+          const targetIdFirst = firstLink.target.id || firstLink.target;
+          firstNeighborId =
+            sourceIdFirst === node.id || sourceIdFirst === node._id
+              ? targetIdFirst
+              : sourceIdFirst;
+
+          // Check if all other links also go to this same firstNeighborId
+          for (let i = 1; i < nodeLinks.length; i++) {
+            const link = nodeLinks[i];
             const sourceId = link.source.id || link.source;
             const targetId = link.target.id || link.target;
-            const otherId = sourceId === node.id ? targetId : sourceId;
-            return collapseNodes.includes(otherId);
-          });
-          if (allLinksToCollapseNodes) {
-            nodesToRemove.push(node.id);
+            const currentNeighborId =
+              sourceId === node.id || sourceId === node._id
+                ? targetId
+                : sourceId;
+
+            if (currentNeighborId !== firstNeighborId) {
+              allLinksToSameNeighbor = false;
+              break; // Found a link to a different neighbor
+            }
+          }
+
+          // If all links go to the same neighbor, check if that neighbor is in collapseNodes
+          if (allLinksToSameNeighbor) {
+            if (collapseNodes.includes(firstNeighborId)) {
+              nodesToRemove.push(node.id);
+            }
           }
         }
       });
