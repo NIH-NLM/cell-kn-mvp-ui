@@ -386,7 +386,7 @@ function ForceGraphConstructor(
       mergedOptions.width,
       height,
     ])
-    .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+    .attr("style", "width: 100%; height: 100%;");
 
   const g = svg.append("g");
 
