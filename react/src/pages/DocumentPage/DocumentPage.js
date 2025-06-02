@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { useParams } from "react-router-dom";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
-import { useParams } from "react-router-dom";
 import { getTitle } from "../../components/Utils/Utils";
 
-// Document as described in ArangoDB documentation
 const DocumentPage = () => {
   const { coll, id } = useParams();
-  let [document, setDocument] = useState(null);
+  const [document, setDocument] = useState(null);
 
-  // Modify the PrunedCollections context if this collection is part of that list
   const prunedCollections = useContext(PrunedCollections);
+
   const filteredPrunedCollections = prunedCollections.includes(coll)
     ? prunedCollections.filter((item) => item !== coll)
     : prunedCollections;
@@ -27,35 +26,65 @@ const DocumentPage = () => {
         setDocument(data);
       } catch (error) {
         console.error("Failed to fetch document:", error);
+
+        setDocument(null);
       }
     };
 
     if (id && coll) {
+      setDocument(null);
       getDocument();
     }
   }, [id, coll]);
 
-  if (document) {
+  const isLoading = !document && id && coll;
+
+  if (isLoading) {
     return (
-      <div className="document-card">
-        <div className="document-item-header">
-          <h1>{getTitle(document)}</h1>
-          <span>{document.term}</span>
-        </div>
-        <div className="document-item-container">
-          <DocumentCard document={document} />
-          <ForceGraph
-            nodeIds={[document._id]}
-            heightRatio={1}
-            settings={{ collectionsToPrune: filteredPrunedCollections }}
-          />
+      <div className="content-page-layout">
+        {" "}
+        <div className="loading-message">Loading document details...</div>{" "}
+      </div>
+    );
+  }
+
+  if (!document) {
+    return (
+      <div className="content-page-layout">
+        <div className="error-message">
+          Document not found or failed to load. Please check the URL or try
+          again.
         </div>
       </div>
     );
-  } else {
-    // TODO: Handle error
-    return <div>Error</div>;
   }
+
+  // Document is loaded
+  return (
+    <div className="content-page-layout document-details-page-layout">
+      <div className="content-box document-details-content-box">
+        <div className="document-item-header">
+          <h1>{getTitle(document)}</h1>
+          {document.term && <span>Term: {document.term}</span>}{" "}
+        </div>
+
+        <div className="document-page-main-content-area">
+          <div className="document-card-panel">
+            <DocumentCard document={document} />
+          </div>
+
+          <div className="force-graph-panel">
+            <ForceGraph
+              nodeIds={[document._id]}
+              settings={{
+                collectionsToPrune: filteredPrunedCollections,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DocumentPage;

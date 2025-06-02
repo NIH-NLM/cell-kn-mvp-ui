@@ -68,9 +68,9 @@ const SelectedItemsTable = ({
                     View
                   </Link>
                   <button
-                      onClick={() => handleRemoveItem(item)}
-                      className="action-button remove-button"
-                      aria-label={`Remove ${getLabel(item)}`}
+                    onClick={() => handleRemoveItem(item)}
+                    className="action-button remove-button"
+                    aria-label={`Remove ${getLabel(item)}`}
                   >
                     Remove
                   </button>
