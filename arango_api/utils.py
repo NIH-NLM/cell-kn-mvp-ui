@@ -358,6 +358,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
     uberon_terms = [
         "UBERON/0002048",  # lung
         "UBERON/0000966",  # retina
+        "UBERON/0000955", # brain
     ]
     # Artificial root ID for the response
     graph_root_id = "root_phenotypes_full"
