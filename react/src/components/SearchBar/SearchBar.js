@@ -3,6 +3,21 @@ import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
 import { GraphContext } from "../Contexts/Contexts";
 
+const SearchIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="search-icon"
+  >
+    <path
+      fillRule="evenodd"
+      d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
 const SearchBar = ({
   generateGraph,
   selectedItems,
@@ -12,7 +27,7 @@ const SearchBar = ({
   const containerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(""); // Current value in the input field
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -39,17 +54,21 @@ const SearchBar = ({
       return response.json();
     } catch (error) {
       console.error("Error fetching search terms:", error);
-      throw error;
+      throw error; // Re-throw to be caught by caller
     }
   };
 
   useEffect(() => {
     const fetchSearchResults = async () => {
-      const data = await getSearchTerms(searchTerm, graphType);
-      setSearchResults(data);
+      try {
+        const data = await getSearchTerms(searchTerm, graphType);
+        setSearchResults(data);
+      } catch (error) {
+        setSearchResults([]); // Clear results on error
+      }
     };
 
-    if (searchTerm !== "") {
+    if (searchTerm.trim() !== "") {
       fetchSearchResults();
     } else {
       setSearchResults([]);
@@ -60,12 +79,10 @@ const SearchBar = ({
     const value = event.target.value;
     setInput(value);
 
-    // Clear the previous timeout to reset the debounce
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
 
-    // Delay the search to prevent excessive API calls
     debounceTimeoutRef.current = setTimeout(() => {
       setSearchTerm(value);
       setShowResults(true);
@@ -80,9 +97,9 @@ const SearchBar = ({
     addSelectedItem(item);
     setShowResults(false);
     setInput("");
+    setSearchTerm("");
   }
 
-  // Add listeners for clicking outside of search area
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -97,23 +114,33 @@ const SearchBar = ({
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
   }, []);
 
+  // Determine if the dropdown should actually be visible
+  const shouldDropdownBeVisible = showResults && input.trim() !== "";
+
   return (
-    <div className="search-container" ref={containerRef}>
+    <div className="search-component-wrapper" ref={containerRef}>
       <div className="search-bar-container">
-        <div className="search-bar">
+        <div className="search-input-wrapper">
           <input
             type="text"
-            placeholder="Search..."
+            className="search-input"
+            placeholder="Search NCKN..."
             value={input}
             onChange={handleSearch}
             onMouseEnter={showR}
           />
+          <SearchIcon />
         </div>
         <div
-          className={`search-results-container ${showResults ? "show" : ""}`}
+          className={`search-results-dropdown ${
+            shouldDropdownBeVisible ? "show" : ""
+          }`}
         >
           <SearchResultsTable
             searchResults={searchResults}
@@ -121,11 +148,13 @@ const SearchBar = ({
           />
         </div>
       </div>
-      <SelectedItemsTable
-        selectedItems={selectedItems}
-        generateGraph={generateGraph}
-        removeSelectedItem={removeSelectedItem}
-      />
+      {selectedItems && selectedItems.length > 0 && (
+        <SelectedItemsTable
+          selectedItems={selectedItems}
+          generateGraph={generateGraph}
+          removeSelectedItem={removeSelectedItem}
+        />
+      )}
     </div>
   );
 };

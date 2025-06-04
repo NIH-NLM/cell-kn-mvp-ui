@@ -9,7 +9,7 @@ const Sunburst = ({ addSelectedItem }) => {
   const [clickedItem, setClickedItem] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [zoomedNodeId, setZoomedNodeId] = useState(null); // null = top root
+  const [zoomedNodeId, setZoomedNodeId] = useState(null);
 
   // --- Refs ---
   const svgContainerRef = useRef(null);
@@ -19,70 +19,58 @@ const Sunburst = ({ addSelectedItem }) => {
   const isLoadingRef = useRef(isLoading);
   const isInitialMountRef = useRef(true);
 
-  // -- Contexts --
-  // const { graphType, setGraphType } = useContext(GraphContext);
-  // Ignore context for focused queries
+  const d3ClickedRef = useRef(null);
+  const lastUsedGraphDataRef = useRef(null);
+  const handleNodeClickRef = useRef(null);
+  const handleCenterClickRef = useRef(null);
+  const handleSunburstClickRef = useRef(null);
+
   const graphType = "phenotypes";
 
   // --- Data Fetching Logic ---
   const fetchSunburstData = useCallback(
     async (parentId = null, isInitialLoad = false) => {
-      // Use the ref to check loading state to avoid infinite loops if fetch is rapid
       if (!isInitialLoad && isLoadingRef.current) {
         return;
       }
-
-      setIsLoading(true); // Always set loading true when fetch starts
+      setIsLoading(true);
       isLoadingRef.current = true;
-
       const fetchUrl = "/arango_api/sunburst/";
       try {
         const response = await fetch(fetchUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            parent_id: parentId,
-            graph: graphType, // Use the latest graphType from context
-          }),
+          body: JSON.stringify({ parent_id: parentId, graph: graphType }),
         });
         if (!response.ok) {
           const err = await response.text();
           throw new Error(`Fetch failed: ${response.status} ${err}`);
         }
         const data = await response.json();
-
         if (parentId) {
-          // Merge
           if (!Array.isArray(data))
             throw new Error(`API error for parent ${parentId}`);
           setGraphData((prevData) => {
-            if (!prevData) {
-              console.warn("Trying to merge into null data, resetting.");
-              return null; // Should not happen if root loaded first
-            }
+            if (!prevData) return null;
             return mergeChildren(prevData, parentId, data);
           });
         } else {
-          // Initial load or graphType change load
           if (typeof data !== "object" || data === null || Array.isArray(data))
             throw new Error("API error for initial load/root");
           setGraphData(data);
-          // Reset zoom only when fetching root data
           if (graphType === "phenotypes") {
             setZoomedNodeId("NCBITaxon/9606");
           } else {
             setZoomedNodeId(null);
           }
-          currentHierarchyRootRef.current = null;
+          currentHierarchyRootRef.current = null; // Reset since data structure changed
         }
       } catch (error) {
         console.error("Fetch/Process Error:", error);
-        // Reset state on error
         setGraphData(null);
         setZoomedNodeId(null);
         currentHierarchyRootRef.current = null;
       } finally {
-        // Always set loading false when fetch finishes (success or error)
         setIsLoading(false);
         isLoadingRef.current = false;
       }
@@ -90,42 +78,30 @@ const Sunburst = ({ addSelectedItem }) => {
     [graphType],
   );
 
-  // Update isLoadingRef whenever isLoading state changes
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // --- Initial Data Load useEffect ---
   useEffect(() => {
-    // Fetch initial data only if it hasn't been fetched yet
-    if (!graphData) {
-      fetchSunburstData(null, false);
+    if (!graphData && !isLoadingRef.current) {
+      // ensure not to fetch if already loading
+      fetchSunburstData(null, true);
     }
   }, []);
 
-  // --- useEffect for Reloading on graphType Change ---
   useEffect(() => {
-    // Skip the logic on the initial render/mount
     if (isInitialMountRef.current) {
-      isInitialMountRef.current = false; // Set flag to false after first mount
+      isInitialMountRef.current = false;
       return;
     }
-
-    // Reset state to prepare for new graph data
-    setGraphData(null); // Clear existing data
-    setZoomedNodeId(null); // Reset zoom to root
-    currentHierarchyRootRef.current = null; // Clear hierarchy reference
+    setGraphData(null);
+    setZoomedNodeId(null);
+    currentHierarchyRootRef.current = null;
     setClickedItem(null);
     setPopupVisible(false);
-
-    // Fetch new root data for the selected graphType
-    // Pass `false` for isInitialLoad to let fetchSunburstData handle setIsLoading
     fetchSunburstData(null, false);
+  }, [graphType, fetchSunburstData]);
 
-    // Dependency array ensures this runs only when graphType changes
-  }, [graphType, fetchSunburstData]); // Include fetchSunburstData as it depends on graphType too
-
-  // Checks if a given D3 hierarchy node needs its grandchildren loaded
   const checkNeedsLoad = (d) => {
     if (!d) return false;
     let needsLoad = false;
@@ -145,158 +121,175 @@ const Sunburst = ({ addSelectedItem }) => {
   };
 
   // --- Event Handlers ---
-
-  const handleNodeClick = useCallback(
-    (event, d) => {
-      if (!d.data._hasChildren) {
+  const latestHandleNodeClick = useCallback(
+    (event, d3Node) => {
+      if (!d3Node.data._hasChildren) {
         return false;
       }
-      const needsLoad = checkNeedsLoad(d);
-      const currentIsLoading = isLoadingRef.current; // Read from ref
+      const needsLoad = checkNeedsLoad(d3Node);
+      const currentIsLoading = isLoadingRef.current;
+
+      if (d3Node.data._id === zoomedNodeId && !needsLoad) {
+        return false; // To prevent D3 re-swirl to itself if already centered
+      }
 
       if (needsLoad && !currentIsLoading) {
-        setZoomedNodeId(d.data._id); // Zoom first
-        fetchSunburstData(d.data._id, false); // Then fetch
-        return true; // Indicate zoom/load happened
-      } else if (!needsLoad && d.parent) {
-        setZoomedNodeId(d.data._id);
-        return true; // Indicate zoom happened
+        if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
+        fetchSunburstData(d3Node.data._id, false);
+        return true; // Tell D3 to animate
+      } else if (!needsLoad && d3Node.children) {
+        // Has children, no load needed
+        if (zoomedNodeId !== d3Node.data._id) setZoomedNodeId(d3Node.data._id);
+        return true; // Tell D3 to animate
       } else if (currentIsLoading) {
-        return false;
-      } else {
-        // e.g., clicking the already zoomed node that doesn't need loading
-        return false;
+        return false; // Do not animate if already loading new data
       }
+      return false; // Default: do not animate
     },
-    [fetchSunburstData],
+    [fetchSunburstData, zoomedNodeId],
   );
 
-  const handleCenterClick = useCallback(
-    () => {
-      const currentHierarchy = currentHierarchyRootRef.current;
-      const currentCenterId = zoomedNodeId;
-      const currentIsLoading = isLoadingRef.current; // Read from ref
+  const latestHandleCenterClick = useCallback(() => {
+    console.log(
+      `[latestHandleCenterClick EXECUTION] Current state zoomedNodeId: ${zoomedNodeId}`,
+    );
+    const currentHierarchy = currentHierarchyRootRef.current;
+    const currentCenterId = zoomedNodeId;
+    const currentIsLoading = isLoadingRef.current;
 
-      if (!currentHierarchy || !currentCenterId) {
-        setZoomedNodeId(null);
-        return;
-      }
-      const centeredNode = currentHierarchy.find(
+    if (!currentHierarchy) {
+      console.warn("[latestHandleCenterClick] Hierarchy root not available.");
+      return;
+    }
+
+    let centeredNode;
+    if (currentCenterId) {
+      centeredNode = currentHierarchy.find(
         (node) => node.data._id === currentCenterId,
       );
-      if (!centeredNode) {
-        console.warn(
-          `Center click: Cannot find centered node ${currentCenterId}. Resetting zoom.`,
-        );
-        setZoomedNodeId(null);
-        return;
-      }
-      const parentNode = centeredNode.parent;
-      if (parentNode) {
-        const parentId = parentNode.data ? parentNode.data._id : null;
-        // Zoom to parent if it is not the hidden root (depth 0)
-        const newZoomedId = parentId && parentNode.depth > 0 ? parentId : null;
-        setZoomedNodeId(newZoomedId);
+    } else {
+      centeredNode = currentHierarchy.find((node) => node.depth === 0);
+    }
 
-        // Check if the parent needs data loaded
-        const needsLoadForParent = checkNeedsLoad(parentNode);
-        if (needsLoadForParent && !currentIsLoading && parentId) {
-          fetchSunburstData(parentId, false);
+    if (!centeredNode) {
+      console.warn(
+        `[latestHandleCenterClick] Cannot find D3 node for current center ID "${currentCenterId}". Defaulting to root.`,
+      );
+      const absoluteRoot = currentHierarchy.find((d) => d.depth === 0);
+      if (absoluteRoot) {
+        if (zoomedNodeId !== null) setZoomedNodeId(null);
+        if (d3ClickedRef.current) {
+          d3ClickedRef.current(null, absoluteRoot);
         }
-      } else {
-        // Already at the root, clicking center zooms out to null
-        setZoomedNodeId(null);
       }
+      return;
+    }
+
+    const parentNode = centeredNode.parent;
+
+    if (parentNode) {
+      const newZoomTargetId =
+        parentNode.depth === 0 ? null : parentNode.data._id;
+      if (zoomedNodeId !== newZoomTargetId) setZoomedNodeId(newZoomTargetId);
+
+      if (d3ClickedRef.current) {
+        d3ClickedRef.current(null, parentNode);
+      }
+
+      const needsLoadForParent = checkNeedsLoad(parentNode);
+      if (
+        needsLoadForParent &&
+        !currentIsLoading &&
+        parentNode.data &&
+        parentNode.data._id
+      ) {
+        if (parentNode.depth !== 0) {
+          fetchSunburstData(parentNode.data._id, false);
+        }
+      }
+    } else {
+      console.log("[latestHandleCenterClick] Already at the root.");
+      if (zoomedNodeId !== null) setZoomedNodeId(null);
+      if (d3ClickedRef.current && centeredNode) {
+        d3ClickedRef.current(null, centeredNode);
+      }
+    }
+  }, [zoomedNodeId, fetchSunburstData]);
+
+  const latestHandleSunburstClick = useCallback(
+    (e, dataNode) => {
+      // For right-click
+      setClickedItem(dataNode.data);
+      setPopupPosition({
+        x: e.clientX + 10 + window.scrollX,
+        y: e.clientY + 10 + window.scrollY,
+      });
+      setPopupVisible(true);
     },
-    [zoomedNodeId, fetchSunburstData], // Depends on zoomedNodeId and fetchSunburstData
+    [zoomedNodeId],
   );
 
-  const handleSunburstClick = useCallback((e, dataNode) => {
-    setClickedItem(dataNode.data);
-    const { clientX, clientY } = e;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    setPopupPosition({ x: clientX + 10 + scrollX, y: clientY + 10 + scrollY });
-    setPopupVisible(true);
-  }, []);
+  // useEffect to update the refs with the latest callback functions
+  useEffect(() => {
+    handleNodeClickRef.current = latestHandleNodeClick;
+    handleCenterClickRef.current = latestHandleCenterClick;
+    handleSunburstClickRef.current = latestHandleSunburstClick;
+  }, [
+    latestHandleNodeClick,
+    latestHandleCenterClick,
+    latestHandleSunburstClick,
+  ]);
 
   // --- D3 Graph Rendering/Updating useEffect ---
   useEffect(() => {
-    // Only attempt to render if graphData is present and container exists
-    if (graphData && svgContainerRef.current) {
-      // Ensure previous SVG is removed ONLY if it exists
-      if (
-        svgNodeRef.current &&
-        svgContainerRef.current.contains(svgNodeRef.current)
-      ) {
-        try {
-          svgContainerRef.current.removeChild(svgNodeRef.current);
-        } catch (e) {
-          console.warn("Ignoring error during SVG removal:", e);
-          /* ignore - node might already be detached */
-        }
-        svgNodeRef.current = null; // Clear the ref after removal
-      }
+    const container = svgContainerRef.current;
+    if (!container) return;
 
-      try {
+    const needsFullReconstruction =
+      !svgNodeRef.current || // No SVG exists yet
+      (graphData !== lastUsedGraphDataRef.current && graphData !== null);
+
+    if (graphData) {
+      if (needsFullReconstruction) {
+        console.log("[Main D3 useEffect] Performing full D3 reconstruction.");
+        if (svgNodeRef.current && container.contains(svgNodeRef.current)) {
+          container.removeChild(svgNodeRef.current);
+        }
+
         const sunburstInstance = SunburstConstructor(
           graphData,
           928, // Width
-          handleSunburstClick,
-          handleNodeClick,
-          handleCenterClick,
+          handleSunburstClickRef,
+          handleNodeClickRef,
+          handleCenterClickRef,
           zoomedNodeId,
         );
 
-        currentHierarchyRootRef.current = sunburstInstance.hierarchyRoot; // Store the hierarchy
+        currentHierarchyRootRef.current = sunburstInstance.hierarchyRoot;
+        d3ClickedRef.current = sunburstInstance.d3Clicked;
 
         if (sunburstInstance.svgNode) {
           svgNodeRef.current = sunburstInstance.svgNode;
-          svgContainerRef.current.appendChild(svgNodeRef.current);
+          container.appendChild(svgNodeRef.current);
+          lastUsedGraphDataRef.current = graphData; // Track graphData used for this D3 build
         } else {
           console.error("SunburstConstructor did not return a valid svgNode.");
           svgNodeRef.current = null;
+          lastUsedGraphDataRef.current = null;
         }
-      } catch (error) {
-        console.error(
-          "Error during SunburstConstructor execution or SVG append:",
-          error,
-        );
-        // Attempt cleanup even on error
-        if (
-          svgNodeRef.current &&
-          svgContainerRef.current.contains(svgNodeRef.current)
-        ) {
-          svgContainerRef.current.removeChild(svgNodeRef.current);
-        }
-        svgNodeRef.current = null;
-        currentHierarchyRootRef.current = null;
-        // Optionally set an error state to display to the user
+      } else {
       }
-    } else if (!graphData && svgContainerRef.current) {
-      // Handle the case where data is null
-      if (
-        svgNodeRef.current &&
-        svgContainerRef.current.contains(svgNodeRef.current)
-      ) {
-        try {
-          svgContainerRef.current.removeChild(svgNodeRef.current);
-        } catch (e) {
-          /* ignore */
-        }
-        svgNodeRef.current = null;
+    } else {
+      // No graphData, so ensure D3 cleanup
+      if (svgNodeRef.current && container.contains(svgNodeRef.current)) {
+        container.removeChild(svgNodeRef.current);
       }
-      currentHierarchyRootRef.current = null; // Also clear hierarchy ref when data is null
+      svgNodeRef.current = null;
+      currentHierarchyRootRef.current = null;
+      d3ClickedRef.current = null;
+      lastUsedGraphDataRef.current = null;
     }
-
-    return () => {};
-  }, [
-    graphData,
-    zoomedNodeId,
-    handleSunburstClick,
-    handleNodeClick,
-    handleCenterClick,
-  ]);
+  }, [graphData, zoomedNodeId]);
 
   // --- Popup Handling ---
   useEffect(() => {
@@ -309,20 +302,16 @@ const Sunburst = ({ addSelectedItem }) => {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      // Cleanup
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [popupVisible]);
 
-  // Handler for the "Add as origin" button in the popup
   function handleSelectItem() {
     if (clickedItem) {
       addSelectedItem(clickedItem);
     }
     handlePopupClose();
   }
-
-  // Function to close the popup and clear related state
   const handlePopupClose = () => {
     setPopupVisible(false);
     setClickedItem(null);
@@ -331,7 +320,6 @@ const Sunburst = ({ addSelectedItem }) => {
   // --- Render ---
   return (
     <div className="sunburst-component-wrapper">
-      {/* Container for the D3 SVG chart */}
       <div
         data-testid="sunburst-container"
         id="sunburst-container"
@@ -345,13 +333,12 @@ const Sunburst = ({ addSelectedItem }) => {
           margin: "0 auto",
         }}
       >
-        {/* Loading Indicator Overlay */}
         {isLoading && (
           <div className="loading-overlay" data-testid="loading-overlay">
             <span>Loading...</span>
           </div>
         )}
-        {/* The SVG will be appended here by the useEffect */}
+        {/* The SVG is appended here */}
       </div>
 
       {/* Popup */}
@@ -366,7 +353,6 @@ const Sunburst = ({ addSelectedItem }) => {
             top: `${popupPosition.y}px`,
           }}
         >
-          {/* Popup Content */}
           <p
             style={{
               margin: "0 0 5px 0",
@@ -384,14 +370,13 @@ const Sunburst = ({ addSelectedItem }) => {
           <a
             className="popup-button"
             data-testid="popup-button-goto"
-            href={`/#/browse/${clickedItem._id}`}
-            target="_blank" // Open in new tab
+            href={`/#/collections/${clickedItem._id}`}
+            target="_blank"
             rel="noopener noreferrer"
             onClick={handlePopupClose}
           >
             Go To Page
           </a>
-          {/* Ensure addSelectedItem prop is a function before rendering */}
           {typeof addSelectedItem === "function" && (
             <button
               className="popup-button"

@@ -316,7 +316,7 @@ function ForceGraphConstructor(
     linkStrokeLinecap: "round",
     initialScale: 1,
     width: 640,
-    heightRatio: 0.5,
+    height: 640,
     nodeForceStrength: -1000,
     targetLinkDistance: 175,
     centerForceStrength: 1,
@@ -373,20 +373,17 @@ function ForceGraphConstructor(
     .force("center", forceCenter)
     .on("tick", ticked);
 
-  // Create main SVG element
-  let height = mergedOptions.width * mergedOptions.heightRatio;
-
   const svg = d3
     .create("svg")
     .attr("width", mergedOptions.width)
-    .attr("height", height)
+    .attr("height", mergedOptions.height)
     .attr("viewBox", [
       -mergedOptions.width / 2,
-      -height / 2,
+      -mergedOptions.height / 2,
       mergedOptions.width,
-      height,
+      mergedOptions.height,
     ])
-    .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+    .attr("style", "width: 100%; height: 100%;");
 
   const g = svg.append("g");
 
@@ -450,7 +447,7 @@ function ForceGraphConstructor(
     .attr("class", "legend")
     .attr(
       "transform",
-      `translate(${-(mergedOptions.width / 2) + 20}, ${-(height / 2) + 20})`,
+      `translate(${-(mergedOptions.width / 2) + 20}, ${-(mergedOptions.height / 2) + 20})`,
     )
     .style("font-family", "sans-serif")
     .style("font-size", "10px");

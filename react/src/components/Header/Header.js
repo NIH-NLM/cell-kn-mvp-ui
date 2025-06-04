@@ -14,16 +14,26 @@ const Header = () => {
   return (
     <div>
       <div className="app-header background-color-main">
-        <h1>NLM Cell Knowledge Network</h1>
-        <div>Login</div>
+        <h1>NLM Cell Knowledge Network MVP</h1>
+        {/*<div>Login</div>*/}
       </div>
       <div className="navbar background-color-light-bg">
         <Link to="/">
-          <h4 className={activeNav === "/" ? "active-nav" : ""}>Explore</h4>
+          <h4 className={activeNav === "/" ? "active-nav" : ""}>Search</h4>
         </Link>
-        <Link to="/browse">
-          <h4 className={activeNav.startsWith("/browse") ? "active-nav" : ""}>
+        <Link to="/sunburst">
+          <h4 className={activeNav === "/sunburst" ? "active-nav" : ""}>
             Browse
+          </h4>
+        </Link>
+        <Link to="/tree">
+          <h4 className={activeNav === "/tree" ? "active-nav" : ""}>Explore</h4>
+        </Link>
+        <Link to="/collections">
+          <h4
+            className={activeNav.startsWith("/collections") ? "active-nav" : ""}
+          >
+            Collections
           </h4>
         </Link>
         <Link to="/schema">

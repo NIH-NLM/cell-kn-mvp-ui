@@ -26,7 +26,7 @@ describe("Header Component", () => {
     // Check if each navigation link is rendered
     expect(screen.getByText(/Explore/i)).toBeInTheDocument();
     expect(screen.getByText(/Query/i)).toBeInTheDocument();
-    expect(screen.getByText(/Browse/i)).toBeInTheDocument();
+    expect(screen.getByText(/collections/i)).toBeInTheDocument();
     expect(screen.getByText(/Schema/i)).toBeInTheDocument();
   });
 
@@ -55,7 +55,7 @@ describe("Header Component", () => {
     );
 
     // Check the initial active class
-    expect(screen.getByText(/Browse/i)).toHaveClass("active-nav");
+    expect(screen.getByText(/collections/i)).toHaveClass("active-nav");
     expect(screen.getByText(/Explore/i)).not.toHaveClass("active-nav");
 
     // Simulate a click event on the "Schema" link to navigate to `/schema`
@@ -63,6 +63,6 @@ describe("Header Component", () => {
 
     // Check if the active class switches to the "Schema" link after the click
     expect(screen.getByText(/Schema/i)).toHaveClass("active-nav");
-    expect(screen.getByText(/Browse/i)).not.toHaveClass("active-nav");
+    expect(screen.getByText(/collections/i)).not.toHaveClass("active-nav");
   });
 });

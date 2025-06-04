@@ -19,7 +19,7 @@ const ForceGraph = ({
   const chartContainerRef = useRef();
 
   // Init setting states
-  const [depth, setDepth] = useState(settings["defaultDepth"] || 3);
+  const [depth, setDepth] = useState(settings["defaultDepth"] || 2);
   const [edgeDirection, setEdgeDirection] = useState(
     settings["edgeDirection"] || "ANY",
   );
@@ -63,6 +63,7 @@ const ForceGraph = ({
   const [showNoDataPopup, setShowNoDataPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [collapseOnStart, setCollapseOnStart] = useState(true);
+  const [activeTab, setActiveTab] = useState("general");
 
   const { graphType, setGraphType } = useContext(GraphContext);
 
@@ -199,7 +200,7 @@ const ForceGraph = ({
               interactionCallback: handlePopupClose,
               nodeStrength: -100,
               width: chartContainerRef.current?.clientWidth || "2560",
-              heightRatio: heightRatio,
+              height: chartContainerRef.current?.clientHeight,
               labelStates: labelStates,
             });
             resolve(graphInstance);
@@ -234,7 +235,8 @@ const ForceGraph = ({
           (node) =>
             node &&
             typeof node._id !== "undefined" &&
-            ((originNodeIds.length == 1 && !originNodeIds.includes(node._id)) || depth !== 1 ||
+            ((originNodeIds.length == 1 && !originNodeIds.includes(node._id)) ||
+              depth !== 1 ||
               originNodeIds.length > 1),
         )
         .map((node) => node._id);
@@ -510,15 +512,24 @@ const ForceGraph = ({
     setClickedNodeId(nodeData._id);
     setClickedNodeLabel(getLabel(nodeData));
 
-    const { clientX, clientY } = e;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
+    if (chartContainerRef.current) {
+      const chartRect = chartContainerRef.current.getBoundingClientRect();
+      const xRelativeToChart = e.clientX - chartRect.left;
+      const yRelativeToChart = e.clientY - chartRect.top;
 
-    setPopupPosition({
-      x: clientX + 10 + scrollX,
-      y: clientY + 10 + scrollY,
-    });
-    setPopupVisible(true);
+      setPopupPosition({
+        x: xRelativeToChart + 30,
+        y: yRelativeToChart + 30,
+      });
+      setPopupVisible(true);
+    } else {
+      console.error("Chart container ref not found for popup positioning.");
+      setPopupPosition({
+        x: e.clientX + 10 + window.scrollX,
+        y: e.clientY + 10 + window.scrollY,
+      });
+      setPopupVisible(true);
+    }
   };
 
   const handleGraphToggle = () => {
@@ -740,339 +751,369 @@ const ForceGraph = ({
   };
 
   return (
-    <div className="graph-container">
-      <button
-        onClick={toggleOptionsVisibility}
-        className="toggle-button background-color-white"
-        aria-expanded={optionsVisible}
-        aria-controls="graph-options-panel"
-      >
-        {optionsVisible ? "Hide Options ▼" : "Show Options ▲"}
-      </button>
+    <div
+      className={`graph-component-wrapper ${optionsVisible ? "options-open" : "options-closed"}`}
+    >
+      <div className="graph-main-area">
+        <button
+          onClick={toggleOptionsVisibility}
+          className="toggle-options-button"
+          aria-expanded={optionsVisible}
+          aria-controls="graph-options-panel"
+        >
+          {optionsVisible ? "> Hide Options" : "< Show Options"}{" "}
+        </button>
+
+        {isLoading && (
+          <div className="loading-indicator">
+            <div className="progress-bar"></div>
+            <span>Loading graph data...</span>
+          </div>
+        )}
+        <div
+          id="chart-container"
+          ref={chartContainerRef}
+          style={{
+            minHeight: "500px",
+            position: "relative",
+            flexGrow: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {!isLoading && !graph && showNoDataPopup && (
+            <div className="no-data-message">
+              No data meets the current criteria. Please adjust options or
+              search terms.
+            </div>
+          )}
+          {!isLoading &&
+            !graph &&
+            !showNoDataPopup &&
+            !originNodeIds?.length && (
+              <div className="no-data-message">
+                Please search for nodes to visualize a graph.
+              </div>
+            )}
+        </div>
+        <div
+          className="node-popup"
+          style={
+            popupVisible
+              ? {
+                  display: "flex",
+                  position: "absolute",
+                  left: `${popupPosition.x}px`,
+                  top: `${popupPosition.y}px`,
+                }
+              : { display: "none" }
+          }
+        >
+          <a
+            className="popup-button"
+            href={`/#/collections/${clickedNodeId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Go To "{clickedNodeLabel}"
+          </a>
+          <button className="popup-button" onClick={handleExpand}>
+            Expand from "{clickedNodeLabel}"
+          </button>
+          <button className="popup-button" onClick={handleCollapse}>
+            Collapse Satellite Nodes
+          </button>
+          <button className="popup-button" onClick={handleRemove}>
+            Remove Node & Satellites
+          </button>
+          <button
+            className="popup-close-button"
+            onClick={handlePopupClose}
+            aria-label="Close popup"
+          >
+            ×
+          </button>
+        </div>
+      </div>{" "}
       <div
         id="graph-options-panel"
-        className="graph-options"
+        className="graph-options-side-panel"
         data-testid="graph-options"
-        style={{ display: optionsVisible ? "flex" : "none" }}
+        style={{ display: optionsVisible ? "block" : "none" }}
       >
-        {/* Depth Picker */}
-        <div className="option-group">
-          <label htmlFor="depth-select">Depth:</label>
-          <select id="depth-select" value={depth} onChange={handleDepthChange}>
-            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/*/!* Edge Direction Picker *!/*/}
-        {/*<div className="option-group">*/}
-        {/*  <label htmlFor="edge-direction-select">*/}
-        {/*    Edge traversal direction:*/}
-        {/*  </label>*/}
-        {/*  <select*/}
-        {/*    id="edge-direction-select"*/}
-        {/*    value={edgeDirection}*/}
-        {/*    onChange={handleEdgeDirectionChange}*/}
-        {/*  >*/}
-        {/*    {["OUTBOUND", "INBOUND", "ANY"].map((value) => (*/}
-        {/*      <option key={value} value={value}>*/}
-        {/*        {value}*/}
-        {/*      </option>*/}
-        {/*    ))}*/}
-        {/*  </select>*/}
-        {/*</div>*/}
-
-        {/*/!* Node Limit Picker *!/*/}
-        {/*<div className="option-group">*/}
-        {/*  <label htmlFor="node-limit-select">Path Traversal Limit:</label>*/}
-        {/*  <select*/}
-        {/*    id="node-limit-select"*/}
-        {/*    value={nodeLimit}*/}
-        {/*    onChange={handleNodeLimitChange}*/}
-        {/*  >*/}
-        {/*    {[10, 50, 100, 150, 250, 500, 1000, 5000].map((value) => (*/}
-        {/*      <option key={value} value={value}>*/}
-        {/*        {value}*/}
-        {/*      </option>*/}
-        {/*    ))}*/}
-        {/*  </select>*/}
-        {/*</div>*/}
-
-        {/* Graph Operation (Set Operation) */}
-        {graphNodeIds && graphNodeIds.length >= 2 && (
-          <div className="option-group multi-node">
-            <label htmlFor="set-operation-select">Graph operation:</label>
-            <select
-              id="set-operation-select"
-              value={setOperation}
-              onChange={handleOperationChange}
-            >
-              {["Intersection", "Union", "Symmetric Difference"].map(
-                (value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ),
-              )}
-            </select>
-          </div>
-        )}
-
-        {/* Font Size Pickers */}
-        <div className="option-group font-size-picker">
-          <div className="node-font-size-picker">
-            <label htmlFor="node-font-size-select">Node font size:</label>
-            <select
-              id="node-font-size-select"
-              value={nodeFontSize}
-              onChange={handleNodeFontSizeChange}
-            >
-              {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map(
-                (size) => (
-                  <option key={size} value={size}>
-                    {size}px
-                  </option>
-                ),
-              )}
-            </select>
-          </div>
-          <div className="edge-font-size-picker">
-            <label htmlFor="edge-font-size-select">Edge font size:</label>
-            <select
-              id="edge-font-size-select"
-              value={edgeFontSize}
-              onChange={handleEdgeFontSizeChange}
-            >
-              {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map(
-                (size) => (
-                  <option key={size} value={size}>
-                    {size}px
-                  </option>
-                ),
-              )}
-            </select>
-          </div>
-        </div>
-
-        {/* Collection Picker */}
-        <div className="option-group collection-picker">
-          <label>Select collections to include in graph traversal:</label>
-          <div className="checkboxes-container">
-            {collections.map((collection) => (
-              <div key={collection} className="checkbox-container">
-                <button
-                  id={collection}
-                  // Now checked if allowedCollections includes the collection
-                  checked={allowedCollections.includes(collection)}
-                  onClick={() => handleCollectionChange(collection)}
-                  className={
-                    allowedCollections.includes(collection)
-                      ? "background-color-bg"
-                      : "background-color-light"
-                  }
-                >
-                  {collectionsMap.has(collection)
-                    ? collectionsMap.get(collection)["display_name"]
-                    : collection}
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="checkboxes-container collection-controls">
-            <button
-              onClick={handleAllOn}
-              className={
-                allowedCollections.length === collections.length
-                  ? "background-color-bg"
-                  : "background-color-light"
-              }
-              disabled={allowedCollections.length === collections.length}
-            >
-              All On
-            </button>
-            <button
-              onClick={handleAllOff}
-              className={
-                allowedCollections.length === 0
-                  ? "background-color-bg"
-                  : "background-color-light"
-              }
-              disabled={allowedCollections.length === 0}
-            >
-              All Off
-            </button>
-          </div>
-        </div>
-
-        {/* Label Toggles */}
-        <div className="option-group labels-toggle-container">
-          <label>Toggle Labels:</label>
-          <div className="labels-toggle">
-            <div className="label-toggle-item">
-              Collection
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={labelStates[".collection-label"]}
-                  onChange={() => handleLabelToggle(".collection-label")}
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            <div className="label-toggle-item">
-              Edge
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={labelStates[".link-label"]}
-                  onChange={() => handleLabelToggle(".link-label")}
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            <div className="label-toggle-item">
-              Node
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={labelStates[".node-label"]}
-                  onChange={() => handleLabelToggle(".node-label")}
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Graph Toggle Button */}
-        <div className="option-group labels-toggle-container">
-          <label>Graph Source:</label>
-          <div className="labels-toggle">
-            Evidence
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={graphType === "ontologies"}
-                onChange={handleGraphToggle}
-                aria-label="Toggle between Phenotypes and Ontologies"
-              />
-              <span className="slider round"></span>
-            </label>
-            Knowledge
-          </div>
-        </div>
-
-        {/* Shortest Path Toggle */}
-        {graphNodeIds && graphNodeIds.length >= 2 && (
-          <div className="option-group multi-node">
-            Shortest Path
-            <label className="switch" style={{ margin: "auto" }}>
-              <input
-                type="checkbox"
-                checked={findShortestPaths}
-                onChange={handleShortestPathToggle}
-              />
-              <span className="slider round"></span>
-            </label>
-          </div>
-        )}
-
-        {/* Simulation Restart Button */}
-        <div className="option-group checkbox-container">
+        <div className="options-tabs-nav">
           <button
-            className="simulation-toggle background-color-bg"
-            onClick={handleSimulationRestart}
+            className={`tab-button ${activeTab === "general" ? "active" : ""}`}
+            onClick={() => setActiveTab("general")}
+            aria-controls="tab-panel-general"
+            aria-selected={activeTab === "general"}
+            role="tab"
           >
-            Restart Simulation
+            General
+          </button>
+          {graphNodeIds && graphNodeIds.length >= 2 && (
+            <button
+              className={`tab-button ${activeTab === "multiNode" ? "active" : ""}`}
+              onClick={() => setActiveTab("multiNode")}
+              aria-controls="tab-panel-multiNode"
+              aria-selected={activeTab === "multiNode"}
+              role="tab"
+            >
+              Multi-Node
+            </button>
+          )}
+          <button
+            className={`tab-button ${activeTab === "collections" ? "active" : ""}`}
+            onClick={() => setActiveTab("collections")}
+            aria-controls="tab-panel-collections"
+            aria-selected={activeTab === "collections"}
+            role="tab"
+          >
+            Collections
+          </button>
+          <button
+            className={`tab-button ${activeTab === "export" ? "active" : ""}`}
+            onClick={() => setActiveTab("export")}
+            aria-controls="tab-panel-export"
+            aria-selected={activeTab === "export"}
+            role="tab"
+          >
+            Export
           </button>
         </div>
 
-        {/* Export Buttons */}
-        <div className="option-group export-buttons">
-          <label>Export Graph:</label>
-          <button onClick={() => exportGraph("svg")}>Download as SVG</button>
-          <button onClick={() => exportGraph("png")}>Download as PNG</button>
-          {/* <button onClick={() => exportGraph("jpeg")}>Download as JPEG</button> */}
+        <div className="options-tabs-content">
+          {activeTab === "general" && (
+            <div
+              id="tab-panel-general"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group">
+                <label htmlFor="depth-select">Depth:</label>
+                <select
+                  id="depth-select"
+                  value={depth}
+                  onChange={handleDepthChange}
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="option-group font-size-picker">
+                <div className="node-font-size-picker">
+                  <label htmlFor="node-font-size-select">Node font size:</label>
+                  <select
+                    id="node-font-size-select"
+                    value={nodeFontSize}
+                    onChange={handleNodeFontSizeChange}
+                  >
+                    {[
+                      4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+                    ].map((size) => (
+                      <option key={size} value={size}>
+                        {size}px
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="edge-font-size-picker">
+                  <label htmlFor="edge-font-size-select">Edge font size:</label>
+                  <select
+                    id="edge-font-size-select"
+                    value={edgeFontSize}
+                    onChange={handleEdgeFontSizeChange}
+                  >
+                    {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map(
+                      (size) => (
+                        <option key={size} value={size}>
+                          {size}px
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="option-group labels-toggle-container">
+                <label>Toggle Labels:</label>
+                <div className="labels-toggle">
+                  <div className="label-toggle-item">
+                    Collection
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates[".collection-label"]}
+                        onChange={() => handleLabelToggle(".collection-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Edge
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates[".link-label"]}
+                        onChange={() => handleLabelToggle(".link-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Node
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates[".node-label"]}
+                        onChange={() => handleLabelToggle(".node-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="option-group labels-toggle-container">
+                {" "}
+                <label>Graph Source:</label>
+                <div className="labels-toggle graph-source-toggle">
+                  {" "}
+                  Evidence
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={graphType === "ontologies"}
+                      onChange={handleGraphToggle}
+                      aria-label="Toggle between Phenotypes and Ontologies"
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  Knowledge
+                </div>
+              </div>
+              <div className="option-group checkbox-container">
+                <button
+                  className="simulation-toggle background-color-bg"
+                  onClick={handleSimulationRestart}
+                >
+                  Restart Simulation
+                </button>
+              </div>
+            </div>
+          )}
+          {activeTab === "multiNode" &&
+            graphNodeIds &&
+            graphNodeIds.length >= 2 && (
+              <div
+                id="tab-panel-multiNode"
+                role="tabpanel"
+                className="tab-panel active"
+              >
+                <div className="option-group multi-node">
+                  <label htmlFor="set-operation-select">Graph operation:</label>
+                  <select
+                    id="set-operation-select"
+                    value={setOperation}
+                    onChange={handleOperationChange}
+                  >
+                    {["Intersection", "Union", "Symmetric Difference"].map(
+                      (value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+                <div className="option-group multi-node">
+                  Shortest Path
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={findShortestPaths}
+                      onChange={handleShortestPathToggle}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            )}
+          {activeTab === "collections" && (
+            <div
+              id="tab-panel-collections"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group collection-picker">
+                <label>Active Collections:</label>
+                <div className="checkboxes-container">
+                  {collections.map((collection) => (
+                    <div key={collection} className="checkbox-container">
+                      <button
+                        id={collection}
+                        onClick={() => handleCollectionChange(collection)}
+                        className={
+                          allowedCollections.includes(collection)
+                            ? "collection-button-selected"
+                            : "collection-button-deselected"
+                        }
+                      >
+                        {collectionsMap.has(collection)
+                          ? collectionsMap.get(collection)["display_name"]
+                          : collection}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="checkboxes-container collection-controls">
+                  <button
+                    onClick={handleAllOn}
+                    className={
+                      allowedCollections.length === collections.length
+                        ? "collection-button-selected collection-button-all"
+                        : "collection-button-deselected collection-button-all"
+                    }
+                    disabled={allowedCollections.length === collections.length}
+                  >
+                    All On
+                  </button>
+                  <button
+                    onClick={handleAllOff}
+                    className={
+                      allowedCollections.length === 0
+                        ? "collection-button-selected collection-button-all"
+                        : "collection-button-deselected collection-button-all"
+                    }
+                    disabled={allowedCollections.length === 0}
+                  >
+                    All Off
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === "export" && (
+            <div
+              id="tab-panel-export"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group export-buttons">
+                <label>Export Graph:</label>
+                <button onClick={() => exportGraph("svg")}>
+                  Download as SVG
+                </button>
+                <button onClick={() => exportGraph("png")}>
+                  Download as PNG
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>{" "}
-      {/* End graph-options */}
-      {isLoading && (
-        <div className="loading-indicator">
-          {" "}
-          {/* Changed class for clarity */}
-          <div className="progress-bar"></div>{" "}
-          {/* Basic progress bar style needed */}
-          <span>Loading graph data...</span>
-        </div>
-      )}
-      {/* Chart Container */}
-      <div
-        id="chart-container"
-        ref={chartContainerRef}
-        style={{
-          minHeight: "500px",
-          border: "1px solid #ccc",
-          position: "relative" /* Needed for absolute positioning of popups */,
-        }}
-      >
-        {/* Conditional rendering inside container */}
-        {!isLoading && !graph && showNoDataPopup && (
-          <div className="no-data-message">
-            {" "}
-            No data meets the current criteria. Please adjust options or search
-            terms.
-          </div>
-        )}
-        {!isLoading && !graph && !showNoDataPopup && !originNodeIds?.length && (
-          <div className="no-data-message">
-            {" "}
-            {/* Style this message */}
-            Please search for nodes to visualize a graph.
-          </div>
-        )}
-      </div>
-      {/* Node Action Popup */}
-      <div
-        className="node-popup"
-        style={
-          popupVisible
-            ? {
-                display: "flex", // Changed to flex for better layout
-                position: "absolute", // Position relative to chart-container
-                left: `${popupPosition.x}px`,
-                top: `${popupPosition.y}px`,
-              }
-            : { display: "none" }
-        }
-      >
-        <a
-          className="popup-button"
-          href={`/#/browse/${clickedNodeId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Go To "{clickedNodeLabel}"
-        </a>
-        <button className="popup-button" onClick={handleExpand}>
-          Expand from "{clickedNodeLabel}"
-        </button>
-        <button className="popup-button" onClick={handleCollapse}>
-          Collapse Satellite Nodes
-        </button>
-        <button className="popup-button" onClick={handleRemove}>
-          Remove Node & Satellites
-        </button>
-        <button
-          className="popup-close-button"
-          onClick={handlePopupClose}
-          aria-label="Close popup" // Accessibility
-        >
-          ×
-        </button>
-      </div>
     </div>
   );
 };

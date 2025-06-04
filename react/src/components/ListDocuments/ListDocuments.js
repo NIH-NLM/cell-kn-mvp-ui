@@ -4,7 +4,7 @@ import { getLabel } from "../Utils/Utils";
 
 const ListDocuments = ({ document }) => {
   return (
-    <Link to={`/browse/${document._id}`}>
+    <Link to={`/collections/${document._id}`}>
       <div className="list-document">
         <h3>{getLabel(document)}</h3>
       </div>

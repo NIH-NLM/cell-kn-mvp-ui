@@ -10,84 +10,79 @@ import { getColorForCollection } from "../../services/ColorServices/ColorService
  *
  * @param {object} data The hierarchical data object.
  * @param {number} size The outer diameter.
- * @param {function} handleSunburstClick Callback for right-click.
- * @param {function} handleNodeClick Callback for left-click on arcs (event, d3Node) -> bool.
- * @param {function} handleCenterClick Callback for left-click on center circle/text.
+ * @param {object} handleSunburstClickRef Ref to callback for right-click.
+ * @param {object} handleNodeClickRef Ref to callback for left-click on arcs (event, d3Node) -> bool.
+ * @param {object} handleCenterClickRef Ref to callback for left-click on center circle/text.
  * @param {string|null} [zoomedNodeId] Optional: The ID of the node to be centered initially.
- * @returns {object} { svgNode, hierarchyRoot }.
+ * @returns {object} { svgNode, hierarchyRoot, d3Clicked }.
  */
 function SunburstConstructor(
   data,
   size,
-  handleSunburstClick,
-  handleNodeClick,
-  handleCenterClick, // Callback for center click
-  zoomedNodeId, // ID of node to center on
+  handleSunburstClickRef,
+  handleNodeClickRef,
+  handleCenterClickRef,
+  zoomedNodeId,
 ) {
   // --- Configuration ---
   const width = size;
   const height = width;
   const radius = width / 6;
-  const zoomDuration = 750;
-  const fadeInDelay = 0;
-  const fadeInDuration = 0;
+  const zoomDuration = 750; // Duration for zoom animation
+  const fadeInDelay = 0; // Delay for initial fade-in
+  const fadeInDuration = 0; // Duration for initial fade-in
 
   // --- Basic Data Check ---
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
     console.error("Constructor Error: Invalid or missing data received!", data);
-    return { svgNode: null, hierarchyRoot: null };
+    return { svgNode: null, hierarchyRoot: null, d3Clicked: () => {} }; // Return dummy d3Clicked
   }
 
   // --- D3 Setup ---
   let hierarchy,
     root,
-    pNode = null;
+    pNode = null; // pNode is the node to be initially at the center
 
   try {
-    // Create hierarchy & partition
     hierarchy = d3
       .hierarchy(data)
       .sum((d) => d.value || 1)
       .sort((a, b) => (b.value || 1) - (a.value || 1));
     root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(hierarchy);
 
-    // Calculate Initial 'current' Positions based on zoomedNodeId
     pNode = zoomedNodeId ? root.find((d) => d.data._id === zoomedNodeId) : null;
     if (zoomedNodeId && !pNode) {
       console.warn(
-        `Constructor Warning: Could not find zoomedNodeId "${zoomedNodeId}".`,
+        `Constructor Warning: Could not find zoomedNodeId "${zoomedNodeId}". Falling back to root.`,
       );
     }
+    const initialCenterReferenceNode = pNode || root;
+
     root.each((d) => {
-      if (pNode) {
-        // Calculate zoomed position
-        const targetX0 =
-          Math.max(0, Math.min(1, (d.x0 - pNode.x0) / (pNode.x1 - pNode.x0))) *
-          2 *
-          Math.PI;
-        const targetX1 =
-          Math.max(0, Math.min(1, (d.x1 - pNode.x0) / (pNode.x1 - pNode.x0))) *
-          2 *
-          Math.PI;
-        const targetY0 = Math.max(0, d.y0 - pNode.depth);
-        const targetY1 = Math.max(0, d.y1 - pNode.depth);
-        d.current = {
-          x0: isNaN(targetX0) ? 0 : targetX0,
-          x1: isNaN(targetX1) ? 0 : targetX1,
-          y0: isNaN(targetY0) ? 0 : targetY0,
-          y1: isNaN(targetY1) ? 0 : targetY1,
-        };
-      } else {
-        // Default (root) position
-        d.current = { x0: d.x0, y0: d.y0, x1: d.x1, y1: d.y1 };
-      }
+      const ref = initialCenterReferenceNode;
+      const targetX0 =
+        Math.max(0, Math.min(1, (d.x0 - ref.x0) / (ref.x1 - ref.x0))) *
+        2 *
+        Math.PI;
+      const targetX1 =
+        Math.max(0, Math.min(1, (d.x1 - ref.x0) / (ref.x1 - ref.x0))) *
+        2 *
+        Math.PI;
+      const targetY0 = Math.max(0, d.y0 - ref.depth);
+      const targetY1 = Math.max(0, d.y1 - ref.depth);
+      d.current = {
+        x0: isNaN(targetX0) ? 0 : targetX0,
+        x1: isNaN(targetX1) ? 0 : targetX1,
+        y0: isNaN(targetY0) ? 0 : targetY0,
+        y1: isNaN(targetY1) ? 0 : targetY1,
+      };
     });
   } catch (error) {
     console.error(
       "Constructor Error: Failed during D3 hierarchy/partition/position setup:",
       error,
     );
-    return { svgNode: null, hierarchyRoot: null };
+    return { svgNode: null, hierarchyRoot: null, d3Clicked: () => {} };
   }
 
   // --- Arc Generator ---
@@ -118,90 +113,118 @@ function SunburstConstructor(
       .style("margin", "auto");
   } catch (error) {
     console.error("Constructor Error: Failed creating SVG:", error);
-    return { svgNode: null, hierarchyRoot: root };
+    return { svgNode: null, hierarchyRoot: root, d3Clicked: () => {} };
   }
   const g = svg.append("g");
 
   // --- Path Elements ---
-  let pathUpdate, pathEnter;
+  let pathUpdate;
   try {
     const pathGroup = g.append("g").attr("fill-rule", "evenodd");
-    const pathData = root.descendants().slice(1); // Exclude the overall root node from paths
+    const pathData = root.descendants();
     const path = pathGroup.selectAll("path").data(pathData, (d) => d.data._id);
+
     path.exit().remove();
-    pathEnter = path
+
+    const pathEnter = path
       .enter()
       .append("path")
       .attr("fill", (d) => {
+        if (d.depth === 0 && !pNode) return "none";
         const collectionId =
           d.data?._id?.split("/")[0] || d.data?._key || "unknown";
         return getColorForCollection(collectionId);
       })
-      .attr("fill-opacity", 0) // Start invisible
+      .attr("fill-opacity", 0)
       .attr("pointer-events", "none")
       .style("cursor", (d) => (d.children ? "pointer" : "default"))
-      .attr("d", arc);
+      .attr("d", (d) => arc(d)); // Use arc with d.current for initial state
+
     pathEnter
       .append("title")
       .text((d) => getLabel(d.data) || d.data._key || "Unknown");
 
     pathUpdate = path.merge(pathEnter);
+
     pathUpdate
-      .on("contextmenu", function (event, d) {
+      .on("contextmenu", function (event, d_node) {
         event.preventDefault();
-        handleSunburstClick(event, d);
+        if (handleSunburstClickRef.current) {
+          handleSunburstClickRef.current(event, d_node);
+        }
       })
-      .on("click", (event, d) => {
-        if (handleNodeClick(event, d)) {
-          clicked(event, d);
+      .on("click", (event, d_node) => {
+        if (handleNodeClickRef.current) {
+          const shouldCallD3Animation = handleNodeClickRef.current(
+            event,
+            d_node,
+          );
+          if (shouldCallD3Animation) {
+            clicked(event, d_node);
+          }
         }
       });
   } catch (error) {
     console.error("Constructor Error: Failed processing Paths:", error);
-    return { svgNode: svg ? svg.node() : null, hierarchyRoot: root };
+    return {
+      svgNode: svg ? svg.node() : null,
+      hierarchyRoot: root,
+      d3Clicked: () => {},
+    };
   }
 
   // --- Label Elements ---
-  let labelUpdate, labelEnter;
+  let labelUpdate;
   try {
     const labelGroup = g
       .append("g")
       .attr("pointer-events", "none")
       .attr("text-anchor", "middle")
       .style("user-select", "none");
-    const labelData = root.descendants().slice(1); // Exclude root from labels
+
+    const labelData = root.descendants();
     const label = labelGroup
       .selectAll("text")
       .data(labelData, (d) => d.data._id);
+
     label.exit().remove();
-    labelEnter = label
+
+    const labelEnter = label
       .enter()
       .append("text")
       .attr("dy", "0.35em")
-      .attr("fill-opacity", 0) // Start invisible
+      .attr("fill-opacity", 0)
       .attr("transform", (d) => labelTransform(d.current))
       .text((d) => {
+        if (d.depth === 0 && !pNode) return "";
         const lbl = getLabel(d.data) || "";
         return lbl.length > 10 ? lbl.slice(0, 9) + "..." : lbl;
       });
+
     labelUpdate = label.merge(labelEnter);
   } catch (error) {
     console.error("Constructor Error: Failed processing Labels:", error);
-    return { svgNode: svg ? svg.node() : null, hierarchyRoot: root };
+    return {
+      svgNode: svg ? svg.node() : null,
+      hierarchyRoot: root,
+      d3Clicked: () => {},
+    };
   }
 
   // --- Center Elements ---
-  const initialCenterNode = pNode || root;
+  const currentVisualCenterNode = pNode || root;
   let parentCircle, centerText;
   try {
-    parentCircle = svg
+    parentCircle = svg // Assign to parentCircle
       .append("circle")
       .attr("r", radius)
       .attr("fill", "none")
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
       .on("click", (event) => {
-        handleCenterClick();
+        if (handleCenterClickRef.current) {
+          handleCenterClickRef.current();
+        }
       });
     centerText = svg
       .append("text")
@@ -210,180 +233,212 @@ function SunburstConstructor(
       .style("font-size", "14px")
       .style("font-weight", "bold")
       .style("cursor", "pointer")
-      .text(getLabel(initialCenterNode.data) || "Root")
+      .text(getLabel(currentVisualCenterNode.data) || "Root")
       .on("click", (event) => {
-        handleCenterClick();
+        if (handleCenterClickRef.current) {
+          handleCenterClickRef.current();
+        }
       });
   } catch (error) {
     console.error("Constructor Error: Failed creating Center elements:", error);
-    return { svgNode: svg ? svg.node() : null, hierarchyRoot: root };
+    return {
+      svgNode: svg ? svg.node() : null,
+      hierarchyRoot: root,
+      d3Clicked: () => {},
+    };
   }
 
   // --- The `clicked` function ---
-  function clicked(event, p) {
-    // p = node to zoom into
-    // Calculate target positions relative to 'p'
-    root.each((d) => {
-      d.target = {
-        /* target calculation based on p */
+  function clicked(event, pClicked) {
+    root.each((d_node) => {
+      d_node.target = {
+        x0:
+          Math.max(
+            0,
+            Math.min(
+              1,
+              (d_node.x0 - pClicked.x0) / (pClicked.x1 - pClicked.x0),
+            ),
+          ) *
+          2 *
+          Math.PI,
+        x1:
+          Math.max(
+            0,
+            Math.min(
+              1,
+              (d_node.x1 - pClicked.x0) / (pClicked.x1 - pClicked.x0),
+            ),
+          ) *
+          2 *
+          Math.PI,
+        y0: Math.max(0, d_node.y0 - pClicked.depth),
+        y1: Math.max(0, d_node.y1 - pClicked.depth),
       };
+      if (isNaN(d_node.target.x0)) d_node.target.x0 = 0;
+      if (isNaN(d_node.target.x1)) d_node.target.x1 = 0;
     });
 
-    const t = svg.transition().duration(zoomDuration);
+    const t = svg
+      .transition()
+      .duration(event && event.altKey ? 7500 : zoomDuration);
 
-    // Transition paths
     pathUpdate
       .transition(t)
-      .tween("data", (d) => {
-        const i = d3.interpolate(d.current, d.target);
+      .tween("data", (d_node) => {
+        const i = d3.interpolate(d_node.current, d_node.target);
         return (time) => {
-          d.current = i(time);
+          d_node.current = i(time);
         };
       })
-      // Hide center node (p) during zoom animation
-      .attr("fill-opacity", (d) =>
-        d.data._id === p.data._id
+      .attr("fill-opacity", (d_node) =>
+        d_node.data._id === pClicked.data._id
           ? 0
-          : arcVisible(d.target)
-            ? d.children
+          : arcVisible(d_node.target)
+            ? d_node.children
               ? 0.6
               : 0.4
             : 0,
       )
-      .attr("pointer-events", (d) => (arcVisible(d.target) ? "auto" : "none"))
-      .attrTween("d", (d) => () => arc(d));
+      .attr("pointer-events", (d_node) =>
+        d_node.data._id === pClicked.data._id || !arcVisible(d_node.target)
+          ? "none"
+          : "auto",
+      )
+      .attrTween("d", (d_node) => () => arc(d_node));
 
-    // Transition labels
     labelUpdate
       .transition(t)
-      // Hide center node's (p) label during zoom animation
-      .attr("fill-opacity", (d) =>
-        d.data._id === p.data._id ? 0 : +labelVisible(d.target),
+      .attr("fill-opacity", (d_node) =>
+        d_node.data._id === pClicked.data._id
+          ? 0
+          : +labelVisible(d_node.target),
       )
-      .attrTween("transform", (d) => () => labelTransform(d.current));
+      .attrTween("transform", (d_node) => () => labelTransform(d_node.current));
 
-    // Transition Center Text & Cursor
-    centerText.transition(t).text(getLabel(p.data));
-    updateCursor(p);
+    centerText
+      .transition(t)
+      .text(getLabel(pClicked.data) || pClicked.data._key || "Unknown");
+    updateCursor(pClicked);
   }
 
   // --- Helper Functions ---
-  function arcVisible(d_pos) {
+  function arcVisible(pos) {
     if (
-      !d_pos ||
-      typeof d_pos.y1 === "undefined" ||
-      typeof d_pos.y0 === "undefined" ||
-      typeof d_pos.x1 === "undefined" ||
-      typeof d_pos.x0 === "undefined"
+      !pos ||
+      typeof pos.y1 === "undefined" ||
+      typeof pos.y0 === "undefined" ||
+      typeof pos.x1 === "undefined" ||
+      typeof pos.x0 === "undefined"
     )
       return false;
-    return d_pos.y1 > 0 && d_pos.y1 <= 3 && d_pos.x1 > d_pos.x0;
+    return pos.y1 <= 3 && pos.y0 >= 0 && pos.x1 > pos.x0;
   }
-  function labelVisible(d_pos) {
+  function labelVisible(pos) {
     if (
-      !d_pos ||
-      typeof d_pos.y1 === "undefined" ||
-      typeof d_pos.y0 === "undefined" ||
-      typeof d_pos.x1 === "undefined" ||
-      typeof d_pos.x0 === "undefined"
+      !pos ||
+      typeof pos.y1 === "undefined" ||
+      typeof pos.y0 === "undefined" ||
+      typeof pos.x1 === "undefined" ||
+      typeof pos.x0 === "undefined"
     )
       return false;
-    return (
-      arcVisible(d_pos) && (d_pos.y1 - d_pos.y0) * (d_pos.x1 - d_pos.x0) > 0.03
-    );
+    return arcVisible(pos) && (pos.y1 - pos.y0) * (pos.x1 - pos.x0) > 0.03;
   }
-  function labelTransform(d_pos) {
+  function labelTransform(pos) {
     if (
-      !d_pos ||
-      typeof d_pos.x0 === "undefined" ||
-      typeof d_pos.x1 === "undefined" ||
-      typeof d_pos.y0 === "undefined" ||
-      typeof d_pos.y1 === "undefined"
+      !pos ||
+      typeof pos.x0 === "undefined" ||
+      typeof pos.x1 === "undefined" ||
+      typeof pos.y0 === "undefined" ||
+      typeof pos.y1 === "undefined"
     )
       return `translate(0,0)`;
-    const x = (((d_pos.x0 + d_pos.x1) / 2) * 180) / Math.PI;
-    const y = ((d_pos.y0 + d_pos.y1) / 2) * radius;
-    if (isNaN(x) || isNaN(y)) return `translate(0,0)`;
-    return `rotate(${x - 90}) translate(${y},0) rotate(0)`;
+    const xAngle = (((pos.x0 + pos.x1) / 2) * 180) / Math.PI;
+    const yRadius = ((pos.y0 + pos.y1) / 2) * radius;
+    if (isNaN(xAngle) || isNaN(yRadius)) return `translate(0,0)`;
+    return `rotate(${xAngle - 90}) translate(${yRadius},0) rotate(${xAngle < 180 ? 0 : 180})`;
   }
-  function updateCursor(p) {
-    const cursorStyle =
-      !p || typeof p.depth === "undefined" || p.depth === 0
-        ? "default"
-        : "pointer";
+  function updateCursor(pCenter) {
+    const cursorStyle = pCenter && pCenter.parent ? "pointer" : "default";
     if (parentCircle) parentCircle.style("cursor", cursorStyle);
     if (centerText) centerText.style("cursor", cursorStyle);
   }
 
   // --- Apply Initial State & Fade-In ---
-
-  // This section sets the final appearance based on calculated d.current positions.
   try {
-    // Select existing elements
-    const pathExisting = pathUpdate.filter(function () {
-      return pathEnter.nodes().indexOf(this) === -1;
-    });
-    const labelExisting = labelUpdate.filter(function () {
-      return labelEnter.nodes().indexOf(this) === -1;
-    });
-
-    // Update existing paths instantly, hiding the center one
-    pathExisting
-      .attr("d", arc)
-      // Hide center node (zoomedNodeId) if it exists
-      .attr("fill-opacity", (d) =>
-        d.data._id === zoomedNodeId
-          ? 0
-          : arcVisible(d.current)
-            ? d.children
-              ? 0.6
-              : 0.4
-            : 0,
-      )
-      .attr("pointer-events", (d) => (arcVisible(d.current) ? "auto" : "none"));
-
-    // Fade in new paths, hiding the center one if it happens to be new
-    if (pathEnter && !pathEnter.empty()) {
-      pathEnter
-        .transition("fadein")
-        .delay(fadeInDelay)
-        .duration(fadeInDuration)
-        // Hide center node (zoomedNodeId) during fade-in
-        .attr("fill-opacity", (d) =>
-          d.data._id === zoomedNodeId
-            ? 0
-            : arcVisible(d.current)
-              ? d.children
-                ? 0.6
-                : 0.4
-              : 0,
+    pathUpdate // Use pathUpdate which includes entered elements
+      .attr("d", (d) => arc(d))
+      .attr("fill-opacity", (d) => {
+        if (
+          d.data._id === zoomedNodeId ||
+          (d === root && !zoomedNodeId && d.depth === 0)
         )
-        .attr("pointer-events", (d) =>
-          arcVisible(d.current) ? "auto" : "none",
-        );
-    } else {
-    }
-
-    // Update existing labels instantly, hiding the center one
-    labelExisting
-      .attr("transform", (d) => labelTransform(d.current))
-      .attr("fill-opacity", (d) =>
-        d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
+          return 0;
+        return arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0;
+      })
+      .attr("pointer-events", (d) =>
+        d.data._id === zoomedNodeId ||
+        (d === root && !zoomedNodeId && d.depth === 0) ||
+        !arcVisible(d.current)
+          ? "none"
+          : "auto",
       );
 
-    // Fade in new labels, hiding the center one
-    if (labelEnter && !labelEnter.empty()) {
-      labelEnter
-        .transition("fadein_label")
+    if (fadeInDuration > 0 && pathUpdate.enter && !pathUpdate.enter().empty()) {
+      pathUpdate
+        .enter()
+        .transition("fadein_path_explicit")
         .delay(fadeInDelay)
         .duration(fadeInDuration)
-        .attr("fill-opacity", (d) =>
-          d.data._id === zoomedNodeId ? 0 : +labelVisible(d.current),
+        .attr("fill-opacity", (d) => {
+          if (
+            d.data._id === zoomedNodeId ||
+            (d === root && !zoomedNodeId && d.depth === 0)
+          )
+            return 0;
+          return arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0;
+        })
+        .attr("pointer-events", (d) =>
+          d.data._id === zoomedNodeId ||
+          (d === root && !zoomedNodeId && d.depth === 0) ||
+          !arcVisible(d.current)
+            ? "none"
+            : "auto",
         );
-    } else {
     }
 
-    updateCursor(initialCenterNode);
+    labelUpdate
+      .attr("transform", (d) => labelTransform(d.current))
+      .attr("fill-opacity", (d) => {
+        if (
+          d.data._id === zoomedNodeId ||
+          (d === root && !zoomedNodeId && d.depth === 0)
+        )
+          return 0;
+        return +labelVisible(d.current);
+      });
+
+    if (
+      fadeInDuration > 0 &&
+      labelUpdate.enter &&
+      !labelUpdate.enter().empty()
+    ) {
+      labelUpdate
+        .enter()
+        .transition("fadein_label_explicit")
+        .delay(fadeInDelay)
+        .duration(fadeInDuration)
+        .attr("fill-opacity", (d) => {
+          if (
+            d.data._id === zoomedNodeId ||
+            (d === root && !zoomedNodeId && d.depth === 0)
+          )
+            return 0;
+          return +labelVisible(d.current);
+        });
+    }
+    updateCursor(pNode || root);
   } catch (error) {
     console.error(
       "Constructor Error: Failed applying final state/fade-in:",
@@ -395,9 +450,12 @@ function SunburstConstructor(
   const finalSvgNode = svg ? svg.node() : null;
   if (!finalSvgNode) {
     console.error("Constructor Error: Returning null SVG node!");
-  } else {
   }
-  return { svgNode: finalSvgNode, hierarchyRoot: root };
+  return {
+    svgNode: finalSvgNode,
+    hierarchyRoot: root,
+    d3Clicked: clicked,
+  };
 }
 
 export default SunburstConstructor;

@@ -97,7 +97,7 @@ describe("SelectedItemsTable", () => {
     // Find all view links and check the href for the first item
     const viewLinks = screen.getAllByText("View");
     expect(viewLinks[0].getAttribute("href")).toBe(
-      `/browse/${selectedItems[0]._id}`,
+      `/collections/${selectedItems[0]._id}`,
     );
   });
 });
