@@ -445,15 +445,20 @@ function ForceGraphConstructor(
   const legend = svg
     .append("g")
     .attr("class", "legend")
-    .attr(
-      "transform",
-      `translate(${-(mergedOptions.width / 2) + 20}, ${-(mergedOptions.height / 2) + 20})`,
-    )
     .style("font-family", "sans-serif")
     .style("font-size", "10px");
 
+  placeLegend(mergedOptions.width, mergedOptions.height);
+
   const legendSize = 12;
   const legendSpacing = 4;
+
+  function placeLegend(svgWidth, svgHeight) {
+    legend.attr(
+      "transform",
+      `translate(${-(svgWidth / 2) + 20}, ${-(svgHeight / 2) + 20})`,
+    );
+  }
 
   function updateLegend(currentNodes) {
     const presentCollectionIds = [
@@ -858,6 +863,7 @@ function ForceGraphConstructor(
     updateLinkFontSize,
     toggleLabels,
     centerOnNode,
+    placeLegend,
   });
 }
 

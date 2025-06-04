@@ -261,6 +261,24 @@ const ForceGraph = ({
   }, [graph]); // Re-run only when the graph instance itself changes
 
   useEffect(() => {
+    // Check if container and graph are initialized
+    if (
+      chartContainerRef.current?.clientWidth &&
+      chartContainerRef.current?.clientHeight &&
+      graph !== null &&
+      typeof graph.placeLegend === "function"
+    ) {
+      // Keep legend in top left corner
+      graph.placeLegend(
+        chartContainerRef.current?.clientWidth,
+        chartContainerRef.current?.clientHeight,
+      );
+    }
+  }, [
+    chartContainerRef,
+  ]);
+
+  useEffect(() => {
     if (graph !== null && typeof graph.toggleLabels === "function") {
       for (let labelClass in labelStates) {
         graph.toggleLabels(labelStates[labelClass], labelClass);
