@@ -150,6 +150,7 @@ const ForceGraph = ({
     nodeLimit,
     graphType,
     setGraphType,
+    collapseOnStart,
   ]);
 
   useEffect(() => {
@@ -274,9 +275,7 @@ const ForceGraph = ({
         chartContainerRef.current?.clientHeight,
       );
     }
-  }, [
-    chartContainerRef,
-  ]);
+  }, [chartContainerRef]);
 
   useEffect(() => {
     if (graph !== null && typeof graph.toggleLabels === "function") {
@@ -548,6 +547,10 @@ const ForceGraph = ({
       });
       setPopupVisible(true);
     }
+  };
+
+  const handleLeafToggle = () => {
+    setCollapseOnStart(!collapseOnStart);
   };
 
   const handleGraphToggle = () => {
@@ -840,10 +843,10 @@ const ForceGraph = ({
             Expand from "{clickedNodeLabel}"
           </button>
           <button className="popup-button" onClick={handleCollapse}>
-            Collapse Satellite Nodes
+            Collapse Leaf Nodes
           </button>
           <button className="popup-button" onClick={handleRemove}>
-            Remove Node & Satellites
+            Remove {clickedNodeLabel} & Leaf nodes
           </button>
           <button
             className="popup-close-button"
@@ -994,6 +997,23 @@ const ForceGraph = ({
                   </div>
                 </div>
               </div>
+              <div className="option-group labels-toggle-container">
+                {" "}
+                <label>Collapse Leaf Nodes:</label>
+                <div className="labels-toggle graph-source-toggle">
+                  {" "}
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={collapseOnStart}
+                      onChange={handleLeafToggle}
+                      aria-label="Toggle whether to show leaf nodes by default"
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
               <div className="option-group labels-toggle-container">
                 {" "}
                 <label>Graph Source:</label>
