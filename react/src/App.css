@@ -640,6 +640,7 @@ tr:nth-of-type(odd) {
   width: 100%;
   justify-content: center;
   align-items: center;
+  min-height: 60vh;
 }
 
 .visualization-description {
@@ -1374,7 +1375,6 @@ button.active {
 }
 
 .tree-constructor-container {
-  min-height: 60vh;
   display: flex;
 }
 
@@ -1775,11 +1775,10 @@ input:checked + .slider:before {
 /* --- DocumentPage Specific Styles --- */
 
 .document-details-content-box {
-  max-width: 1400px;
+  max-width: 95%;
   align-items: stretch;
   display: flex;
   flex-direction: column;
-
   flex-grow: 1;
 }
 

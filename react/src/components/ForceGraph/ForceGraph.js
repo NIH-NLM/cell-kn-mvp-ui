@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import {
+import LoadingBar, {
   fetchCollections,
   getLabel,
   hasAnyNodes,
@@ -785,11 +785,7 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}{" "}
         </button>
 
-        {isLoading && (
-          <div className="loading-indicator">
-            <div className="progress-bar"></div>
-            <span>Loading graph data...</span>
-          </div>
+        {isLoading && (<LoadingBar/>
         )}
         <div
           id="chart-container"
