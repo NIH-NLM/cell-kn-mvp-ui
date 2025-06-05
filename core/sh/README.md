@@ -62,9 +62,9 @@ See: https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 nvm install v22.15.1
 
-# == Clone springbok-cell-kn-mvp
+# == Clone cell-kn-mvp-ui
 
-git clone git@github.com:spearw/springbok-cell-kn-mvp.git
+git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git
 
 python3.13 -m venv .venv
 . .venv/bin/activate
@@ -102,9 +102,10 @@ cd mod_wsgi-5.0.2/
 make
 sudo make install
 
+# TODO: Review
 # == Configure Apache
 
-? Copy in apache configuration
+Copy in apache configuration
 
 sudo htpasswd -c /etc/apache2/.htpasswd ubuntu
 Password: "perceive favorable data"
