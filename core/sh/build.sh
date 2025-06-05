@@ -19,18 +19,18 @@ DESCRIPTION
     out the current version after the build.
 
 OPTIONS 
-    -o    CELL_KN_ETL_ONTOLOGIES_VERSION
+    -o    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
           Build the specified version of the ontologies graph, if it
           does not exist
 
-    -O    CELL_KN_ETL_ONTOLOGIES_VERSION
+    -O    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
           Force -o
 
-    -r    CELL_KN_ETL_RESULTS_VERSION
+    -r    CELL_KN_MVP_ETL_RESULTS_VERSION
           Build the specified version of the results and phenotype
           graph, if they do not exist
 
-    -R    CELL_KN_ETL_RESULTS_VERSION
+    -R    CELL_KN_MVP_ETL_RESULTS_VERSION
           Force -r
 
     -a    Make ArangoDB archive, and copy it to cell-kn-mvp.org
@@ -57,19 +57,19 @@ while getopts ":o:O:r:R:aAhex" opt; do
     case $opt in
         o)
             run_ontology=1
-	    CELL_KN_ETL_ONTOLOGIES_VERSION=${OPTARG}
+	    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION=${OPTARG}
             ;;
         O)
             force_ontology=1
-	    CELL_KN_ETL_ONTOLOGIES_VERSION=${OPTARG}
+	    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION=${OPTARG}
             ;;
         r)
             run_results=1
-	    CELL_KN_ETL_RESULTS_VERSION=${OPTARG}
+	    CELL_KN_MVP_ETL_RESULTS_VERSION=${OPTARG}
             ;;
         R)
             force_results=1
-	    CELL_KN_ETL_RESULTS_VERSION=${OPTARG}
+	    CELL_KN_MVP_ETL_RESULTS_VERSION=${OPTARG}
             ;;
         a)
             make_archive=1
@@ -108,7 +108,7 @@ if [ "$#" -ne 0 ]; then
 fi
 
 # Build ontology graph, if specified
-pushd "../../../cell-kn-etl-results/cell-kn-etl-ontologies"
+pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
 if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
        || [ $force_ontology == 1 ]; then
 
@@ -127,11 +127,11 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     # build
     git stash
     current_branch=$(git branch --show-current)
-    git checkout $CELL_KN_ETL_ONTOLOGIES_VERSION
+    git checkout $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
 
     # Make a clean package, then build the ontology graph
     mvn clean package -DskipTests
-    classpath="target/cell-kn-etl-ontologies-1.0.jar"
+    classpath="target/cell-kn-mvp-etl-ontologies-1.0.jar"
     java -cp $classpath gov.nih.nlm.OntologyGraphBuilder
 
     # Checkout the current branch, and apply the stash so that changes
@@ -140,8 +140,8 @@ if [ ! -f ".built" ] && [ $run_ontology == 1 ] \
     git stash apply
 
     # Log the build
-    log_message="Built cell-kn-etl-ontologies"
-    log_message+=" using $CELL_KN_ETL_ONTOLOGIES_VERSION"
+    log_message="Built cell-kn-mvp-etl-ontologies"
+    log_message+=" using $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".built"
 
@@ -149,7 +149,7 @@ fi
 popd
 
 # Build results and phenotype graphs, if specified
-pushd "../../../cell-kn-etl-results"
+pushd "../../../cell-kn-mvp-etl-results"
 if [ ! -f ".built" ] && [ $run_results == 1 ] \
        || [ $force_results == 1 ]; then
 
@@ -157,7 +157,7 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     # build
     current_branch=$(git branch --show-current)
     git stash
-    git checkout $CELL_KN_ETL_RESULTS_VERSION
+    git checkout $CELL_KN_MVP_ETL_RESULTS_VERSION
 
     # Activate the Python environment, fetch external data, and write
     # all tuples. Note that the local .zshenv contains E-Utilities
@@ -176,8 +176,8 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     # Make a clean package, then build the results and phenotype
     # graphs
     mvn clean package -DskipTests
-    classpath="target/cell-kn-etl-results-1.0.jar"
-    classpath+=":cell-kn-etl-ontologies/target/cell-kn-etl-ontologies-1.0.jar"
+    classpath="target/cell-kn-mvp-etl-results-1.0.jar"
+    classpath+=":cell-kn-mvp-etl-ontologies/target/cell-kn-mvp-etl-ontologies-1.0.jar"
     java -cp $classpath gov.nih.nlm.ResultsGraphBuilder
     java -cp $classpath gov.nih.nlm.PhenotypeGraphBuilder
 
@@ -194,8 +194,8 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     git stash apply
 
     # Log the build
-    log_message="Built cell-kn-etl-results"
-    log_message+=" using $CELL_KN_ETL_RESULTS_VERSION"
+    log_message="Built cell-kn-mvp-etl-results"
+    log_message+=" using $CELL_KN_MVP_ETL_RESULTS_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".built"
 
@@ -203,13 +203,13 @@ fi
 popd
 
 # Make ArangoDB archive, if specified
-pushd "../../../cell-kn-etl-results/cell-kn-etl-ontologies"
+pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
 if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
        || [ $force_archive == 1 ]; then
 
     # Ensure versions are set
-    if [ -z "$CELL_KN_ETL_ONTOLOGIES_VERSION" ] \
-           || [ -z "$CELL_KN_ETL_RESULTS_VERSION" ]; then
+    if [ -z "$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION" ] \
+           || [ -z "$CELL_KN_MVP_ETL_RESULTS_VERSION" ]; then
         echo "Options must be used to set versions"
         exit 1
     fi
@@ -217,8 +217,8 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
     # Make the archive, and copy it to cell-kn-mvp.org
     pushd data
     archive="arangodb"
-    archive+="-$CELL_KN_ETL_ONTOLOGIES_VERSION"
-    archive+="-$CELL_KN_ETL_RESULTS_VERSION"
+    archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
+    archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
     archive+="-$(date "+%Y-%m-%d").tar.gz"
     tar -czvf $archive arangodb
     scp $archive mvp:~
@@ -226,8 +226,8 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
 
     # Log the archive
     log_message="Archived ArangoDB using"
-    log_message+=" $CELL_KN_ETL_ONTOLOGIES_VERSION"
-    log_message+=" and $CELL_KN_ETL_RESULTS_VERSION"
+    log_message+=" $CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
+    log_message+=" and $CELL_KN_MVP_ETL_RESULTS_VERSION"
     log_message+=" on $(date)"
     echo $log_message > ".archived"
 

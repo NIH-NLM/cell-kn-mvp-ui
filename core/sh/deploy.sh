@@ -77,7 +77,7 @@ if [ $(grep "IS_DEFAULT=1" $(ls conf/* | grep -v [~#]) | wc -l) != 1 ]; then
     exit 0
 fi
 
-# Source the configuration to define CELL_KN_MVP_VERSION,
+# Source the configuration to define CELL_KN_MVP_UI_VERSION,
 # ARANGO_DB_FILE, ARANGO_DB_PORT, SUBDOMAIN, IS_DEFAULT, SERVER_ADMIN
 if [ -z "$CONF" ]; then
     echo "No configuration specified"
@@ -99,20 +99,20 @@ sleep 1
 
 # Clone Cell KN MVP repository into a versioned directory
 pushd ~
-mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION
+mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_UI_VERSION
 rm -rf $mvp_directory
 git clone git@github.com:spearw/springbok-cell-kn-mvp.git $mvp_directory
 popd
 
 # Copy in the environment for the ArangoDB API
-cp env/.env-$CELL_KN_MVP_VERSION ~/$mvp_directory/arango_api/.env
+cp env/.env-$CELL_KN_MVP_UI_VERSION ~/$mvp_directory/arango_api/.env
 sed -i \
     "s/.*ARANGO_DB_HOST.*/ARANGO_DB_HOST=http:\/\/127.0.0.1:$ARANGO_DB_PORT/" \
     ~/$mvp_directory/arango_api/.env
 
 # Checkout the specified CELL KN MVP version
 pushd ~/$mvp_directory
-git checkout $CELL_KN_MVP_VERSION
+git checkout $CELL_KN_MVP_UI_VERSION
 
 # Install Python dependencies, and migrate
 python3.13 -m venv .venv
@@ -143,7 +143,7 @@ popd
 
 # Extract, rename, and symbolically link the ArangoDB archive
 pushd ~
-arango_db_file=$(echo $ARANGO_DB_FILE | sed s/.tar.gz/-$CELL_KN_MVP_VERSION/)
+arango_db_file=$(echo $ARANGO_DB_FILE | sed s/.tar.gz/-$CELL_KN_MVP_UI_VERSION/)
 arango_db_link=arangodb-$ARANGO_DB_PORT
 rm -rf $arango_db_file
 sudo rm -rf $arango_db_link
@@ -155,7 +155,7 @@ popd
     
 # Update, install, and enable the Apache site configuration
 cat 000-default.conf | \
-    sed s/{cell_kn_mvp_version}/$CELL_KN_MVP_VERSION/ | \
+    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
     sed s/{subdomain}/$SUBDOMAIN/ | \
     sed s/{server_admin}/$SERVER_ADMIN/ \
 	> $site

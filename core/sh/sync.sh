@@ -76,13 +76,13 @@ if [ $do_clean == 0 ]; then
     fi
     for conf in $enabled_confs; do
 
-        # Source the configuration to define CELL_KN_MVP_VERSION,
+        # Source the configuration to define CELL_KN_MVP_UI_VERSION,
         # ARANGO_DB_FILE, ARANGO_DB_PORT, SUBDOMAIN, IS_DEFAULT,
         # SERVER_ADMIN
         . $conf
 
 	# Update allowed hosts
-	mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION
+	mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION
 	pushd ~/$mvp_directory/core
 	if [ $IS_DEFAULT == 1 ]; then
 	    allowed_hosts="\"cell-kn-mvp.org\""
@@ -99,7 +99,7 @@ if [ $do_clean == 0 ]; then
 	site=$SUBDOMAIN-cell-kn-mvp.conf
 	sudo a2dissite $site
 	cat 000-default.conf | \
-	    sed s/{cell_kn_mvp_version}/$CELL_KN_MVP_VERSION/ | \
+	    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
 	    sed s/{subdomain}/$SUBDOMAIN/ | \
 	    sed s/{server_admin}/$SERVER_ADMIN/ \
 		> $site
@@ -123,7 +123,7 @@ else
     disabled_confs=$(ls conf/.archive/* | grep -v [~#])
     for conf in $disabled_confs; do
 
-        # Source the configuration to define CELL_KN_MVP_VERSION,
+        # Source the configuration to define CELL_KN_MVP_UI_VERSION,
         # ARANGO_DB_FILE, ARANGO_DB_PORT, SUBDOMAIN, IS_DEFAULT,
         # SERVER_ADMIN
         . $conf
@@ -138,7 +138,7 @@ else
 
         # Remove Cell KN MVP versioned directory
         pushd ~
-        mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION
+        mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION
         rm -rf $mvp_directory
         popd
 
