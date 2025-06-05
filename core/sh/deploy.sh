@@ -91,7 +91,8 @@ fi
 
 # Disable the corresponding site
 site=$SUBDOMAIN-cell-kn-mvp.conf
-sudo a2dissite $site
+echo "Disabling $site"
+sudo a2dissite $site &> /dev/null
 sleep 1
 
 # Stop the corresponding ArangoDB container
@@ -99,12 +100,13 @@ sleep 1
 
 # Clone Cell KN MVP repository into a versioned directory
 pushd ~
-mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_UI_VERSION
+mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION
 rm -rf $mvp_directory
-git clone git@github.com:spearw/springbok-cell-kn-mvp.git $mvp_directory
+git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git $mvp_directory
 popd
 
-# Copy in the environment for the ArangoDB API
+# Copy in the environment for the ArangoDB API, and update the
+# ArangoDB port
 cp env/.env-$CELL_KN_MVP_UI_VERSION ~/$mvp_directory/arango_api/.env
 sed -i \
     "s/.*ARANGO_DB_HOST.*/ARANGO_DB_HOST=http:\/\/127.0.0.1:$ARANGO_DB_PORT/" \
@@ -155,9 +157,9 @@ popd
     
 # Update, install, and enable the Apache site configuration
 cat 000-default.conf | \
-    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
     sed s/{subdomain}/$SUBDOMAIN/ | \
     sed s/{server_admin}/$SERVER_ADMIN/ \
+    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
 	> $site
 if [ $IS_DEFAULT == 1 ]; then
     sed -i \

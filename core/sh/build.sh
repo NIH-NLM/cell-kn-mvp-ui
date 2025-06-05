@@ -169,8 +169,7 @@ if [ ! -f ".built" ] && [ $run_results == 1 ] \
     python NSForestResultsTupleWriter.py
     python AuthorToClResultsTupleWriter.py
     python ExternalApiResultsTupleWriter.py
-    # TODO: Uncomment when complete
-    # python AnnotationResultsTupleWriter.py
+    python AnnotationResultsTupleWriter.py
     popd
 
     # Make a clean package, then build the results and phenotype

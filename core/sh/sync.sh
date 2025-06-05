@@ -92,16 +92,15 @@ if [ $do_clean == 0 ]; then
 	sed -i \
 	    "s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts]/" \
 	    settings.py
-	grep ALLOWED_HOSTS settings.py
 	popd
 
 	# Update, install, and enable the Apache site configuration
 	site=$SUBDOMAIN-cell-kn-mvp.conf
 	sudo a2dissite $site
 	cat 000-default.conf | \
-	    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
 	    sed s/{subdomain}/$SUBDOMAIN/ | \
 	    sed s/{server_admin}/$SERVER_ADMIN/ \
+	    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
 		> $site
 	if [ $IS_DEFAULT == 1 ]; then
 	    sed -i \
@@ -130,7 +129,7 @@ else
 
         # Disable the corresponding site
         site=$SUBDOMAIN-cell-kn-mvp.conf
-        sudo a2dissite $site
+        sudo a2dissite $site &> dev/null
         sleep 1
 
         # Stop the corresponding ArangoDB container
