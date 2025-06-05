@@ -1,6 +1,6 @@
 CELL_KN_MVP_UI_VERSION="v0.5.1"
 ARANGO_DB_FILE="arangodb-v0.1.3-v0.4.0-2025-06-01.tar.gz"
 ARANGO_DB_PORT="8533"
-SUBDOMAIN="v0-5-0"
+SUBDOMAIN="v0-5-1"
 IS_DEFAULT=1
 SERVER_ADMIN="raymond.leclair@springbok.io"
