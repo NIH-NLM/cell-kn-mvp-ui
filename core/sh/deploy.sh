@@ -158,7 +158,7 @@ popd
 # Update, install, and enable the Apache site configuration
 cat 000-default.conf | \
     sed s/{subdomain}/$SUBDOMAIN/ | \
-    sed s/{server_admin}/$SERVER_ADMIN/ \
+    sed s/{server_admin}/$SERVER_ADMIN/ | \
     sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ | \
 	> $site
 if [ $IS_DEFAULT == 1 ]; then
