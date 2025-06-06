@@ -460,6 +460,52 @@ function ForceGraphConstructor(
     );
   }
 
+  function resize(newWidth, newHeight) {
+    // Save old state
+    const oldWidth = mergedOptions.width;
+    const oldHeight = mergedOptions.height;
+
+    // Get the current zoom transform
+    const currentTransform = d3.zoomTransform(svg.node());
+
+    // Find the new center point
+    const centerPoint = currentTransform.invert([oldWidth / 2, oldHeight / 2]);
+
+    // Update the stored options
+    mergedOptions.width = newWidth;
+    mergedOptions.height = newHeight;
+
+    // Update the SVG element's dimensions and viewBox
+    svg
+      .attr("width", newWidth)
+      .attr("height", newHeight)
+      .attr("viewBox", [-newWidth / 2, -newHeight / 2, newWidth, newHeight]);
+
+    // Update the zoom handler's extent
+    zoomHandler.extent([
+      [0, 0],
+      [newWidth, newHeight],
+    ]);
+
+    // Update legend position
+    placeLegend(newWidth, newHeight);
+
+    // Apply new transform
+    const newTranslateX = newWidth / 2 - centerPoint[0] * currentTransform.k;
+    const newTranslateY = newHeight / 2 - centerPoint[1] * currentTransform.k;
+
+    // Create the new transform, preserving the user's zoom level
+    const newTransform = d3.zoomIdentity
+      .translate(newTranslateX, newTranslateY)
+      .scale(currentTransform.k);
+
+    // Apply the new transform to the zoom behavior.
+    svg.call(zoomHandler.transform, newTransform);
+
+    // Start simulation
+    simulation.alpha(1).restart();
+  }
+
   function updateLegend(currentNodes) {
     const presentCollectionIds = [
       ...new Set(currentNodes.map((n) => n.id?.split("/")[0])),
@@ -863,7 +909,7 @@ function ForceGraphConstructor(
     updateLinkFontSize,
     toggleLabels,
     centerOnNode,
-    placeLegend,
+    resize,
   });
 }
 

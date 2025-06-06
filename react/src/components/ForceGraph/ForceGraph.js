@@ -254,28 +254,39 @@ const ForceGraph = ({
   }, [graph]);
 
   useEffect(() => {
-    const chartContainer = d3.select(chartContainerRef.current);
-    chartContainer.selectAll("*").remove(); // Clear previous graph
-    if (graph) {
-      chartContainer.append(() => graph); // Append the new graph element
+    const containerEl = chartContainerRef.current;
+    if (!containerEl) {
+      return;
     }
-  }, [graph]); // Re-run only when the graph instance itself changes
 
-  useEffect(() => {
-    // Check if container and graph are initialized
-    if (
-      chartContainerRef.current?.clientWidth &&
-      chartContainerRef.current?.clientHeight &&
-      graph !== null &&
-      typeof graph.placeLegend === "function"
-    ) {
-      // Keep legend in top left corner
-      graph.placeLegend(
-        chartContainerRef.current?.clientWidth,
-        chartContainerRef.current?.clientHeight,
-      );
+    const chartContainer = d3.select(containerEl);
+    chartContainer.selectAll("*").remove();
+
+    if (!graph) {
+      return;
     }
-  }, [chartContainerRef]);
+
+    chartContainer.append(() => graph);
+
+    if (typeof graph.resize === "function") {
+      const resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          graph.resize(width, height);
+        }
+      });
+
+      resizeObserver.observe(containerEl);
+
+      // Perform an initial resize
+      graph.resize(containerEl.clientWidth, containerEl.clientHeight);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [graph]);
 
   useEffect(() => {
     if (graph !== null && typeof graph.toggleLabels === "function") {
@@ -785,8 +796,7 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}{" "}
         </button>
 
-        {isLoading && (<LoadingBar/>
-        )}
+        {isLoading && <LoadingBar />}
         <div
           id="chart-container"
           ref={chartContainerRef}
