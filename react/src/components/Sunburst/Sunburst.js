@@ -333,9 +333,7 @@ const Sunburst = ({ addSelectedItem }) => {
           margin: "0 auto",
         }}
       >
-        {isLoading && (
-            <LoadingBar/>
-        )}
+        {isLoading && <LoadingBar />}
         {/* The SVG is appended here */}
       </div>
 

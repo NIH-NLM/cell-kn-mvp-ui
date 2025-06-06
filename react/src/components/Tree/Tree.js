@@ -70,9 +70,7 @@ const Tree = () => {
   }, [fetchTreeData]);
 
   if (isLoading) {
-    return (
-          <LoadingBar/>
-        )
+    return <LoadingBar />;
   }
 
   if (error) {

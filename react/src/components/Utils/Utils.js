@@ -1,9 +1,9 @@
 import collectionsMapData from "../../assets/collectionsMap.json";
-import React, {useEffect, useMemo, useState} from "react";
-import {getColorForCollection} from "../../services/ColorServices/ColorServices";
-import {Link} from "react-router-dom";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowRight} from "@fortawesome/free-solid-svg-icons";
+import React, { useEffect, useMemo, useState } from "react";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
@@ -196,10 +196,10 @@ export function truncateString(text, maxLength) {
 
 const LoadingBar = () => {
   return (
-     <div className="loading-indicator">
-       <div className="progress-bar"></div>
-       <span>Loading...</span>
-     </div>
+    <div className="loading-indicator">
+      <div className="progress-bar"></div>
+      <span>Loading...</span>
+    </div>
   );
 };
 
