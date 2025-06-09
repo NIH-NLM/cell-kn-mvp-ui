@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import SunburstConstructor from "../SunburstConstructor/SunburstConstructor";
-import { getLabel, mergeChildren } from "../Utils/Utils";
+import LoadingBar, { getLabel, mergeChildren } from "../Utils/Utils";
 
 const Sunburst = ({ addSelectedItem }) => {
   // --- State ---
@@ -333,11 +333,7 @@ const Sunburst = ({ addSelectedItem }) => {
           margin: "0 auto",
         }}
       >
-        {isLoading && (
-          <div className="loading-overlay" data-testid="loading-overlay">
-            <span>Loading...</span>
-          </div>
-        )}
+        {isLoading && <LoadingBar />}
         {/* The SVG is appended here */}
       </div>
 

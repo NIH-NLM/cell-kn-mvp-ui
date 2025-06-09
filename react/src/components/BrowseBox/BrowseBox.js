@@ -75,9 +75,7 @@ const BrowseBox = () => {
 
   const filteredDocuments = documentList.filter((doc) => {
     const searchLower = filterText.toLowerCase();
-    const label = (
-      doc.label && Array.isArray(doc.label) ? doc.label[0] : doc.label || ""
-    ).toLowerCase();
+    const label = getLabel(doc).toLowerCase();
     const key = (doc._key ? doc._key.toString() : "").toLowerCase();
     return label.includes(searchLower) || key.includes(searchLower);
   });

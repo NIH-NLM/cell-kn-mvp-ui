@@ -1,4 +1,9 @@
 import collectionsMapData from "../../assets/collectionsMap.json";
+import React, { useEffect, useMemo, useState } from "react";
+import { getColorForCollection } from "../../services/ColorServices/ColorServices";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
@@ -80,20 +85,28 @@ export const parseCollections = (collections, collectionsMap = null) => {
 };
 
 export const getLabel = (item) => {
-  const collectionsMap = new Map(collectionsMapData);
-  // Get item collection
-  const itemCollection = item._id.split("/")[0];
-  const labelOptions =
-    collectionsMap.get(itemCollection)?.["individual_labels"] ?? // Get options
-    collectionsMap.get("edges")?.["individual_labels"]; // Expected fallback for edge collections
-  const label = labelOptions
-    .map((key) => item[key]) // Get array of options
-    .find((value) => value !== undefined) // Find the first non-undefined value
-    ?.toString()
-    .split(",")
-    .flatMap((value) => (Array.isArray(value) ? value : [value])) // Handle array
-    .join(" | ");
-  return label;
+  try {
+    const collectionsMap = new Map(collectionsMapData);
+    const itemCollection = item._id.split("/")[0];
+
+    const labelOptions =
+        collectionsMap.get(itemCollection)?.["individual_labels"] ??
+        collectionsMap.get("edges")?.["individual_labels"];
+
+    const label = labelOptions
+        ?.map((key) => item[key])
+        .find((value) => value !== undefined)
+        ?.toString()
+        .split(",")
+        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+        .join(" | ");
+
+    // Return NAME UNKNOWN if undefined.
+    return label ?? "NAME UNKNOWN";
+
+  } catch (error) {
+    console.error(`getLabel failed with exception: ${error}`);
+  }
 };
 
 export const getUrl = (item) => {
@@ -188,3 +201,14 @@ export function truncateString(text, maxLength) {
   }
   return text.slice(0, maxLength) + "...";
 }
+
+const LoadingBar = () => {
+  return (
+    <div className="loading-indicator">
+      <div className="progress-bar"></div>
+      <span>Loading...</span>
+    </div>
+  );
+};
+
+export default LoadingBar;

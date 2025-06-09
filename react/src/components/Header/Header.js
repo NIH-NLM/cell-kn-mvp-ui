@@ -36,9 +36,9 @@ const Header = () => {
             Collections
           </h4>
         </Link>
-        <Link to="/schema">
-          <h4 className={activeNav.startsWith("/schema") ? "active-nav" : ""}>
-            Schema
+        <Link to="/about">
+          <h4 className={activeNav.startsWith("/about") ? "active-nav" : ""}>
+            About
           </h4>
         </Link>
         {/* Hide query page until it is useful */}
