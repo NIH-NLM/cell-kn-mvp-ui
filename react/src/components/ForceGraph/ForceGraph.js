@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import {
+import LoadingBar, {
   fetchCollections,
   getLabel,
   hasAnyNodes,
@@ -150,6 +150,7 @@ const ForceGraph = ({
     nodeLimit,
     graphType,
     setGraphType,
+    collapseOnStart,
   ]);
 
   useEffect(() => {
@@ -253,12 +254,39 @@ const ForceGraph = ({
   }, [graph]);
 
   useEffect(() => {
-    const chartContainer = d3.select(chartContainerRef.current);
-    chartContainer.selectAll("*").remove(); // Clear previous graph
-    if (graph) {
-      chartContainer.append(() => graph); // Append the new graph element
+    const containerEl = chartContainerRef.current;
+    if (!containerEl) {
+      return;
     }
-  }, [graph]); // Re-run only when the graph instance itself changes
+
+    const chartContainer = d3.select(containerEl);
+    chartContainer.selectAll("*").remove();
+
+    if (!graph) {
+      return;
+    }
+
+    chartContainer.append(() => graph);
+
+    if (typeof graph.resize === "function") {
+      const resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          graph.resize(width, height);
+        }
+      });
+
+      resizeObserver.observe(containerEl);
+
+      // Perform an initial resize
+      graph.resize(containerEl.clientWidth, containerEl.clientHeight);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [graph]);
 
   useEffect(() => {
     if (graph !== null && typeof graph.toggleLabels === "function") {
@@ -532,6 +560,10 @@ const ForceGraph = ({
     }
   };
 
+  const handleLeafToggle = () => {
+    setCollapseOnStart(!collapseOnStart);
+  };
+
   const handleGraphToggle = () => {
     const newGraphValue =
       graphType === "phenotypes" ? "ontologies" : "phenotypes";
@@ -764,12 +796,7 @@ const ForceGraph = ({
           {optionsVisible ? "> Hide Options" : "< Show Options"}{" "}
         </button>
 
-        {isLoading && (
-          <div className="loading-indicator">
-            <div className="progress-bar"></div>
-            <span>Loading graph data...</span>
-          </div>
-        )}
+        {isLoading && <LoadingBar />}
         <div
           id="chart-container"
           ref={chartContainerRef}
@@ -822,10 +849,10 @@ const ForceGraph = ({
             Expand from "{clickedNodeLabel}"
           </button>
           <button className="popup-button" onClick={handleCollapse}>
-            Collapse Satellite Nodes
+            Collapse Leaf Nodes
           </button>
           <button className="popup-button" onClick={handleRemove}>
-            Remove Node & Satellites
+            Remove {clickedNodeLabel} & Leaf nodes
           </button>
           <button
             className="popup-close-button"
@@ -976,6 +1003,23 @@ const ForceGraph = ({
                   </div>
                 </div>
               </div>
+              <div className="option-group labels-toggle-container">
+                {" "}
+                <label>Collapse Leaf Nodes:</label>
+                <div className="labels-toggle graph-source-toggle">
+                  {" "}
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={collapseOnStart}
+                      onChange={handleLeafToggle}
+                      aria-label="Toggle whether to show leaf nodes by default"
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
               <div className="option-group labels-toggle-container">
                 {" "}
                 <label>Graph Source:</label>

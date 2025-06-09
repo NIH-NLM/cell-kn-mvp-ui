@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import TreeConstructor from "../TreeConstructor/TreeConstructor";
+import LoadingBar from "../Utils/Utils";
 
 const Tree = () => {
   const [treeData, setTreeData] = useState(null);
@@ -69,7 +70,7 @@ const Tree = () => {
   }, [fetchTreeData]);
 
   if (isLoading) {
-    return <p>Loading...</p>;
+    return <LoadingBar />;
   }
 
   if (error) {
