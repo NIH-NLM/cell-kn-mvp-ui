@@ -105,7 +105,7 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
-# Source the configuration to define all versions
+# Source the configuration
 if [ -z "$CONF" ]; then
     echo "No configuration specified"
     exit 0

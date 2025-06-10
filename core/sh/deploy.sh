@@ -69,7 +69,7 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
-# Source the configuration to define all versions
+# Check command line arguments
 if [ -z "$CONF" ]; then
     echo "No configuration specified"
     exit 0
@@ -77,10 +77,12 @@ elif [ ! -f "conf/$CONF" ]; then
     echo "Configuration not found"
     exit 1
 fi
+
+# Source the specified configuration
 . conf/$CONF
 
 # Identify the domain on which to deploy
-public_ip=$(curl http://checkip.amazonaws.com)
+public_ip=$(curl -s http://checkip.amazonaws.com)
 if [ $public_ip == 54.146.82.39 ]; then
     domain="cell-kn-mvp.org"
 elif [ $public_ip == 35.173.140.169 ]; then
@@ -96,7 +98,7 @@ archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
 archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
 archive+=".tar.gz"
 
-# Assign the port as one greater than the maximum in use, but staying
+# Assign the port as one greater than the maximum in use, staying
 # within port range
 port=$(docker ps | grep arangodb | cut -d "-" -f 4 | sort | tail -n 1)
 if [ -z $port ]; then
@@ -108,7 +110,7 @@ else
     fi
 fi
 
-# Assign the subdomain based on the configuration version
+# Assign the subdomain based on the specified configuration
 subdomain=$(echo $CONF | sed s/\\./-/g)
 
 # Disable the corresponding site
@@ -179,5 +181,7 @@ cat 000-default.conf | \
 sudo cp $site /etc/apache2/sites-available
 rm $site
 sudo a2ensite $site
+
+# Restart Apache
 sudo systemctl restart apache2
 sleep 1

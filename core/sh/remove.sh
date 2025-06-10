@@ -61,7 +61,7 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
-# Source the configuration to define all versions
+# Check command line arguments
 if [ -z "$CONF" ]; then
     echo "No configuration specified"
     exit 0
@@ -69,6 +69,8 @@ elif [ ! -f "conf/$CONF" ]; then
     echo "Configuration not found"
     exit 1
 fi
+
+# Source the specified configuration
 . conf/$CONF
 
 # Assign the archive
@@ -77,7 +79,7 @@ archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
 archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
 archive+=".tar.gz"
 
-# Assign the subdomain based on the configuration version
+# Assign the subdomain based on the specified configuration
 subdomain=$(echo $CONF | sed s/\\./-/g)
 
 # Disable the corresponding site
