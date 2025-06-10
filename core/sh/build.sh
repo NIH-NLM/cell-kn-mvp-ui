@@ -10,28 +10,27 @@ SYNOPSIS
     build [OPTIONS]
 
 DESCRIPTION
-    Build the Cell KN MVP by checking out the specified versions to
-    build, making clean packages, building the ontology graph,
-    fetching external data, building the results and phenotype graphs,
-    archiving the ArangoDB database, and copying the archive to
-    cell-kn-mvp.org. Changes on the current branches are stashed prior
-    to checking out the specified versions, then applied on checking
-    out the current version after the build.
+    Build the Cell KN MVP ArangoDB archive by checking out the
+    specified versions to build, making clean packages, building the
+    ontology graph, fetching external data, building the results and
+    phenotype graphs, archiving the ArangoDB database, and copying the
+    archive to the specified server. Changes on the current branches
+    are stashed prior to checking out the specified versions, then
+    applied on checking out the current version after the build.
 
 OPTIONS 
-    -o    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
-          Build the specified version of the ontologies graph, if it
+    -c    CONF
+          The Cell KN MVP configuration to build
+
+    -o    Build the specified version of the ontologies graph, if it
           does not exist
 
-    -O    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION
-          Force -o
+    -O    Force -o
 
-    -r    CELL_KN_MVP_ETL_RESULTS_VERSION
-          Build the specified version of the results and phenotype
+    -r    Build the specified version of the results and phenotype
           graph, if they do not exist
 
-    -R    CELL_KN_MVP_ETL_RESULTS_VERSION
-          Force -r
+    -R    Force -r
 
     -a    Make ArangoDB archive, and copy it to cell-kn-mvp.org
 
@@ -53,23 +52,22 @@ run_results=0
 force_results=0
 make_archive=0
 force_archive=0
-while getopts ":o:O:r:R:aAhex" opt; do
+while getopts ":c:oOrRaAhex" opt; do
     case $opt in
+	c)
+	    CONF=${OPTARG}
+            ;;
         o)
             run_ontology=1
-	    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION=${OPTARG}
             ;;
         O)
             force_ontology=1
-	    CELL_KN_MVP_ETL_ONTOLOGIES_VERSION=${OPTARG}
             ;;
         r)
             run_results=1
-	    CELL_KN_MVP_ETL_RESULTS_VERSION=${OPTARG}
             ;;
         R)
             force_results=1
-	    CELL_KN_MVP_ETL_RESULTS_VERSION=${OPTARG}
             ;;
         a)
             make_archive=1
@@ -106,6 +104,16 @@ if [ "$#" -ne 0 ]; then
     echo "No arguments required"
     exit 1
 fi
+
+# Source the configuration to define all versions
+if [ -z "$CONF" ]; then
+    echo "No configuration specified"
+    exit 0
+elif [ ! -f "conf/$CONF" ]; then
+    echo "Configuration not found"
+    exit 1
+fi
+. conf/$CONF
 
 # Build ontology graph, if specified
 pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
@@ -206,19 +214,12 @@ pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
 if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
        || [ $force_archive == 1 ]; then
 
-    # Ensure versions are set
-    if [ -z "$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION" ] \
-           || [ -z "$CELL_KN_MVP_ETL_RESULTS_VERSION" ]; then
-        echo "Options must be used to set versions"
-        exit 1
-    fi
-
     # Make the archive, and copy it to cell-kn-mvp.org
     pushd data
     archive="arangodb"
     archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
     archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
-    archive+="-$(date "+%Y-%m-%d").tar.gz"
+    archive+=".tar.gz"
     tar -czvf $archive arangodb
     scp $archive mvp:~
     popd
