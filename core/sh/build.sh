@@ -214,7 +214,8 @@ pushd "../../../cell-kn-mvp-etl-results/cell-kn-mvp-etl-ontologies"
 if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
        || [ $force_archive == 1 ]; then
 
-    # Make the archive, and copy it to cell-kn-mvp.org
+    # Make the archive, and copy it to cell-kn-mvp.org and
+    # cell-kn-stg.org
     pushd data
     archive="arangodb"
     archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
@@ -222,6 +223,7 @@ if [ ! -f ".archived" ] && [ $make_archive == 1 ] \
     archive+=".tar.gz"
     tar -czvf $archive arangodb
     scp $archive mvp:~
+    scp $archive stg:~
     popd
 
     # Log the archive
