@@ -19,34 +19,32 @@ const ForceGraph = ({
   const chartContainerRef = useRef();
 
   // Init setting states
-  const [depth, setDepth] = useState(settings["defaultDepth"] || 2);
+  const [depth, setDepth] = useState(settings["defaultDepth"] ?? 2);
   const [edgeDirection, setEdgeDirection] = useState(
-    settings["edgeDirection"] || "ANY",
+    settings["edgeDirection"] ?? "ANY",
   );
   const [setOperation, setSetOperation] = useState(
-    settings["setOperation"] || "Union",
+    settings["setOperation"] ?? "Union",
   );
   const [allowedCollections, setAllowedCollections] = useState([]);
   const [nodeFontSize, setNodeFontSize] = useState(
-    settings["nodeFontSize"] || 12,
+    settings["nodeFontSize"] ?? 12,
   );
   const [edgeFontSize, setEdgeFontSize] = useState(
-    settings["edgeFontSize"] || 8,
+    settings["edgeFontSize"] ?? 8,
   );
-  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 5000);
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] ?? 5000);
   const [labelStates, setLabelStates] = useState(
-    settings["labelStates"] || {
+    settings["labelStates"] ?? {
       ".collection-label": false,
       ".link-label": true,
       ".node-label": true,
     },
   );
   const [findShortestPaths, setFindShortestPaths] = useState(
-    "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
+    settings["findShortestPaths"] ?? false,
   );
-  const [useFocusNodes] = useState(
-    "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
-  );
+  const [useFocusNodes] = useState(settings["useFocusNodes"] ?? true);
 
   // Init other states
   const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
