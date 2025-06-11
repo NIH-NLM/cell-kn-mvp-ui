@@ -215,21 +215,14 @@ export function truncateString(text, maxLength) {
 }
 
 // Parse id. If edge id, return both edges.
-export function parseId(item) {
-  const itemCollection = item._id.split("/")[0];
-  // Edge collection
-  if (itemCollection.includes("-")) {
-    // Split edge id into vertex id parts
-    const [part1, part2] = item._id.split("/");
-    const [c1, c2] = part1.split("-");
-    const [id1, id2] = part2.split("-");
-
-    // Reassemble the parts into the connecting vertices' ids as array
-    return [`${c1}/${id1}`, `${c2}/${id2}`];
+export function parseId(document) {
+  // Check if edge document
+  if (document._from && document._to) {
+    return [document._from, document._to];
   }
-  // Vertex collection
+  // Return its own id if vertex
   else {
-    return [item._id];
+    return [document._id];
   }
 }
 
