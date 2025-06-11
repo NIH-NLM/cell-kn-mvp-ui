@@ -184,7 +184,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("class", "link-hit-area")
     .attr("fill", "none")
     .attr("stroke", "transparent")
-    .attr("stroke-width", 15)
+    .attr("stroke-width", 25)
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .on("contextmenu", function (event, d) {
       event.preventDefault();
