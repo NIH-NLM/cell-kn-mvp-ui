@@ -1,3 +1,4 @@
+#!/usr/bin/bash
 # Print usage
 usage() {
     cat << EOF
@@ -68,51 +69,74 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
-DOMAIN="cell-kn-mvp.org"
-
-# List the configurations, and ensure only one default site exists
-confs=$(ls conf/* | grep -v [~#])
-if [ $(grep "IS_DEFAULT=1" $(ls conf/* | grep -v [~#]) | wc -l) != 1 ]; then
-    echo "One site, and only one site, must be default"
-    exit 0
-fi
-
-# Source the configuration to define CELL_KN_MVP_VERSION,
-# ARANGO_DB_FILE, ARANGO_DB_PORT, SUBDOMAIN, IS_DEFAULT, SERVER_ADMIN
+# Check command line arguments
 if [ -z "$CONF" ]; then
     echo "No configuration specified"
     exit 0
 elif [ ! -f "conf/$CONF" ]; then
     echo "Configuration not found"
-    printf "Available configurations:\\n$(ls conf/ | grep -v [~#])\n"
     exit 1
 fi
+
+# Source the specified configuration
 . conf/$CONF
 
+# Identify the domain on which to deploy
+public_ip=$(curl -s http://checkip.amazonaws.com)
+if [ $public_ip == 54.146.82.39 ]; then
+    domain="cell-kn-mvp.org"
+elif [ $public_ip == 35.173.140.169 ]; then
+    domain="cell-kn-stg.org"
+else
+    echo "Unknown public IP address"
+    exit 1
+fi
+
+# Assign the archive
+archive="arangodb"
+archive+="-$CELL_KN_MVP_ETL_ONTOLOGIES_VERSION"
+archive+="-$CELL_KN_MVP_ETL_RESULTS_VERSION"
+archive+=".tar.gz"
+
+# Assign the port as one greater than the maximum in use, staying
+# within port range
+port=$(docker ps | grep arangodb | cut -d "-" -f 4 | sort | tail -n 1)
+if [ -z $port ]; then
+    port=8529
+else
+    port=$(($port + 1))
+    if [ $port -gt 8539 ]; then
+	port=8529
+    fi
+fi
+
+# Assign the subdomain based on the specified configuration
+subdomain=$(echo $CONF | sed s/\\./-/g)
+
 # Disable the corresponding site
-site=$SUBDOMAIN-cell-kn-mvp.conf
-sudo a2dissite $site
+site=$subdomain-cell-kn-mvp.conf
+echo "Disabling $site"
+sudo a2dissite $site &> /dev/null
 sleep 1
 
 # Stop the corresponding ArangoDB container
-../../arango_api/sh/stop-arangodb.sh
+ARANGO_DB_PORT=$port ~/stop-arangodb.sh
 
 # Clone Cell KN MVP repository into a versioned directory
-pushd ~
-mvp_directory=springbok-cell-kn-mvp-$CELL_KN_MVP_VERSION
-rm -rf $mvp_directory
-git clone git@github.com:spearw/springbok-cell-kn-mvp.git $mvp_directory
-popd
+mvp_directory=cell-kn-mvp-ui-$CELL_KN_MVP_UI_VERSION-$subdomain
+rm -rf ~/$mvp_directory
+git clone git@github.com:NIH-NLM/cell-kn-mvp-ui.git ~/$mvp_directory
 
-# Copy in the environment for the ArangoDB API
-cp env/.env-$CELL_KN_MVP_VERSION ~/$mvp_directory/arango_api/.env
+# Copy in the environment for the ArangoDB API, and update the
+# ArangoDB port
+cp .env ~/$mvp_directory/arango_api/.env
 sed -i \
-    "s/.*ARANGO_DB_HOST.*/ARANGO_DB_HOST=http:\/\/127.0.0.1:$ARANGO_DB_PORT/" \
+    "s/.*ARANGO_DB_HOST.*/ARANGO_DB_HOST=http:\/\/127.0.0.1:$port/" \
     ~/$mvp_directory/arango_api/.env
 
 # Checkout the specified CELL KN MVP version
 pushd ~/$mvp_directory
-git checkout $CELL_KN_MVP_VERSION
+git checkout $CELL_KN_MVP_UI_VERSION
 
 # Install Python dependencies, and migrate
 python3.13 -m venv .venv
@@ -125,47 +149,39 @@ python manage.py migrate
 pushd react
 npm install
 npm run build
-popd
 deactivate
+popd
 
 # Update allowed hosts
-pushd core
-if [ $IS_DEFAULT == 1 ]; then
-    allowed_hosts="\"cell-kn-mvp.org\""
-else
-    allowed_hosts="\"$SUBDOMAIN.cell-kn-mvp.org\""
-fi
+allowed_hosts="\"$subdomain.$domain\""
 sed -i \
     "s/.*ALLOWED_HOSTS.*/ALLOWED_HOSTS = [$allowed_hosts]/" \
-    settings.py
-popd
+    core/settings.py
 popd
 
 # Extract, rename, and symbolically link the ArangoDB archive
 pushd ~
-arango_db_file=$(echo $ARANGO_DB_FILE | sed s/.tar.gz/-$CELL_KN_MVP_VERSION/)
-arango_db_link=arangodb-$ARANGO_DB_PORT
-rm -rf $arango_db_file
-sudo rm -rf $arango_db_link
-tar -zxvf $ARANGO_DB_FILE
-mv arangodb $arango_db_file
-sudo ln -sf $arango_db_file $arango_db_link
-./start-arangodb.sh
+arangodb_file=$(echo $archive | sed s/.tar.gz//)-$subdomain
+arangodb_link=arangodb-$port
+rm -rf $arangodb_file
+sudo rm -rf $arangodb_link
+tar -zxvf $archive
+mv arangodb $arangodb_file
+sudo ln -sf $arangodb_file $arangodb_link
+ARANGO_DB_PORT=$port ./start-arangodb.sh
 popd
-    
+
 # Update, install, and enable the Apache site configuration
 cat 000-default.conf | \
-    sed s/{cell_kn_mvp_version}/$CELL_KN_MVP_VERSION/ | \
-    sed s/{subdomain}/$SUBDOMAIN/ | \
-    sed s/{server_admin}/$SERVER_ADMIN/ \
+    sed s/{subdomain}/$subdomain/ | \
+    sed s/{domain}/$domain/ | \
+    sed s/{server_admin}/$SERVER_ADMIN/ | \
+    sed s/{cell_kn_mvp_ui_version}/$CELL_KN_MVP_UI_VERSION/ \
 	> $site
-if [ $IS_DEFAULT == 1 ]; then
-    sed -i \
-	"s/.*ServerName.*/    ServerName $DOMAIN/" \
-	$site
-fi
 sudo cp $site /etc/apache2/sites-available
 rm $site
 sudo a2ensite $site
+
+# Restart Apache
 sudo systemctl restart apache2
 sleep 1
