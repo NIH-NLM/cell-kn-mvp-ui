@@ -54,6 +54,7 @@ export function processGraphLinks(
     // Prepare the new link object
     const processedNewLink = {
       ...newLink,
+      sourceText: newLink.source,
       source: sourceNode,
       target: targetNode,
       label: labelFn(newLink),
@@ -148,7 +149,6 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
       .attr("y", options.nodeRadius + options.nodeFontSize)
       .style("font-size", options.nodeFontSize + "px")
       .style("display", "none")
-      .text((d) => d.nodeLabel)
       .text((d) => truncateString(d.nodeLabel, 15));
     nodeG
       .append("text")
@@ -161,8 +161,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
         options.collectionsMap.has(d._id.split("/")[0])
           ? options.collectionsMap.get(d._id.split("/")[0])["abbreviated_name"]
           : d._id.split("/")[0],
-      )
-      .text((d) => truncateString(d.nodeLabel, 15));
+      );
   });
 
   // Render links
@@ -176,9 +175,11 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   // Create new link elements
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
-  // For non self-links, add a line element
-  linkEnter
-    .filter((d) => d.source.id !== d.target.id)
+  // --- Handle Non-Self-Links ---
+  const nonSelfLinkEnter = linkEnter.filter((d) => d.source.id !== d.target.id);
+
+  // Add a path element for non-self-links
+  nonSelfLinkEnter
     .append("path")
     .attr("fill", "none")
     .attr(
@@ -195,20 +196,36 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-end", "url(#arrow)");
 
-  // Append text for non self-links
-  linkEnter
-    .filter((d) => d.source.id !== d.target.id)
+  // Append the primary label text for non-self-links
+  nonSelfLinkEnter
     .append("text")
+    .attr("class", "link-label")
     .text((d) => (d.name ? d.name : d.label))
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
-    .attr("text-anchor", "middle")
-    .attr("class", "link-label");
+    .attr("text-anchor", "middle");
 
-  // For self-links, add a path element
-  linkEnter
-    .filter((d) => d.source.id === d.target.id)
+  // Append the source label text for non-self-links
+  nonSelfLinkEnter
+    .append("text")
+    .attr("class", "link-source")
+    .text(
+      (d) =>
+        `${d.sourceText} (${d.Score ? (+d.Score).toPrecision(2) : "N/A"})` ||
+        "Source Unknown",
+    )
+    .style("font-size", options.linkFontSize + "px")
+    .style("fill", "black")
+    .style("display", "none")
+    .attr("text-anchor", "middle")
+    .attr("dy", "1.2em");
+
+  // --- Handle Self-Links ---
+  const selfLinkEnter = linkEnter.filter((d) => d.source.id === d.target.id);
+
+  // Add a path element for self-links
+  selfLinkEnter
     .append("path")
     .attr("class", "self-link")
     .attr("fill", "none")
@@ -226,16 +243,30 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .attr("stroke-linecap", options.linkStrokeLinecap)
     .attr("marker-mid", "url(#self-arrow)");
 
-  // Append text for self-links
-  linkEnter
-    .filter((d) => d.source.id === d.target.id)
+  // Append the primary label text for self-links
+  selfLinkEnter
     .append("text")
+    .attr("class", "link-label")
     .text((d) => (d.name ? d.name : d.label))
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
+    .attr("text-anchor", "middle");
+
+  // Append the source label text for self-links
+  selfLinkEnter
+    .append("text")
+    .attr("class", "link-source")
+    .text(
+      (d) =>
+        `${d.sourceText} (${d.Score ? (+d.Score).toPrecision(2) : "N/A"})` ||
+        "Source Unknown",
+    )
+    .style("font-size", options.linkFontSize + "px")
+    .style("fill", "black")
+    .style("display", "none")
     .attr("text-anchor", "middle")
-    .attr("class", "link-label");
+    .attr("dy", "1.2em");
 
   // Merge enter selection with the update selection
   linkSelection.merge(linkEnter);
@@ -617,60 +648,69 @@ function ForceGraphConstructor(
       .selectAll("g.node")
       .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    // Update positions for link text
-    linkElements.selectAll("text.link-label").attr("transform", (d) => {
-      if (!d.source || !d.target) return "";
+    // Update positions for all link text elements
+    linkElements.each(function (d) {
+      if (!d.source || !d.target) return;
+
+      let transformString = "";
 
       if (d.source.id === d.target.id) {
-        // Self-link text
+        // --- Self-link text positioning ---
         const x = d.source.x;
         const y = d.source.y;
         const nodeR = mergedOptions.nodeRadius;
         const loopRadius = nodeR * 1.5;
-        // Position text below the apex of the self-loop
-        return `translate(${x}, ${y + nodeR + loopRadius + mergedOptions.linkFontSize * 0.5 + 5})`;
-      }
 
-      // Non-self-link text
-      const sx = d.source.x;
-      const sy = d.source.y;
-      const tx = d.target.x;
-      const ty = d.target.y;
-
-      let midX, midY, angle;
-
-      if (d.isParallelPair) {
-        const mx = (sx + tx) / 2;
-        const my = (sy + ty) / 2;
-        const dx = tx - sx;
-        const dy = ty - sy;
-        angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const curvatureOffset =
-          dist * mergedOptions.parallelLinkCurvature * 0.3; // How far to offset text from center
-
-        const normX = dy / dist;
-        const normY = -dx / dist;
-
-        midX = mx + curvatureOffset * normX;
-        midY = my + curvatureOffset * normY;
+        // Position text below the apex of the self-loop.
+        transformString = `translate(${x}, ${y + nodeR + loopRadius + mergedOptions.linkFontSize * 0.5 + 5})`;
       } else {
-        // Straight line
-        midX = (sx + tx) / 2;
-        midY = (sy + ty) / 2;
-        angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
+        // --- Non-self-link text positioning ---
+        const sx = d.source.x;
+        const sy = d.source.y;
+        const tx = d.target.x;
+        const ty = d.target.y;
+
+        let midX, midY, angle;
+
+        if (d.isParallelPair) {
+          // For curved parallel links
+          const mx = (sx + tx) / 2;
+          const my = (sy + ty) / 2;
+          const dx = tx - sx;
+          const dy = ty - sy;
+          angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          // How far to offset text from the straight center line to follow the curve
+          const curvatureOffset =
+            dist * mergedOptions.parallelLinkCurvature * 0.3;
+
+          const normX = dy / dist;
+          const normY = -dx / dist;
+
+          midX = mx + curvatureOffset * normX;
+          midY = my + curvatureOffset * normY;
+        } else {
+          // For straight links
+          midX = (sx + tx) / 2;
+          midY = (sy + ty) / 2;
+          angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
+        }
+
+        // Keep text upright by flipping it if it's upside down
+        if (Math.abs(angle) > 90) {
+          angle += 180;
+        }
+
+        // vertical offset from the line/arc for text
+        const textVerticalOffset = 0;
+        const offsetX = textVerticalOffset * Math.sin((angle * Math.PI) / 180);
+        const offsetY = textVerticalOffset * -Math.cos((angle * Math.PI) / 180);
+
+        transformString = `translate(${midX + offsetX}, ${midY + offsetY}) rotate(${angle})`;
       }
 
-      // Keep text upright
-      if (Math.abs(angle) > 90) angle += 180;
-
-      // Small vertical offset from the line/arc for text
-      const textVerticalOffset = 0; // Keep for later
-      const offsetX = textVerticalOffset * Math.sin((angle * Math.PI) / 180);
-      const offsetY = textVerticalOffset * -Math.cos((angle * Math.PI) / 180);
-
-      return `translate(${midX + offsetX}, ${midY + offsetY}) rotate(${angle})`;
+      d3.select(this).selectAll("text").attr("transform", transformString);
     });
   }
 
@@ -695,17 +735,34 @@ function ForceGraphConstructor(
   }
 
   function toggleLabels(show, labelClass, frozenState = false) {
-    let container;
-    if (labelClass.includes("link")) {
-      container = linkContainer;
-    } else {
-      container = nodeContainer;
+    // A map to associate label classes with their respective D3 containers.
+    const containerMap = {
+      "link-label": linkContainer,
+      "link-source": linkContainer,
+      "node-label": nodeContainer,
+      "collection-label": nodeContainer,
+    };
+
+    const container = containerMap[labelClass];
+
+    // If the class is unknown, log a warning and do nothing.
+    if (!container) {
+      console.warn(
+        `toggleLabels: No container configured for class "${labelClass}"`,
+      );
+      return;
     }
+
+    // Select all elements with the given class and set their display style.
     container
-      .selectAll(`${labelClass}`)
+      .selectAll(`.${labelClass}`)
       .style("display", show ? "block" : "none");
+
+    // Update the internal state unless the state is frozen
     if (!frozenState) {
-      mergedOptions.labelStates[labelClass] = show;
+      if (mergedOptions && mergedOptions.labelStates) {
+        mergedOptions.labelStates[labelClass] = show;
+      }
     }
   }
 
@@ -721,7 +778,7 @@ function ForceGraphConstructor(
   function updateLinkFontSize(newFontSize) {
     mergedOptions.linkFontSize = newFontSize;
     linkContainer
-      .selectAll("text.link-label")
+      .selectAll("text.link-label", "text.link-source")
       .style("font-size", newFontSize + "px");
   }
 

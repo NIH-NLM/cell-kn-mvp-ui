@@ -36,9 +36,10 @@ const ForceGraph = ({
   const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] ?? 5000);
   const [labelStates, setLabelStates] = useState(
     settings["labelStates"] ?? {
-      ".collection-label": false,
-      ".link-label": true,
-      ".node-label": true,
+      "collection-label": false,
+      "link-source": false,
+      "link-label": true,
+      "node-label": true,
     },
   );
   const [findShortestPaths, setFindShortestPaths] = useState(
@@ -971,8 +972,8 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".collection-label"]}
-                        onChange={() => handleLabelToggle(".collection-label")}
+                        checked={labelStates["collection-label"]}
+                        onChange={() => handleLabelToggle("collection-label")}
                       />
                       <span className="slider round"></span>
                     </label>
@@ -982,8 +983,19 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".link-label"]}
-                        onChange={() => handleLabelToggle(".link-label")}
+                        checked={labelStates["link-label"]}
+                        onChange={() => handleLabelToggle("link-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Source
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["link-source"]}
+                        onChange={() => handleLabelToggle("link-source")}
                       />
                       <span className="slider round"></span>
                     </label>
@@ -993,8 +1005,8 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".node-label"]}
-                        onChange={() => handleLabelToggle(".node-label")}
+                        checked={labelStates["node-label"]}
+                        onChange={() => handleLabelToggle("node-label")}
                       />
                       <span className="slider round"></span>
                     </label>
