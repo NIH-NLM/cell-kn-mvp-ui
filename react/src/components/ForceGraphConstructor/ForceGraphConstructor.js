@@ -172,15 +172,29 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   // Remove links that are no longer in the data
   linkSelection.exit().remove();
 
-  // Create new link elements
+  // Create new link elements (a <g> for each link)
   const linkEnter = linkSelection.enter().append("g").attr("class", "link");
 
   // --- Handle Non-Self-Links ---
   const nonSelfLinkEnter = linkEnter.filter((d) => d.source.id !== d.target.id);
 
-  // Add a path element for non-self-links
+  // Add invisible wide click area
   nonSelfLinkEnter
     .append("path")
+    .attr("class", "link-hit-area")
+    .attr("fill", "none")
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 15)
+    .attr("stroke-linecap", options.linkStrokeLinecap)
+    .on("contextmenu", function (event, d) {
+      event.preventDefault();
+      options.onNodeClick(event, d);
+    });
+
+  // Add the visible path
+  nonSelfLinkEnter
+    .append("path")
+    .attr("class", "link-visible")
     .attr("fill", "none")
     .attr(
       "stroke",
@@ -194,7 +208,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
         : null,
     )
     .attr("stroke-linecap", options.linkStrokeLinecap)
-    .attr("marker-end", "url(#arrow)");
+    .attr("marker-end", "url(#arrow)")
+    .style("pointer-events", "none");
 
   // Append the primary label text for non-self-links
   nonSelfLinkEnter
@@ -204,7 +219,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
-    .attr("text-anchor", "middle");
+    .attr("text-anchor", "middle")
+    .style("pointer-events", "none");
 
   // Append the source label text for non-self-links
   nonSelfLinkEnter
@@ -215,12 +231,25 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
-    .attr("dy", "1.2em");
+    .attr("dy", "1.2em")
+    .style("pointer-events", "none");
 
   // --- Handle Self-Links ---
   const selfLinkEnter = linkEnter.filter((d) => d.source.id === d.target.id);
 
-  // Add a path element for self-links
+  // Add invisible click handler
+  selfLinkEnter
+    .append("path")
+    .attr("class", "self-link-hit-area")
+    .attr("fill", "none")
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 15)
+    .on("contextmenu", function (event, d) {
+      event.preventDefault();
+      options.onNodeClick(event, d);
+    });
+
+  // Add the visible path for self-links
   selfLinkEnter
     .append("path")
     .attr("class", "self-link")
@@ -237,7 +266,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
         : null,
     )
     .attr("stroke-linecap", options.linkStrokeLinecap)
-    .attr("marker-mid", "url(#self-arrow)");
+    .attr("marker-mid", "url(#self-arrow)")
+    .style("pointer-events", "none");
 
   // Append the primary label text for self-links
   selfLinkEnter
@@ -247,7 +277,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
-    .attr("text-anchor", "middle");
+    .attr("text-anchor", "middle")
+    .style("pointer-events", "none");
 
   // Append the source label text for self-links
   selfLinkEnter
@@ -258,7 +289,8 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
     .style("fill", "black")
     .style("display", "none")
     .attr("text-anchor", "middle")
-    .attr("dy", "1.2em");
+    .attr("dy", "1.2em")
+    .style("pointer-events", "none");
 
   // Merge enter selection with the update selection
   linkSelection.merge(linkEnter);

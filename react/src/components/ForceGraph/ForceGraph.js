@@ -56,6 +56,7 @@ const ForceGraph = ({
   const [clickedNodeId, setClickedNodeId] = useState(null);
   const [clickedNodeLabel, setClickedNodeLabel] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
+  const [popupIsEdge, setPopupIsEdge] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
   const collectionsMap = new Map(collectionsMapData);
@@ -538,6 +539,7 @@ const ForceGraph = ({
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData._id);
     setClickedNodeLabel(getLabel(nodeData));
+    let collection = nodeData._id.split("/")[0];
 
     if (chartContainerRef.current) {
       const chartRect = chartContainerRef.current.getBoundingClientRect();
@@ -548,6 +550,12 @@ const ForceGraph = ({
         x: xRelativeToChart + 30,
         y: yRelativeToChart + 30,
       });
+      // Edge collection
+      if (collection.includes("-")) {
+        setPopupIsEdge(true);
+      } else {
+        setPopupIsEdge(false);
+      }
       setPopupVisible(true);
     } else {
       console.error("Chart container ref not found for popup positioning.");
@@ -555,6 +563,12 @@ const ForceGraph = ({
         x: e.clientX + 10 + window.scrollX,
         y: e.clientY + 10 + window.scrollY,
       });
+      // Edge collection
+      if (collection.includes("-")) {
+        setPopupIsEdge(true);
+      } else {
+        setPopupIsEdge(false);
+      }
       setPopupVisible(true);
     }
   };
@@ -844,13 +858,43 @@ const ForceGraph = ({
           >
             Go To "{clickedNodeLabel}"
           </a>
-          <button className="popup-button" onClick={handleExpand}>
+          <button
+            className="popup-button"
+            onClick={handleExpand}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Expand from "{clickedNodeLabel}"
           </button>
-          <button className="popup-button" onClick={handleCollapse}>
+          <button
+            className="popup-button"
+            onClick={handleCollapse}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Collapse Leaf Nodes
           </button>
-          <button className="popup-button" onClick={handleRemove}>
+          <button
+            className="popup-button"
+            onClick={handleRemove}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Remove {clickedNodeLabel} & Leaf nodes
           </button>
           <button
