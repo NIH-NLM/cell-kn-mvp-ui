@@ -210,11 +210,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   nonSelfLinkEnter
     .append("text")
     .attr("class", "link-source")
-    .text(
-      (d) =>
-        `${d.sourceText} (${d.Score ? (+d.Score).toPrecision(2) : "N/A"})` ||
-        "Source Unknown",
-    )
+    .text((d) => `${d.sourceText}` || "Source Unknown")
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
@@ -257,11 +253,7 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
   selfLinkEnter
     .append("text")
     .attr("class", "link-source")
-    .text(
-      (d) =>
-        `${d.sourceText} (${d.Score ? (+d.Score).toPrecision(2) : "N/A"})` ||
-        "Source Unknown",
-    )
+    .text((d) => `${d.sourceText}` || "Source Unknown")
     .style("font-size", options.linkFontSize + "px")
     .style("fill", "black")
     .style("display", "none")
