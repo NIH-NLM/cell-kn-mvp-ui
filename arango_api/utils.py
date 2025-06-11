@@ -257,53 +257,45 @@ def search_by_term(search_term, db):
     db_name_lower = db.lower()
 
     query = f"""
-            LET lowerSearchTerm = LOWER(@search_term) 
-            // Pre-calculate the token used in BOOST for efficiency & consistency
-            LET firstSearchToken = FIRST(TOKENS(@search_term, "text_en"))
-
+            LET lower_search_term = LOWER(@search_term) 
             // --- Subquery to Search, Sort, and Limit ---
             LET sortedDocs = (
                 FOR doc IN indexed
-                    // This finds potential candidates using boosted pseudo-exacts and ngrams
-                    SEARCH ANALYZER(
-                      // Boost condition based on first token match
-                      BOOST(doc.label == firstSearchToken, 10.0) OR
-                      BOOST(doc.Name == firstSearchToken, 10.0) OR
-                      BOOST(doc.Symbol == firstSearchToken, 10.0) OR
-                      BOOST(doc.Label == firstSearchToken, 10.0) OR
-                      BOOST(doc.PMID == firstSearchToken, 10.0) OR
-                      BOOST(doc.Phase == firstSearchToken, 10.0) OR 
-                      BOOST(doc._key == firstSearchToken, 10.0)
-                      // OR NGRAM matching
-                      OR
-                      NGRAM_MATCH(doc.label, @search_term, 0.7, "bigram") OR
-                      NGRAM_MATCH(doc.Name, @search_term, 0.7, "bigram") OR
-                      NGRAM_MATCH(doc.Label, @search_term, 0.7, "bigram") OR
-                      NGRAM_MATCH(doc.Symbol, @search_term, 0.7, "bigram") OR
-                      NGRAM_MATCH(doc.PMID, @search_term, 0.7, "bigram") OR
-                      NGRAM_MATCH(doc.Phase, @search_term, 0.7, "bigram") OR 
-                      NGRAM_MATCH(doc._key, @search_term, 0.7, "bigram") 
-                    , "text_en") // Use text_en as the context analyzer for BOOST/TOKENS
-
-                    // --- Define STRICT Exact Match for Sorting ---
+                    SEARCH 
+                        // n-gram match
+                        ANALYZER(
+                          NGRAM_MATCH(doc.label, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Name, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Label, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Symbol, lower_search_term, 0.5, "n-gram")
+                        , "text_en")
+                        OR
+                        // Levenshtein match
+                        ANALYZER(
+                          BOOST(LEVENSHTEIN_MATCH(doc.label, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Name, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Label, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Symbol, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.PMID, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Phase, lower_search_term, 3), 1.0) OR 
+                          BOOST(LEVENSHTEIN_MATCH(doc._key, lower_search_term, 1), 1.0)
+                        , "text_en_no_stem") 
+                    
+                    // Exact match, sorted first
                     LET isExactMatch = (
-                        (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lowerSearchTerm) OR
-                        (HAS(doc, 'Name') AND IS_STRING(doc.Name) AND LOWER(doc.Name) == lowerSearchTerm) OR
-                        (HAS(doc, 'Symbol') AND IS_STRING(doc.Symbol) AND LOWER(doc.Symbol) == lowerSearchTerm) OR
-                        (HAS(doc, 'Label') AND IS_STRING(doc.Label) AND LOWER(doc.Label) == lowerSearchTerm) OR
-                        (HAS(doc, 'PMID') AND IS_STRING(doc.PMID) AND LOWER(doc.PMID) == lowerSearchTerm) OR
-                        (HAS(doc, '_key') AND IS_STRING(doc._key) AND doc._key == @search_term) // Direct _key check is case-sensitive
-                        // Add other fields if they should count towards exact match sorting
+                        (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lower_search_term) OR
+                        (HAS(doc, 'Name') AND IS_STRING(doc.Name) AND LOWER(doc.Name) == lower_search_term) OR
+                        (HAS(doc, 'Symbol') AND IS_STRING(doc.Symbol) AND LOWER(doc.Symbol) == lower_search_term) OR
+                        (HAS(doc, 'Label') AND IS_STRING(doc.Label) AND LOWER(doc.Label) == lower_search_term) OR
+                        (HAS(doc, 'PMID') AND IS_STRING(doc.PMID) AND LOWER(doc.PMID) == lower_search_term) OR
+                        (HAS(doc, '_key') AND IS_STRING(doc._key) AND doc._key == @search_term)
                     )
-
-                    // --- Multi-key Sort: Exact Matches FIRST, then by BM25 ---
                     SORT isExactMatch DESC, BM25(doc) DESC
-
                     RETURN doc
             ) 
 
             RETURN sortedDocs
-        """
+            """
 
     bind_vars = {"search_term": search_term}
     try:
@@ -358,7 +350,7 @@ def get_phenotypes_sunburst(ignored_parent_id):
     uberon_terms = [
         "UBERON/0002048",  # lung
         "UBERON/0000966",  # retina
-        "UBERON/0000955", # brain
+        "UBERON/0000955",  # brain
     ]
     # Artificial root ID for the response
     graph_root_id = "root_phenotypes_full"

@@ -1,27 +1,47 @@
+import React from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGithub } from "@fortawesome/free-brands-svg-icons";
+
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <div className="footer">
-      <p>
-        The National Library of Medicine (NLM) Cell Knowledge Network is a
-        knowledgebase about cell characteristics (phenotypes) emerging from
-        single cell technologies, integrated with other sources of trusted
-        knowledge, sourced from:
-      </p>
-      <ul>
-        <li>Validated data processing and analysis pipelines</li>
-        <li>Reference ontologies</li>
-        <li>NCBI and other information resources</li>
-        <li>LLM-based text mining</li>
-      </ul>
-      <p>
-        A knowledge graph is produced from triple assertions
-        (subject-predicate-object) corresponding to biomedical entities (nodes)
-        and their relations (edges), and links experimental data to the
-        reference Cell Ontology as evidence in support of assertions. The graph
-        integrates single cell genomics experimental data with other information
-        sources about cells, tissues, biomarkers, pathways, drugs, diseases.
-      </p>
-    </div>
+    <footer className="site-footer">
+      <div className="footer-content-wrapper">
+        <div className="footer-section footer-links">
+          <a
+            href="https://github.com/NIH-NLM/cell-kn-mvp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link github-link"
+            aria-label="View source code on GitHub"
+          >
+            <FontAwesomeIcon icon={faGithub} />
+            <span>View on GitHub</span>
+          </a>
+          <a
+            href="https://www.nlm.nih.gov/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link"
+          >
+            NLM
+          </a>
+          <a
+            href="https://www.ncbi.nlm.nih.gov/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link"
+          >
+            NCBI
+          </a>
+        </div>
+
+        <div className="footer-section footer-copyright">
+          <p>© {currentYear} National Library of Medicine (NLM).</p>
+        </div>
+      </div>
+    </footer>
   );
 };
 

@@ -2,6 +2,7 @@ import SearchBar from "../../components/SearchBar/SearchBar";
 import { useContext, useState, useRef, useEffect } from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
+import { Link } from "react-router-dom";
 
 const SearchPage = () => {
   const [nodeIds, setNodeIds] = useState([]);
@@ -16,7 +17,6 @@ const SearchPage = () => {
     if (items && items.length > 0) {
       setGraphJustGenerated(true);
     } else {
-      // If generating with no items do not try to scroll
       setGraphJustGenerated(false);
     }
   };
@@ -31,9 +31,7 @@ const SearchPage = () => {
     setSelectedItems((prev) => prev.filter((d) => d._id !== item._id));
   };
 
-  // useEffect to handle scrolling
   useEffect(() => {
-    // Scroll if the flag is true, nodeIds are present, and the ref is available
     if (
       graphJustGenerated &&
       nodeIds.length > 0 &&
@@ -51,7 +49,9 @@ const SearchPage = () => {
     <div className="search-page-layout">
       <div className="main-search-box">
         <h1 className="search-page-title">Search the Knowledge Network</h1>
-        <div className="sunburst-search-container">
+        <div className="search-bar-wrapper">
+          {" "}
+          {/* Renamed from sunburst-search-container for clarity */}
           <SearchBar
             generateGraph={() => generateGraph(selectedItems)}
             selectedItems={selectedItems}
@@ -62,17 +62,28 @@ const SearchPage = () => {
       </div>
 
       <div className="about-section-container">
-        {/* ... about content ... */}
-        <h2 className="about-title">About This Search</h2>
+        <h2 className="about-title">About NCKN</h2>
         <p>
-          This tool enables the exploration of interconnected biological data.
-          Use the search bar above to find genes, cells, diseases, chemical
-          compounds, and other relevant entities.
+          The National Library of Medicine (NLM) Cell Knowledge Network is a
+          knowledgebase focused on cell characteristics (phenotypes) derived
+          from single-cell technologies. It integrates this information with
+          data from reference ontologies, NCBI resources, and text mining
+          efforts.
         </p>
         <p>
-          Select items from your search results to build a list. Once you have
-          your items of interest, you can generate a network graph to visualize
-          their relationships and discover new connections.
+          The network is structured as a knowledge graph of biomedical entities
+          (nodes) and their relationships (edges). This graph links experimental
+          single-cell genomics data to the reference Cell Ontology, providing
+          evidence for assertions and integrating information about cells,
+          tissues, biomarkers, pathways, drugs, and diseases.
+        </p>
+        <p>
+          Use the search bar above to find and explore entities within this
+          network. Selected items can be used to generate interactive graphs
+          visualizing their connections.
+          <Link to="/about" className="learn-more-link internal-learn-more">
+            Learn more...
+          </Link>
         </p>
       </div>
 
