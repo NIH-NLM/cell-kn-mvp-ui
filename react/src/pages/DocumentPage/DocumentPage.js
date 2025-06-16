@@ -3,11 +3,12 @@ import { useParams } from "react-router-dom";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollections } from "../../components/Contexts/Contexts";
-import { getTitle } from "../../components/Utils/Utils";
+import { getTitle, parseId } from "../../components/Utils/Utils";
 
 const DocumentPage = () => {
   const { coll, id } = useParams();
   const [document, setDocument] = useState(null);
+  const [nodeIds, setNodeIds] = useState(null);
 
   const prunedCollections = useContext(PrunedCollections);
 
@@ -24,6 +25,7 @@ const DocumentPage = () => {
         }
         const data = await response.json();
         setDocument(data);
+        setNodeIds(parseId(data));
       } catch (error) {
         console.error("Failed to fetch document:", error);
 
@@ -75,9 +77,10 @@ const DocumentPage = () => {
 
           <div className="force-graph-panel">
             <ForceGraph
-              nodeIds={[document._id]}
+              nodeIds={nodeIds}
               settings={{
                 collectionsToPrune: filteredPrunedCollections,
+                defaultDepth: nodeIds.length > 1 ? 0 : 2,
               }}
             />
           </div>

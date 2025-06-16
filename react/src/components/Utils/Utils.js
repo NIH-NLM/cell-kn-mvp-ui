@@ -90,20 +90,19 @@ export const getLabel = (item) => {
     const itemCollection = item._id.split("/")[0];
 
     const labelOptions =
-        collectionsMap.get(itemCollection)?.["individual_labels"] ??
-        collectionsMap.get("edges")?.["individual_labels"];
+      collectionsMap.get(itemCollection)?.["individual_labels"] ??
+      collectionsMap.get("edges")?.["individual_labels"];
 
     const label = labelOptions
-        ?.map((key) => item[key])
-        .find((value) => value !== undefined)
-        ?.toString()
-        .split(",")
-        .flatMap((value) => (Array.isArray(value) ? value : [value]))
-        .join(" | ");
+      ?.map((key) => item[key])
+      .find((value) => value !== undefined)
+      ?.toString()
+      .split(",")
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .join(" | ");
 
     // Return NAME UNKNOWN if undefined.
     return label ?? "NAME UNKNOWN";
-
   } catch (error) {
     console.error(`getLabel failed with exception: ${error}`);
   }
@@ -115,17 +114,22 @@ export const getUrl = (item) => {
   const itemCollection = item._id.split("/")[0];
   const collectionMap = collectionsMap.get(itemCollection);
 
-  const individualUrl = collectionMap?.["individual_url"];
-  let replacement = item[collectionMap["field_to_use"]].replaceAll(
-    collectionMap["to_be_replaced"],
-    collectionMap["replace_with"],
-  );
-  if (collectionMap["make_lower_case"]) {
-    replacement = replacement.toLowerCase();
+  // Collection exists in map
+  if (collectionMap) {
+    const individualUrl = collectionMap?.["individual_url"];
+    let replacement = item[collectionMap["field_to_use"]].replaceAll(
+      collectionMap["to_be_replaced"],
+      collectionMap["replace_with"],
+    );
+    if (collectionMap["make_lower_case"]) {
+      replacement = replacement.toLowerCase();
+    }
+    // Create url
+    const url = individualUrl.replace("<FIELD_TO_USE>", replacement);
+    return url;
+  } else {
+    return null;
   }
-  // Create url
-  const url = individualUrl.replace("<FIELD_TO_USE>", replacement);
-  return url;
 };
 
 export const getTitle = (item) => {
@@ -134,8 +138,16 @@ export const getTitle = (item) => {
   const itemCollection = item._id.split("/")[0];
   const collectionMap = collectionsMap.get(itemCollection);
 
-  const title = `${collectionMap["display_name"]}: ${getLabel(item)}`;
-  return capitalCase(title);
+  // Collection exists in map
+  if (collectionMap) {
+    const title = `${collectionMap["display_name"]}: ${getLabel(item)}`;
+    return capitalCase(title);
+  }
+  // Default (expected for edges)
+  else {
+    const title = `${itemCollection}: ${item.label ? item.label : item._id}`;
+    return capitalCase(title);
+  }
 };
 
 export const capitalCase = (input) => {
@@ -200,6 +212,18 @@ export function truncateString(text, maxLength) {
     return text;
   }
   return text.slice(0, maxLength) + "...";
+}
+
+// Parse id. If edge id, return both edges.
+export function parseId(document) {
+  // Check if edge document
+  if (document._from && document._to) {
+    return [document._from, document._to];
+  }
+  // Return its own id if vertex
+  else {
+    return [document._id];
+  }
 }
 
 const LoadingBar = () => {
