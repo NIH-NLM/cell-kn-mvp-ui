@@ -257,30 +257,41 @@ def search_by_term(search_term, db):
     db_name_lower = db.lower()
 
     query = f"""
-            LET lower_search_term = LOWER(@search_term) 
+            LET lower_search_term = LOWER(@search_term)
             // --- Subquery to Search, Sort, and Limit ---
             LET sortedDocs = (
                 FOR doc IN indexed
-                    SEARCH 
+                    SEARCH
                         // n-gram match
                         ANALYZER(
                           NGRAM_MATCH(doc.label, lower_search_term, 0.5, "n-gram") OR
-                          NGRAM_MATCH(doc.Name, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.definition, lower_search_term, 0.5, "n-gram") OR
                           NGRAM_MATCH(doc.Label, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Name, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Trade_names, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Recommended_name, lower_search_term, 0.5, "n-gram") OR
+                          NGRAM_MATCH(doc.Author, lower_search_term, 0.5, "n-gram") OR
                           NGRAM_MATCH(doc.Symbol, lower_search_term, 0.5, "n-gram")
                         , "text_en")
                         OR
                         // Levenshtein match
                         ANALYZER(
                           BOOST(LEVENSHTEIN_MATCH(doc.label, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Name, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.definition, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.Label, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Name, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Trade_names, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Recommended_name, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Author, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Year, lower_search_term, 1), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.PMID, lower_search_term, 1), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.PMCID, lower_search_term, 1), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Phase, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.Symbol, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.PMID, lower_search_term, 3), 1.0) OR
-                          BOOST(LEVENSHTEIN_MATCH(doc.Phase, lower_search_term, 3), 1.0) OR 
+                          BOOST(LEVENSHTEIN_MATCH(doc.Markers, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc._key, lower_search_term, 1), 1.0)
-                        , "text_en_no_stem") 
-                    
+                        , "text_en_no_stem")
+
                     // Exact match, sorted first
                     LET isExactMatch = (
                         (HAS(doc, 'label') AND IS_STRING(doc.label) AND LOWER(doc.label) == lower_search_term) OR
@@ -292,7 +303,7 @@ def search_by_term(search_term, db):
                     )
                     SORT isExactMatch DESC, BM25(doc) DESC
                     RETURN doc
-            ) 
+            )
 
             RETURN sortedDocs
             """
