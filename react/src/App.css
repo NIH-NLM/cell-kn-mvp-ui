@@ -391,7 +391,6 @@ tr:nth-of-type(odd) {
 /* Graph Display Area Styling */
 .graph-display-area {
   width: 100%;
-  max-width: 1200px;
   margin-top: 20px;
   background-color: var(--color-white);
   padding: 20px;
