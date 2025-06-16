@@ -19,34 +19,33 @@ const ForceGraph = ({
   const chartContainerRef = useRef();
 
   // Init setting states
-  const [depth, setDepth] = useState(settings["defaultDepth"] || 2);
+  const [depth, setDepth] = useState(settings["defaultDepth"] ?? 2);
   const [edgeDirection, setEdgeDirection] = useState(
-    settings["edgeDirection"] || "ANY",
+    settings["edgeDirection"] ?? "ANY",
   );
   const [setOperation, setSetOperation] = useState(
-    settings["setOperation"] || "Union",
+    settings["setOperation"] ?? "Union",
   );
   const [allowedCollections, setAllowedCollections] = useState([]);
   const [nodeFontSize, setNodeFontSize] = useState(
-    settings["nodeFontSize"] || 12,
+    settings["nodeFontSize"] ?? 12,
   );
   const [edgeFontSize, setEdgeFontSize] = useState(
-    settings["edgeFontSize"] || 8,
+    settings["edgeFontSize"] ?? 8,
   );
-  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] || 5000);
+  const [nodeLimit, setNodeLimit] = useState(settings["nodeLimit"] ?? 5000);
   const [labelStates, setLabelStates] = useState(
-    settings["labelStates"] || {
-      ".collection-label": false,
-      ".link-label": true,
-      ".node-label": true,
+    settings["labelStates"] ?? {
+      "collection-label": false,
+      "link-source": false,
+      "link-label": true,
+      "node-label": true,
     },
   );
   const [findShortestPaths, setFindShortestPaths] = useState(
-    "findShortestPaths" in settings ? settings["findShortestPaths"] : false,
+    settings["findShortestPaths"] ?? false,
   );
-  const [useFocusNodes] = useState(
-    "useFocusNodes" in settings ? settings["useFocusNodes"] : true,
-  );
+  const [useFocusNodes] = useState(settings["useFocusNodes"] ?? true);
 
   // Init other states
   const [graphNodeIds, setGraphNodeIds] = useState(originNodeIds);
@@ -57,6 +56,7 @@ const ForceGraph = ({
   const [clickedNodeId, setClickedNodeId] = useState(null);
   const [clickedNodeLabel, setClickedNodeLabel] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
+  const [popupIsEdge, setPopupIsEdge] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [graph, setGraph] = useState(null);
   const collectionsMap = new Map(collectionsMapData);
@@ -539,6 +539,7 @@ const ForceGraph = ({
   const handleNodeClick = (e, nodeData) => {
     setClickedNodeId(nodeData._id);
     setClickedNodeLabel(getLabel(nodeData));
+    let collection = nodeData._id.split("/")[0];
 
     if (chartContainerRef.current) {
       const chartRect = chartContainerRef.current.getBoundingClientRect();
@@ -549,6 +550,12 @@ const ForceGraph = ({
         x: xRelativeToChart + 30,
         y: yRelativeToChart + 30,
       });
+      // Edge collection
+      if (collection.includes("-")) {
+        setPopupIsEdge(true);
+      } else {
+        setPopupIsEdge(false);
+      }
       setPopupVisible(true);
     } else {
       console.error("Chart container ref not found for popup positioning.");
@@ -556,6 +563,12 @@ const ForceGraph = ({
         x: e.clientX + 10 + window.scrollX,
         y: e.clientY + 10 + window.scrollY,
       });
+      // Edge collection
+      if (collection.includes("-")) {
+        setPopupIsEdge(true);
+      } else {
+        setPopupIsEdge(false);
+      }
       setPopupVisible(true);
     }
   };
@@ -845,13 +858,43 @@ const ForceGraph = ({
           >
             Go To "{clickedNodeLabel}"
           </a>
-          <button className="popup-button" onClick={handleExpand}>
+          <button
+            className="popup-button"
+            onClick={handleExpand}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Expand from "{clickedNodeLabel}"
           </button>
-          <button className="popup-button" onClick={handleCollapse}>
+          <button
+            className="popup-button"
+            onClick={handleCollapse}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Collapse Leaf Nodes
           </button>
-          <button className="popup-button" onClick={handleRemove}>
+          <button
+            className="popup-button"
+            onClick={handleRemove}
+            style={
+              !popupIsEdge
+                ? {
+                    display: "block",
+                  }
+                : { display: "none" }
+            }
+          >
             Remove {clickedNodeLabel} & Leaf nodes
           </button>
           <button
@@ -973,8 +1016,8 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".collection-label"]}
-                        onChange={() => handleLabelToggle(".collection-label")}
+                        checked={labelStates["collection-label"]}
+                        onChange={() => handleLabelToggle("collection-label")}
                       />
                       <span className="slider round"></span>
                     </label>
@@ -984,8 +1027,19 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".link-label"]}
-                        onChange={() => handleLabelToggle(".link-label")}
+                        checked={labelStates["link-label"]}
+                        onChange={() => handleLabelToggle("link-label")}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div className="label-toggle-item">
+                    Source
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={labelStates["link-source"]}
+                        onChange={() => handleLabelToggle("link-source")}
                       />
                       <span className="slider round"></span>
                     </label>
@@ -995,8 +1049,8 @@ const ForceGraph = ({
                     <label className="switch">
                       <input
                         type="checkbox"
-                        checked={labelStates[".node-label"]}
-                        onChange={() => handleLabelToggle(".node-label")}
+                        checked={labelStates["node-label"]}
+                        onChange={() => handleLabelToggle("node-label")}
                       />
                       <span className="slider round"></span>
                     </label>
