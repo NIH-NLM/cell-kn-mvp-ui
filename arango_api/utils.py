@@ -283,6 +283,7 @@ def search_by_term(search_term, db):
                           BOOST(LEVENSHTEIN_MATCH(doc.Trade_names, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.Recommended_name, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.Author, lower_search_term, 3), 1.0) OR
+                          BOOST(LEVENSHTEIN_MATCH(doc.Title, lower_search_term, 3), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.Year, lower_search_term, 1), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.PMID, lower_search_term, 1), 1.0) OR
                           BOOST(LEVENSHTEIN_MATCH(doc.PMCID, lower_search_term, 1), 1.0) OR
