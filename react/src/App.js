@@ -13,7 +13,7 @@ import SunburstPage from "./pages/SunburstPage/SunburstPage";
 import TreePage from "./pages/TreePage/TreePage";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";
-import {FtuPartsProvider} from "./contexts/FTUPartsContext";
+import { FtuPartsProvider } from "./contexts/FTUPartsContext";
 
 function App() {
   return (

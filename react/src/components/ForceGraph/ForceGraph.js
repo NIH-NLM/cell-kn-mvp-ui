@@ -1,8 +1,9 @@
-import React, {useEffect, useState, useRef, useContext, memo} from "react";
+import React, { useEffect, useState, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import {LoadingBar,
+import {
+  LoadingBar,
   fetchCollections,
   getLabel,
   hasAnyNodes,

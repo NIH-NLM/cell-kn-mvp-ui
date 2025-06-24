@@ -1,9 +1,13 @@
-import React, {useEffect, useState, useContext, useMemo} from "react";
+import React, { useEffect, useState, useContext, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
 import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
-import {findFtuUrlById, getTitle, parseId} from "../../components/Utils/Utils";
+import {
+  findFtuUrlById,
+  getTitle,
+  parseId,
+} from "../../components/Utils/Utils";
 import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
 import { useFtuParts } from "../../contexts/FTUPartsContext";
 
@@ -38,7 +42,7 @@ const DocumentPage = () => {
 
     if (id && coll) {
       setDocument(null);
-      getDocument()
+      getDocument();
     }
   }, [id, coll]);
 
@@ -47,15 +51,17 @@ const DocumentPage = () => {
       return null;
     }
     const ftuUrl = findFtuUrlById(ftuParts.results.bindings, id);
-    console.log(ftuUrl)
-    return ftuUrl
+    console.log(ftuUrl);
+    return ftuUrl;
   }, [document, ftuParts, id]);
 
-
-  const forceGraphSettings = useMemo(() => ({
-    collectionsToPrune: filteredPrunedCollections,
-    defaultDepth: nodeIds ? (nodeIds.length > 1 ? 0 : 2) : 2,
-  }), [filteredPrunedCollections, nodeIds]);
+  const forceGraphSettings = useMemo(
+    () => ({
+      collectionsToPrune: filteredPrunedCollections,
+      defaultDepth: nodeIds ? (nodeIds.length > 1 ? 0 : 2) : 2,
+    }),
+    [filteredPrunedCollections, nodeIds],
+  );
 
   const isLoading = !document && id && coll;
 
@@ -93,9 +99,7 @@ const DocumentPage = () => {
             <DocumentCard document={document} />
             {ftuIllustrationUrl && (
               <FTUIllustration
-                selectedIllustration={
-                  ftuIllustrationUrl
-                }
+                selectedIllustration={ftuIllustrationUrl}
                 illustrations={
                   "https://cdn.humanatlas.io/digital-objects/graph/2d-ftu-illustrations/latest/assets/2d-ftu-illustrations.jsonld"
                 }
@@ -103,10 +107,7 @@ const DocumentPage = () => {
             )}
           </div>
           <div className="force-graph-panel">
-            <ForceGraph
-              nodeIds={nodeIds}
-              settings={forceGraphSettings}
-            />
+            <ForceGraph nodeIds={nodeIds} settings={forceGraphSettings} />
           </div>
         </div>
       </div>

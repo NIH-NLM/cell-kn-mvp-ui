@@ -2036,3 +2036,47 @@ input:checked + .slider:before {
 .ftu-container {
   height: 90vh;
 }
+
+/* --- Popup button component --- */
+.cell-info-popup {
+  background-color: var(--color-white);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 1000;
+  width: 250px;
+  font-family: sans-serif;
+}
+
+.popup-header {
+  font-size: 1.1em;
+  font-weight: bold;
+  border-bottom: 1px solid var(--color-gray);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.popup-content p {
+  margin: 4px 0;
+  font-size: 0.9em;
+}
+
+.popup-actions {
+  margin-top: 16px;
+}
+
+.popup-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: var(--color-gray);
+}
+
+.popup-close-btn:hover {
+  color: var(--color-dark);
+}
