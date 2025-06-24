@@ -226,7 +226,7 @@ export function parseId(document) {
   }
 }
 
-const LoadingBar = () => {
+export const LoadingBar = () => {
   return (
     <div className="loading-indicator">
       <div className="progress-bar"></div>
@@ -235,4 +235,25 @@ const LoadingBar = () => {
   );
 };
 
-export default LoadingBar;
+export const findFtuUrlById = (ftuPartsArray, searchId) => {
+  if (!Array.isArray(ftuPartsArray) || !searchId) {
+    return null;
+  }
+
+  // Find match
+  const foundMatch = ftuPartsArray.find((part) => {
+    const ftuIri = part.ftu_iri?.value;
+    const ftuPartIri = part.ftu_part_iri?.value;
+
+    // Check if either IRI value exists and includes the searchId
+    const isMatch =
+      (ftuIri && ftuIri.includes(searchId)) ||
+      (ftuPartIri && ftuPartIri.includes(searchId));
+
+    return isMatch;
+  });
+
+  // Return match digital object URL
+  console.log(foundMatch);
+  return foundMatch?.ftu_digital_object?.value || null;
+};
