@@ -1,22 +1,5 @@
 import { createContext, useState } from "react";
 
-/* Collections Context */
-export const PrunedCollections = createContext([
-  "CS",
-  "CSD",
-  "MmusDv",
-  "CHEBI",
-  "GO",
-  "HP",
-  "HsapDv",
-  "NCT",
-  "Orphanet",
-  "PATO",
-  "RS",
-  "SO",
-]);
-
-/* Graph Context */
 const defaultGraphContextValue = {
   graphType: "phenotypes",
   setGraphType: () => {

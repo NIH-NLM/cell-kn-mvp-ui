@@ -72,6 +72,8 @@ button.background-color-bg:hover {
 }
 
 body {
+  overflow-y: auto;
+  height: 100%;
   line-height: 1.8em;
   font-weight: 400;
   font-size: 16px;
@@ -85,10 +87,6 @@ a {
 .site-container {
   height: 100vh;
   width: 100vw;
-}
-
-.app > * {
-  padding: 5rem;
 }
 
 .container {
@@ -1077,36 +1075,6 @@ button.active {
   padding: 0.5rem;
 }
 
-/* Footer */
-.footer {
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--color-text);
-  padding: 40px;
-  background-color: var(--color-light-bg);
-  border-top: 1px solid var(--color-border);
-}
-
-.footer p {
-  margin-bottom: 15px;
-  text-align: justify;
-}
-
-.footer ul {
-  margin-top: 10px;
-  padding-left: 20px;
-  list-style-type: disc;
-  margin-bottom: 15px;
-}
-
-.footer ul li {
-  margin-bottom: 10px;
-}
-
-.footer p:last-child {
-  margin-bottom: 0;
-}
-
 .loading-overlay {
   position: absolute;
 }
@@ -2062,4 +2030,9 @@ input:checked + .slider:before {
   .footer-copyright {
     text-align: center;
   }
+}
+
+/* --- Additional FTU styles --- */
+.ftu-container {
+  height: 90vh;
 }

@@ -1,16 +1,19 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, {useEffect, useState, useContext, useMemo} from "react";
 import { useParams } from "react-router-dom";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import { PrunedCollections } from "../../components/Contexts/Contexts";
-import { getTitle, parseId } from "../../components/Utils/Utils";
+import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
+import {findFtuUrlById, getTitle, parseId} from "../../components/Utils/Utils";
+import FTUIllustration from "../../components/FTUIllustration/FTUIllustration";
+import { useFtuParts } from "../../contexts/FTUPartsContext";
 
 const DocumentPage = () => {
   const { coll, id } = useParams();
   const [document, setDocument] = useState(null);
   const [nodeIds, setNodeIds] = useState(null);
 
-  const prunedCollections = useContext(PrunedCollections);
+  const prunedCollections = useContext(PrunedCollectionsContext);
+  const { ftuParts, ftuPartsIsLoading, ftuPartsError } = useFtuParts();
 
   const filteredPrunedCollections = prunedCollections.includes(coll)
     ? prunedCollections.filter((item) => item !== coll)
@@ -35,9 +38,24 @@ const DocumentPage = () => {
 
     if (id && coll) {
       setDocument(null);
-      getDocument();
+      getDocument()
     }
   }, [id, coll]);
+
+  const ftuIllustrationUrl = useMemo(() => {
+    if (!document || !ftuParts || ftuParts.length === 0) {
+      return null;
+    }
+    const ftuUrl = findFtuUrlById(ftuParts.results.bindings, id);
+    console.log(ftuUrl)
+    return ftuUrl
+  }, [document, ftuParts, id]);
+
+
+  const forceGraphSettings = useMemo(() => ({
+    collectionsToPrune: filteredPrunedCollections,
+    defaultDepth: nodeIds ? (nodeIds.length > 1 ? 0 : 2) : 2,
+  }), [filteredPrunedCollections, nodeIds]);
 
   const isLoading = !document && id && coll;
 
@@ -73,15 +91,21 @@ const DocumentPage = () => {
         <div className="document-page-main-content-area">
           <div className="document-card-panel">
             <DocumentCard document={document} />
+            {ftuIllustrationUrl && (
+              <FTUIllustration
+                selectedIllustration={
+                  ftuIllustrationUrl
+                }
+                illustrations={
+                  "https://cdn.humanatlas.io/digital-objects/graph/2d-ftu-illustrations/latest/assets/2d-ftu-illustrations.jsonld"
+                }
+              />
+            )}
           </div>
-
           <div className="force-graph-panel">
             <ForceGraph
               nodeIds={nodeIds}
-              settings={{
-                collectionsToPrune: filteredPrunedCollections,
-                defaultDepth: nodeIds.length > 1 ? 0 : 2,
-              }}
+              settings={forceGraphSettings}
             />
           </div>
         </div>
