@@ -1,13 +1,13 @@
 import SearchBar from "../../components/SearchBar/SearchBar";
 import { useContext, useState, useRef, useEffect } from "react";
 import ForceGraph from "../../components/ForceGraph/ForceGraph";
-import { PrunedCollections } from "../../components/Contexts/Contexts";
+import { PrunedCollectionsContext } from "../../contexts/PrunedCollectionsContext";
 import { Link } from "react-router-dom";
 
 const SearchPage = () => {
   const [nodeIds, setNodeIds] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
-  const prunedCollections = useContext(PrunedCollections);
+  const prunedCollections = useContext(PrunedCollectionsContext);
   const graphDisplayAreaRef = useRef(null);
   const [graphJustGenerated, setGraphJustGenerated] = useState(false);
 

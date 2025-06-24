@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import SelectedItemsTable from "../SelectedItemsTable/SelectedItemsTable";
 import SearchResultsTable from "../SearchResultsTable/SearchResultsTable";
-import { GraphContext } from "../Contexts/Contexts";
+import { GraphContext } from "../../contexts/GraphContext";
 
 const SearchIcon = () => (
   <svg

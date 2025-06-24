@@ -1,14 +1,15 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
-import LoadingBar, {
+import {
+  LoadingBar,
   fetchCollections,
   getLabel,
   hasAnyNodes,
   parseCollections,
 } from "../Utils/Utils";
-import { GraphContext } from "../Contexts/Contexts";
+import { GraphContext } from "../../contexts/GraphContext";
 
 const ForceGraph = ({
   nodeIds: originNodeIds,
@@ -1216,4 +1217,4 @@ const ForceGraph = ({
   );
 };
 
-export default ForceGraph;
+export default memo(ForceGraph);
