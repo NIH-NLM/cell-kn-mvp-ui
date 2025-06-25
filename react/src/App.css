@@ -2033,8 +2033,70 @@ input:checked + .slider:before {
 }
 
 /* --- Additional FTU styles --- */
-.ftu-container {
-  height: 90vh;
+.max-height-limited {
+  max-height: 40vh;
+  position: relative;
+}
+
+.ftu-container > hra-medical-illustration {
+  width: 100%;
+  height: 100%;
+}
+
+.expand-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-light);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.expand-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.ftu-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.ftu-container.fullscreen > hra-medical-illustration {
+  width: 100%;
+  height: 100%;
+  max-width: 90vw;
+  max-height: 90vh;
+  background-color: var(--color-white);
+  border-radius: 8px;
+}
+
+.ftu-container.fullscreen .expand-button {
+  top: 2rem;
+  right: 2rem;
+  background-color: var(--color-light);
+}
+
+svg {
+  height: 90%;
 }
 
 /* --- Popup button component --- */
