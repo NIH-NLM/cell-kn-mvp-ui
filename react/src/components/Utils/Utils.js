@@ -241,19 +241,11 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
   }
 
   // Find match
-  const foundMatch = ftuPartsArray.find((part) => {
-    const ftuIri = part.ftu_iri?.value;
-    const ftuPartIri = part.ftu_part_iri?.value;
-
-    // Check if either IRI value exists and includes the searchId
-    const isMatch =
-      (ftuIri && ftuIri.includes(searchId)) ||
-      (ftuPartIri && ftuPartIri.includes(searchId));
-
-    return isMatch;
-  });
+  const foundMatch = ftuPartsArray.find((ftuPart) =>
+    ftuPart.ftu_iri === searchId || ftuPart.ftu_part_iri === searchId
+  );
 
   // Return match digital object URL
   console.log(foundMatch);
-  return foundMatch?.ftu_digital_object?.value || null;
+  return foundMatch?.ftu_digital_object || null;
 };

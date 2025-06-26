@@ -50,7 +50,7 @@ const DocumentPage = () => {
     if (!document || !ftuParts || ftuParts.length === 0) {
       return null;
     }
-    const ftuUrl = findFtuUrlById(ftuParts.results.bindings, id);
+    const ftuUrl = findFtuUrlById(ftuParts, id);
     console.log(ftuUrl);
     return ftuUrl;
   }, [document, ftuParts, id]);
