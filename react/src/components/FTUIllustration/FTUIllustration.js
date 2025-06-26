@@ -49,6 +49,7 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
         return;
       }
 
+      // Get event data details
       const id = event.detail.representation_of
         .split("/")
         .pop()
@@ -56,12 +57,15 @@ const FTUIllustration = ({ selectedIllustration, illustrations }) => {
       const label = event.detail.label;
       setPopupData({ id, label });
 
+      // Find web component rect
       const rect = ftuRef.current.getBoundingClientRect();
       setPopupPosition({ x: rect.left, y: rect.top });
     };
 
+    // Add event listener
     ftu.addEventListener("cell-click", handleCellClick);
 
+    // Cleanup
     return () => {
       ftu.removeEventListener("cell-click", handleCellClick);
     };
