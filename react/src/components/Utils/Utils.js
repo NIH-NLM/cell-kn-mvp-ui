@@ -242,7 +242,7 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
 
   // Find match
   const foundMatch = ftuPartsArray.find((ftuPart) =>
-    ftuPart.ftu_iri === searchId || ftuPart.ftu_part_iri === searchId
+    ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId)
   );
 
   // Return match digital object URL
