@@ -8,6 +8,7 @@ import {
   getLabel,
   parseCollections,
   fetchCollections,
+  hasNodesInRawData,
 } from "../Utils/Utils";
 import {
   fetchAndProcessGraph,
@@ -145,7 +146,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     }
 
     // Call updategraph when rawData changes
-    if (status === "succeeded" && Object.keys(rawData).length > 0) {
+    if (status === "processing" && Object.keys(rawData).length > 0) {
       const processedData = performSetOperation(
         rawData,
         settings.setOperation,
@@ -420,7 +421,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
-        {status === "loading" && <LoadingBar />}
+        {(status === "loading" || status === "processing") && <LoadingBar />}
 
         <div
           id="chart-container-wrapper"
@@ -435,11 +436,19 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           }}
         >
           <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
-
-          {status === "loading" && <LoadingBar />}
-          {status !== "loading" && graphData.nodes.length === 0 && (
-            <div className="no-data-message" style={{ position: "absolute" }}>
-              No data meets the current criteria.
+          {status === "loading" && <LoadingBar />}{" "}
+          {(status === "processing" || status === "succeeded") &&
+            !hasNodesInRawData(rawData) && (
+              <div className="no-data-message" style={{ position: "absolute" }}>
+                No data meets the current criteria. Please adjust your filters.
+              </div>
+            )}
+          {status === "failed" && (
+            <div
+              className="no-data-message error-message"
+              style={{ position: "absolute" }}
+            >
+              Failed to fetch graph data. Please try again.
             </div>
           )}
         </div>

@@ -247,3 +247,16 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
   console.log(foundMatch);
   return foundMatch?.ftu_digital_object || null;
 };
+
+// A helper to determine if a raw API graph response object is empty
+export const hasNodesInRawData = (data) => {
+  if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
+    return false;
+  }
+  if (data.nodes && typeof data.nodes === "object") {
+    return Object.values(data.nodes).some(
+      (nodeArray) => Array.isArray(nodeArray) && nodeArray.length > 0,
+    );
+  }
+  return false;
+};

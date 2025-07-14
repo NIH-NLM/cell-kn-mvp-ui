@@ -57,9 +57,13 @@ export const fetchAndProcessGraph = createAsyncThunk(
       graphType: settings.graphType,
     };
 
-    const rawData = await fetchGraphDataAPI(params);
-    // Returned to action.payload 'fulfilled' reducer
-    return rawData;
+    try {
+      const rawData = await fetchGraphDataAPI(params);
+      return rawData;
+    } catch (error) {
+      console.error("Thunk fetch error:", error);
+      throw error;
+    }
   },
 );
 
@@ -111,6 +115,7 @@ const graphSlice = createSlice({
     // Action to set the processed graph data, including node positions
     setGraphData: (state, action) => {
       state.graphData = action.payload;
+      state.status = "succeeded";
     },
     // Action to initialize the graph with new origin nodes
     initializeGraph: (state, action) => {
@@ -132,7 +137,7 @@ const graphSlice = createSlice({
         state.status = "loading";
       })
       .addCase(fetchAndProcessGraph.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = "processing";
         state.rawData = action.payload;
       })
       .addCase(fetchAndProcessGraph.rejected, (state, action) => {
