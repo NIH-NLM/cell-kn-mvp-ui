@@ -93,10 +93,6 @@ export function processGraphLinks(
 /* Rendering Functions */
 
 function renderGraph(simulation, nodes, links, d3, containers, options) {
-  // Update simulation nodes and links
-  simulation.nodes(nodes);
-  options.forceLink.links(links);
-
   // Render nodes
   const nodeSelection = containers.nodeContainer
     .selectAll("g.node")
@@ -299,8 +295,6 @@ function renderGraph(simulation, nodes, links, d3, containers, options) {
 
   // Merge enter selection with the update selection
   linkSelection.merge(linkEnter);
-
-  simulation.alpha(1.5).restart();
 }
 
 /* Utility Functions */
@@ -801,6 +795,21 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
+  function resetGraph() {
+    simulation.stop();
+
+    processedNodes = [];
+    processedLinks = [];
+
+    simulation.nodes([]);
+    simulation.force("link").links([]);
+
+    nodeContainer.selectAll("*").remove();
+    linkContainer.selectAll("*").remove();
+
+    svg.call(zoomHandler.transform, d3.zoomIdentity);
+  }
+
   // Process new data and re-render.
   function updateGraph({
     newNodes = [],
@@ -808,114 +817,62 @@ function ForceGraphConstructor(
     collapseNodes = [],
     removeNode = false,
     centerNodeId = null,
-    simulate = false,
+    resetData = false,
   } = {}) {
-    // Determine whether new data is being added
-    const hasNewData = newNodes.length > 0 || newLinks.length > 0;
-
-    // If there is new data, toggle on simulation and turn off labels so nodes can reposition
-    if (hasNewData || simulate) {
-      // Toggle off labels
-      Object.keys(mergedOptions.labelStates).forEach((key) => {
-        toggleLabels(false, key, true);
-      });
-      toggleSimulation(
-        true,
-        simulation,
-        forceNode,
-        forceCenter,
-        forceLink,
-        processedLinks, // Pass current links for forceLink to operate on
-        mergedOptions.nodeForceStrength,
-        mergedOptions.centerForceStrength,
-        linkForceStrength,
-      );
+    // Check for reset
+    if (resetData) {
+      resetGraph();
     }
 
-    if (collapseNodes.length) {
-      // Identify nodes that are connected only to a collapse node
+    if (collapseNodes.length > 0) {
       const nodesToRemove = [];
       processedNodes.forEach((node) => {
-        // Skip nodes that are in collapseNodes or are origin nodes
-        if (mergedOptions.originNodeIds.includes(node.id)) {
-          return;
-        }
-        // Get all links associated with this node
+        if (mergedOptions.originNodeIds.includes(node.id)) return;
         const nodeLinks = processedLinks.filter(
-          (link) =>
-            (link.source.id || link.source) === node.id ||
-            (link.target.id || link.target) === node.id,
+          (l) =>
+            (l.source.id || l.source) === node.id ||
+            (l.target.id || l.target) === node.id,
         );
-        // Remove node if all links connect to the same collapse node
         if (nodeLinks.length > 0) {
-          // Node must have at least one link to be considered
-          let firstNeighborId = null;
-          let allLinksToSameNeighbor = true;
-
-          // Determine the ID of the neighbor connected by the first link
-          const firstLink = nodeLinks[0];
-          const sourceIdFirst = firstLink.source.id || firstLink.source;
-          const targetIdFirst = firstLink.target.id || firstLink.target;
-          firstNeighborId =
-            sourceIdFirst === node.id || sourceIdFirst === node._id
-              ? targetIdFirst
-              : sourceIdFirst;
-
-          // Check if all other links also go to this same firstNeighborId
-          for (let i = 1; i < nodeLinks.length; i++) {
-            const link = nodeLinks[i];
-            const sourceId = link.source.id || link.source;
-            const targetId = link.target.id || link.target;
-            const currentNeighborId =
-              sourceId === node.id || sourceId === node._id
-                ? targetId
-                : sourceId;
-
-            if (currentNeighborId !== firstNeighborId) {
-              allLinksToSameNeighbor = false;
-              break; // Found a link to a different neighbor
-            }
-          }
-
-          // If all links go to the same neighbor, check if that neighbor is in collapseNodes
-          if (allLinksToSameNeighbor) {
-            if (collapseNodes.includes(firstNeighborId)) {
-              nodesToRemove.push(node.id);
-            }
+          const firstNeighborId =
+            (nodeLinks[0].source.id || nodeLinks[0].source) === node.id
+              ? nodeLinks[0].target.id || nodeLinks[0].target
+              : nodeLinks[0].source.id || nodeLinks[0].source;
+          const allLinksToSameNeighbor = nodeLinks.every(
+            (l) =>
+              ((l.source.id || l.source) === node.id &&
+                (l.target.id || l.target) === firstNeighborId) ||
+              ((l.target.id || l.target) === node.id &&
+                (l.source.id || l.source) === firstNeighborId),
+          );
+          if (
+            allLinksToSameNeighbor &&
+            collapseNodes.includes(firstNeighborId)
+          ) {
+            nodesToRemove.push(node.id);
           }
         }
       });
-
-      // Remove the nodes that were marked
       processedNodes = processedNodes.filter(
-        (node) => !nodesToRemove.includes(node.id),
+        (n) => !nodesToRemove.includes(n.id),
       );
-      // Also remove any links associated with the nodes just removed
-      processedLinks = processedLinks.filter((link) => {
-        const sourceId = link.source.id || link.source;
-        const targetId = link.target.id || link.target;
-        return (
-          !nodesToRemove.includes(sourceId) && !nodesToRemove.includes(targetId)
-        );
-      });
-
-      // If removeNode is true, remove the collapseNodes themselves
+      processedLinks = processedLinks.filter(
+        (l) =>
+          !nodesToRemove.includes(l.source.id) &&
+          !nodesToRemove.includes(l.target.id),
+      );
       if (removeNode) {
         processedNodes = processedNodes.filter(
-          (node) => !collapseNodes.includes(node.id),
+          (n) => !collapseNodes.includes(n.id),
         );
-        processedLinks = processedLinks.filter((link) => {
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
-          return (
-            !collapseNodes.includes(sourceId) &&
-            !collapseNodes.includes(targetId)
-          );
-        });
+        processedLinks = processedLinks.filter(
+          (l) =>
+            !collapseNodes.includes(l.source.id) &&
+            !collapseNodes.includes(l.target.id),
+        );
       }
     }
 
-    // Add nodes and links
     processedNodes = processGraphData(
       processedNodes,
       newNodes,
@@ -932,6 +889,11 @@ function ForceGraphConstructor(
       mergedOptions.label,
     );
 
+    // Update simulation state
+    simulation.nodes(processedNodes);
+    forceLink.links(processedLinks);
+
+    // Update the DOM
     renderGraph(
       simulation,
       processedNodes,
@@ -939,7 +901,7 @@ function ForceGraphConstructor(
       d3,
       { nodeContainer, linkContainer },
       {
-        // Pass relevant options from mergedOptions
+        // Pass only rendering-specific options
         forceLink,
         nodeRadius: mergedOptions.nodeRadius,
         nodeFontSize: mergedOptions.nodeFontSize,
@@ -956,32 +918,38 @@ function ForceGraphConstructor(
     );
     updateLegend(processedNodes);
 
+    toggleSimulation(
+      true,
+      simulation,
+      forceNode,
+      forceCenter,
+      forceLink,
+      processedLinks, // Pass current links for forceLink to operate on
+      mergedOptions.nodeForceStrength,
+      mergedOptions.centerForceStrength,
+      linkForceStrength,
+    );
+
+    // Wait for graph to settle
     const newThreshold = Math.max(1 / (processedNodes.length || 1), 0.002);
-    // Wait for simulation to settle then disable it
     waitForAlpha(simulation, newThreshold).then(() => {
+      // Once settled, stop the simulation
+      toggleSimulation(false, simulation, forceNode, forceCenter, forceLink);
+
       if (centerNodeId) {
         centerOnNode(centerNodeId);
       }
-      toggleSimulation(
-        false, // Turn off simulation
-        simulation,
-        forceNode,
-        forceCenter,
-        forceLink,
-        processedLinks, // Pass links so force can be disassociated if needed
-        mergedOptions.nodeForceStrength,
-        mergedOptions.centerForceStrength,
-      );
+
+      // Restore label visibility after nodes have stopped moving
       Object.keys(mergedOptions.labelStates).forEach((key) => {
-        const value = mergedOptions.labelStates[key];
-        toggleLabels(value, key, false); // Unfreeze and restore label state
+        toggleLabels(mergedOptions.labelStates[key], key);
       });
-      // Save node locations in redux store
+
+      // Callback to Redux to save the final state with positions for undo/redo
       if (typeof mergedOptions.onSimulationEnd === "function") {
         const finalNodes = processedNodes.map(
           ({ x, y, index, vx, vy, ...rest }) => ({ x, y, ...rest }),
         );
-        // Convert d3 node objects back to IDs
         const finalLinks = processedLinks.map(
           ({ source, target, ...rest }) => ({
             ...rest,

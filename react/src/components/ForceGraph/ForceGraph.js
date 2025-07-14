@@ -94,6 +94,40 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     dispatch,
   ]);
 
+  useEffect(() => {
+    // Get the DOM node for the wrapper div
+    const wrapperElement = wrapperRef.current;
+    if (!wrapperElement) {
+      return;
+    }
+
+    // Create a new ResizeObserver
+    const resizeObserver = new ResizeObserver((entries) => {
+      const graphInstance = graphInstanceRef.current;
+      if (!graphInstance) {
+        return;
+      }
+
+      // Take first entry
+      for (let entry of entries) {
+        if (entry.target === wrapperElement) {
+          const { width, height } = entry.contentRect;
+
+          // Call resize on D3
+          graphInstance.resize(width, height);
+        }
+      }
+    });
+
+    // Start observing the wrapper div for size changes
+    resizeObserver.observe(wrapperElement);
+
+    // Cleanup
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   // Process data and update/create the D3 graph when new raw data arrives
   useEffect(() => {
     if (!graphInstanceRef.current) {
@@ -157,6 +191,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
         graphInstanceRef.current.updateGraph({
           newNodes: processedData.nodes,
           newLinks: processedData.links,
+          resetData: true,
         });
       }
     }
@@ -421,7 +456,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           {optionsVisible ? "> Hide Options" : "< Show Options"}
         </button>
 
-        {(status === "loading" || status === "processing") && <LoadingBar />}
+        {status === "loading" && <LoadingBar />}
 
         <div
           id="chart-container-wrapper"
@@ -436,7 +471,6 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           }}
         >
           <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
-          {status === "loading" && <LoadingBar />}{" "}
           {(status === "processing" || status === "succeeded") &&
             !hasNodesInRawData(rawData) && (
               <div className="no-data-message" style={{ position: "absolute" }}>
