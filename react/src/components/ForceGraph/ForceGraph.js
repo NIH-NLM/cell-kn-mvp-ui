@@ -91,6 +91,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     settings.findShortestPaths,
     settings.nodeLimit,
     settings.graphType,
+    settings.collapseOnStart,
     dispatch,
   ]);
 
