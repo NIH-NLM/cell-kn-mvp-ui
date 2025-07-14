@@ -188,10 +188,19 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
       );
 
       if (graphInstanceRef.current) {
+        let collapseList = [];
+        if (settings.collapseOnStart && processedData.nodes) {
+          // Find all nodes that are not the original search nodes
+          collapseList = processedData.nodes
+            .filter((node) => !originNodeIds.includes(node._id))
+            .map((node) => node._id);
+        }
+
         graphInstanceRef.current.updateGraph({
           newNodes: processedData.nodes,
           newLinks: processedData.links,
           resetData: true,
+          collapseNodes: collapseList,
         });
       }
     }
