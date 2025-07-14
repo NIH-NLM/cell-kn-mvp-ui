@@ -15,14 +15,19 @@ export function processGraphData(
     (newNode) =>
       !existingNodes.some((existing) => existing._id === nodeId(newNode)),
   );
-  filteredNewNodes.forEach((newNode) => {
-    newNode.id = nodeId(newNode);
-    let collection = newNode.id.split("/")[0];
-    newNode.nodeHover = labelFn(newNode);
-    newNode.color = getColorForCollection(collection);
-    newNode.nodeLabel = labelFn(newNode);
+  const processedNewNodes = filteredNewNodes.map((newNode) => {
+    const collection = nodeId(newNode).split("/")[0];
+
+    return {
+      ...newNode,
+      id: nodeId(newNode),
+      nodeHover: labelFn(newNode),
+      color: getColorForCollection(collection),
+      nodeLabel: labelFn(newNode),
+    };
   });
-  return existingNodes.concat(filteredNewNodes);
+
+  return existingNodes.concat(processedNewNodes);
 }
 
 export function processGraphLinks(
@@ -344,6 +349,7 @@ function toggleSimulation(
 /* ForceGraphConstructor */
 
 function ForceGraphConstructor(
+  svgElement,
   { nodes: initialNodes, links: initialLinks },
   options = {},
 ) {
@@ -429,7 +435,7 @@ function ForceGraphConstructor(
     .on("tick", ticked);
 
   const svg = d3
-    .create("svg")
+    .select(svgElement)
     .attr("width", mergedOptions.width)
     .attr("height", mergedOptions.height)
     .attr("viewBox", [
@@ -758,8 +764,7 @@ function ForceGraphConstructor(
       .call(zoomHandler.transform, newTransform);
   }
 
-  function toggleLabels(show, labelClass, frozenState = false) {
-    // A map to associate label classes with their respective D3 containers.
+  function toggleLabels(show, labelClass) {
     const containerMap = {
       "link-label": linkContainer,
       "link-source": linkContainer,
@@ -768,8 +773,6 @@ function ForceGraphConstructor(
     };
 
     const container = containerMap[labelClass];
-
-    // If the class is unknown, log a warning and do nothing.
     if (!container) {
       console.warn(
         `toggleLabels: No container configured for class "${labelClass}"`,
@@ -777,17 +780,9 @@ function ForceGraphConstructor(
       return;
     }
 
-    // Select all elements with the given class and set their display style.
     container
       .selectAll(`.${labelClass}`)
       .style("display", show ? "block" : "none");
-
-    // Update the internal state unless the state is frozen
-    if (!frozenState) {
-      if (mergedOptions && mergedOptions.labelStates) {
-        mergedOptions.labelStates[labelClass] = show;
-      }
-    }
   }
 
   // Update node font size
@@ -981,17 +976,32 @@ function ForceGraphConstructor(
         const value = mergedOptions.labelStates[key];
         toggleLabels(value, key, false); // Unfreeze and restore label state
       });
+      // Save node locations in redux store
+      if (typeof mergedOptions.onSimulationEnd === "function") {
+        const finalNodes = processedNodes.map(
+          ({ x, y, index, vx, vy, ...rest }) => ({ x, y, ...rest }),
+        );
+        // Convert d3 node objects back to IDs
+        const finalLinks = processedLinks.map(
+          ({ source, target, ...rest }) => ({
+            ...rest,
+            source: source.id || source,
+            target: target.id || target,
+          }),
+        );
+        mergedOptions.onSimulationEnd(finalNodes, finalLinks);
+      }
     });
   }
 
-  return Object.assign(svg.node(), {
+  return {
     updateGraph,
     updateNodeFontSize,
     updateLinkFontSize,
     toggleLabels,
     centerOnNode,
     resize,
-  });
+  };
 }
 
 export default ForceGraphConstructor;

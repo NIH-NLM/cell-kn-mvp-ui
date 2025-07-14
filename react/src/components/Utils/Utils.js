@@ -1,9 +1,5 @@
 import collectionsMapData from "../../assets/collectionsMap.json";
 import React, { useEffect, useMemo, useState } from "react";
-import { getColorForCollection } from "../../services/ColorServices/ColorServices";
-import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 export const fetchCollections = async (graphType) => {
   // Accept graphType argument
@@ -241,8 +237,10 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
   }
 
   // Find match
-  const foundMatch = ftuPartsArray.find((ftuPart) =>
-    ftuPart.ftu_iri.includes(searchId) || ftuPart.ftu_part_iri.includes(searchId)
+  const foundMatch = ftuPartsArray.find(
+    (ftuPart) =>
+      ftuPart.ftu_iri.includes(searchId) ||
+      ftuPart.ftu_part_iri.includes(searchId),
   );
 
   // Return match digital object URL

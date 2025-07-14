@@ -773,7 +773,7 @@ option {
 }
 
 /*Graph*/
-#chart-container {
+#chart-container-wrapper {
   border: 2px solid var(--color-dark);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
@@ -1615,7 +1615,7 @@ button.collection-button-deselected:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-#chart-container {
+#chart-container-wrapper {
   flex-grow: 1;
   width: 100%;
   border: none;
@@ -1811,7 +1811,7 @@ input:checked + .slider:before {
   position: relative;
 }
 
-.force-graph-panel #chart-container {
+.force-graph-panel #chart-container-wrapper {
   flex-grow: 1;
   min-height: 400px;
   width: 100%;
