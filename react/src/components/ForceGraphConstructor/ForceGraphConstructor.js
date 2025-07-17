@@ -810,36 +810,33 @@ function ForceGraphConstructor(
     svg.call(zoomHandler.transform, d3.zoomIdentity);
   }
 
-  function findLeafNodes(collapseNodes){
+  function findLeafNodes(collapseNodes) {
     const leafNodes = [];
     processedNodes.forEach((node) => {
       if (mergedOptions.originNodeIds.includes(node.id)) return;
       const nodeLinks = processedLinks.filter(
-          (l) =>
-              (l.source.id || l.source) === node.id ||
-              (l.target.id || l.target) === node.id,
+        (l) =>
+          (l.source.id || l.source) === node.id ||
+          (l.target.id || l.target) === node.id,
       );
       if (nodeLinks.length > 0) {
         const firstNeighborId =
-            (nodeLinks[0].source.id || nodeLinks[0].source) === node.id
-                ? nodeLinks[0].target.id || nodeLinks[0].target
-                : nodeLinks[0].source.id || nodeLinks[0].source;
+          (nodeLinks[0].source.id || nodeLinks[0].source) === node.id
+            ? nodeLinks[0].target.id || nodeLinks[0].target
+            : nodeLinks[0].source.id || nodeLinks[0].source;
         const allLinksToSameNeighbor = nodeLinks.every(
-            (l) =>
-                ((l.source.id || l.source) === node.id &&
-                    (l.target.id || l.target) === firstNeighborId) ||
-                ((l.target.id || l.target) === node.id &&
-                    (l.source.id || l.source) === firstNeighborId),
+          (l) =>
+            ((l.source.id || l.source) === node.id &&
+              (l.target.id || l.target) === firstNeighborId) ||
+            ((l.target.id || l.target) === node.id &&
+              (l.source.id || l.source) === firstNeighborId),
         );
-        if (
-            allLinksToSameNeighbor &&
-            collapseNodes.includes(firstNeighborId)
-        ) {
+        if (allLinksToSameNeighbor && collapseNodes.includes(firstNeighborId)) {
           leafNodes.push(node.id);
         }
       }
     });
-    return leafNodes
+    return leafNodes;
   }
 
   // Process new data and re-render.
@@ -855,7 +852,6 @@ function ForceGraphConstructor(
     if (resetData) {
       resetGraph();
     }
-
 
     processedNodes = processGraphData(
       processedNodes,
@@ -874,23 +870,23 @@ function ForceGraphConstructor(
     );
 
     if (collapseNodes.length > 0) {
-      const nodesToRemove = findLeafNodes(collapseNodes)
+      const nodesToRemove = findLeafNodes(collapseNodes);
       processedNodes = processedNodes.filter(
-          (n) => !nodesToRemove.includes(n.id),
+        (n) => !nodesToRemove.includes(n.id),
       );
       processedLinks = processedLinks.filter(
-          (l) =>
-              !nodesToRemove.includes(l.source.id) &&
-              !nodesToRemove.includes(l.target.id),
+        (l) =>
+          !nodesToRemove.includes(l.source.id) &&
+          !nodesToRemove.includes(l.target.id),
       );
       if (removeNode) {
         processedNodes = processedNodes.filter(
-            (n) => !collapseNodes.includes(n.id),
+          (n) => !collapseNodes.includes(n.id),
         );
         processedLinks = processedLinks.filter(
-            (l) =>
-                !collapseNodes.includes(l.source.id) &&
-                !collapseNodes.includes(l.target.id),
+          (l) =>
+            !collapseNodes.includes(l.source.id) &&
+            !collapseNodes.includes(l.target.id),
         );
       }
     }

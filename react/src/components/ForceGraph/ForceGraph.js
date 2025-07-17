@@ -66,7 +66,11 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
 
   // Initialize or reset the graph when the input nodes change
   useEffect(() => {
-    dispatch(initializeGraph({ nodeIds: originNodeIdsFromProps }));
+    if (
+      JSON.stringify(originNodeIdsFromProps) !== JSON.stringify(originNodeIds)
+    ) {
+      dispatch(initializeGraph({ nodeIds: originNodeIdsFromProps }));
+    }
   }, [originNodeIdsFromProps, dispatch]);
 
   // Fetch the list of available collections once
@@ -131,67 +135,56 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
 
   // Process data and update/create the D3 graph when new raw data arrives
   useEffect(() => {
-    if (!graphInstanceRef.current) {
-      const handleSimulationEnd = (finalNodes, finalLinks) => {
-        dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
-      };
-
-      // Create the instance
-      const newGraphInstance = ForceGraphConstructor(
-        svgRef.current,
-        { nodes: [], links: [] }, // Start with empty data
-        {
-          onSimulationEnd: handleSimulationEnd,
-
-          // Redux Options
-          nodeFontSize: settings.nodeFontSize,
-          linkFontSize: settings.edgeFontSize,
-          originNodeIds: settings.useFocusNodes ? originNodeIds : [],
-          labelStates: settings.labelStates,
-
-          // Local states
-          nodeGroups: collections,
-          collectionsMap: collectionsMap,
-
-          // Event handlers
-          onNodeClick: handleNodeClick,
-          interactionCallback: handlePopupClose,
-
-          // Utility
-          nodeGroup: (d) => d._id.split("/")[0],
-          nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
-          label: getLabel,
-
-          // Static D3 Config
-          nodeStrength: -100,
-
-          // Initial Sizing
-          width: svgRef.current.clientWidth,
-          height: svgRef.current.clientHeight,
-        },
-      );
-      graphInstanceRef.current = newGraphInstance;
-      // Ensure labels begin with correct toggle
-      if (newGraphInstance.toggleLabels) {
-        for (const labelClass in settings.labelStates) {
-          const shouldShow = settings.labelStates[labelClass];
-          newGraphInstance.toggleLabels(shouldShow, labelClass);
-        }
-      }
-    }
-
-    // Call updategraph when rawData changes
     if (status === "processing" && Object.keys(rawData).length > 0) {
+      // Process data
       const processedData = performSetOperation(
         rawData,
         settings.setOperation,
         originNodeIds,
       );
 
-      if (graphInstanceRef.current) {
+      // Create graph instance
+      if (!graphInstanceRef.current) {
+        const handleSimulationEnd = (finalNodes, finalLinks) => {
+          dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
+        };
+
+        const newGraphInstance = ForceGraphConstructor(
+          svgRef.current,
+          processedData,
+          {
+            // TODO: check if missing any
+            onSimulationEnd: handleSimulationEnd,
+            originNodeIds: settings.useFocusNodes ? originNodeIds : [],
+            nodeFontSize: settings.nodeFontSize,
+            linkFontSize: settings.edgeFontSize,
+            labelStates: settings.labelStates,
+            nodeGroups: collections,
+            collectionsMap: collectionsMap,
+            onNodeClick: handleNodeClick,
+            interactionCallback: handlePopupClose,
+            nodeGroup: (d) => d._id.split("/")[0],
+            nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
+            label: getLabel,
+            nodeStrength: -100,
+            width: svgRef.current.clientWidth,
+            height: svgRef.current.clientHeight,
+          },
+        );
+
+        graphInstanceRef.current = newGraphInstance;
+
+        // Initial label sync
+        for (const labelClass in settings.labelStates) {
+          graphInstanceRef.current.toggleLabels(
+            settings.labelStates[labelClass],
+            labelClass,
+          );
+        }
+      } else {
+        // Update graph
         let collapseList = [];
         if (settings.collapseOnStart && processedData.nodes) {
-          // Find all nodes that are not the original search nodes
           collapseList = processedData.nodes
             .filter((node) => !originNodeIds.includes(node._id))
             .map((node) => node._id);
@@ -205,7 +198,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
         });
       }
     }
-  }, [rawData, settings.setOperation, status, originNodeIds, dispatch]);
+  }, [rawData, settings]);
 
   // Handle font size changes by calling D3 instance method
   useEffect(() => {
@@ -605,6 +598,20 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
                   onChange={handleDepthChange}
                 >
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="option-group">
+                <label htmlFor="depth-select">Traversal Direction:</label>
+                <select
+                  id="edge-direction-select"
+                  value={settings.depth}
+                  onChange={handleEdgeDirectionChange}
+                >
+                  {["ANY", "INBOUND", "OUTBOUND"].map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
