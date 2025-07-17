@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { ActionCreators as UndoActionCreators } from "redux-undo";
+import { ActionCreators } from "redux-undo";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
 import collectionsMapData from "../../assets/collectionsMap.json";
 import {
@@ -231,8 +231,8 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     [dispatch],
   );
 
-  const handleUndo = () => dispatch(UndoActionCreators.undo());
-  const handleRedo = () => dispatch(UndoActionCreators.redo());
+  const handleUndo = () => dispatch(ActionCreators.undo());
+  const handleRedo = () => dispatch(ActionCreators.redo());
 
   // Settings handlers
   const handleDepthChange = (event) =>
@@ -548,16 +548,6 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
         data-testid="graph-options"
         style={{ display: optionsVisible ? "block" : "none" }}
       >
-        <div className="option-group history-controls">
-          <label>History:</label>
-          <button onClick={handleUndo} disabled={!canUndo}>
-            Undo
-          </button>
-          <button onClick={handleRedo} disabled={!canRedo}>
-            Redo
-          </button>
-        </div>
-
         <div className="options-tabs-nav">
           <button
             className={`tab-button ${activeTab === "general" ? "active" : ""}`}
@@ -578,6 +568,12 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
             onClick={() => setActiveTab("collections")}
           >
             Collections
+          </button>
+          <button
+            className={`tab-button ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            History
           </button>
           <button
             className={`tab-button ${activeTab === "export" ? "active" : ""}`}
@@ -716,6 +712,34 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
                 >
                   Restart Simulation
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "history" && (
+            <div
+              id="tab-panel-history"
+              role="tabpanel"
+              className="tab-panel active"
+            >
+              <div className="option-group">
+                <label>Graph History</label>
+                <div className="history-controls">
+                  <button onClick={handleUndo} disabled={!canUndo}>
+                    <span className="history-icon">↶</span> Undo Last Action
+                  </button>
+                  <button onClick={handleRedo} disabled={!canRedo}>
+                    Redo <span className="history-icon">↷</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="option-group">
+                <label>Saved Graphs</label>
+                <div className="save-load-controls">
+                  <button>Save Current Graph</button>
+                  <button>Load a Saved Graph</button>
+                </div>
               </div>
             </div>
           )}
