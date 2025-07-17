@@ -16,6 +16,9 @@ import {
   setGraphData,
   initializeGraph,
   setAvailableCollections,
+  expandNode,
+  setCollapsedNodes,
+  uncollapseNode,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 
@@ -29,23 +32,18 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
   const graphInstanceRef = useRef(null);
 
   // Redux state
+  const { present, past, future } = useSelector((state) => state.graph);
   const {
     settings,
     graphData,
     rawData,
     status,
     originNodeIds,
-    canUndo,
-    canRedo,
-  } = useSelector((state) => ({
-    settings: state.graph.present.settings,
-    graphData: state.graph.present.graphData,
-    rawData: state.graph.present.rawData,
-    status: state.graph.present.status,
-    originNodeIds: state.graph.present.originNodeIds,
-    canUndo: state.graph.past.length > 0,
-    canRedo: state.graph.future.length > 0,
-  }));
+    lastActionType,
+    collapsedNodes,
+  } = present;
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
 
   // Local state
   const [collections, setCollections] = useState([]);
@@ -135,13 +133,32 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
 
   // Process data and update/create the D3 graph when new raw data arrives
   useEffect(() => {
-    if (status === "processing" && Object.keys(rawData).length > 0) {
+    // Check last action to prevent infinite loop
+    if (lastActionType === "setGraphData") {
+      return;
+    }
+
+    if (
+      (status === "processing" || status === "succeeded") &&
+      Object.keys(rawData).length > 0
+    ) {
       // Process data
       const processedData = performSetOperation(
         rawData,
         settings.setOperation,
         originNodeIds,
       );
+
+      // On initial fetch
+      if (lastActionType === "fetch/fulfilled" && settings.collapseOnStart) {
+        // Calculate the list of leaf nodes to collapse
+        const initialCollapseList = processedData.nodes
+          .filter((node) => !originNodeIds.includes(node._id))
+          .map((node) => node._id);
+
+        // Save to state
+        dispatch(setCollapsedNodes(initialCollapseList));
+      }
 
       // Create graph instance
       if (!graphInstanceRef.current) {
@@ -183,22 +200,16 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
         }
       } else {
         // Update graph
-        let collapseList = [];
-        if (settings.collapseOnStart && processedData.nodes) {
-          collapseList = processedData.nodes
-            .filter((node) => !originNodeIds.includes(node._id))
-            .map((node) => node._id);
-        }
-
+        const doReset = lastActionType === "fetch/fulfilled";
         graphInstanceRef.current.updateGraph({
           newNodes: processedData.nodes,
           newLinks: processedData.links,
-          resetData: true,
-          collapseNodes: collapseList,
+          resetData: doReset,
+          collapseNodes: collapsedNodes,
         });
       }
     }
-  }, [rawData, settings]);
+  }, [present]);
 
   // Handle font size changes by calling D3 instance method
   useEffect(() => {
@@ -283,45 +294,17 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
       graphInstanceRef.current.updateGraph({ simulate: true });
     }
   };
+
   const handleExpand = () => {
     const nodeIdToExpand = popup.nodeId;
     if (!nodeIdToExpand) return;
-    const getExpansionData = async () => {
-      const response = await fetch("/arango_api/graph/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          node_ids: [nodeIdToExpand],
-          depth: 1, // Expand depth 1 from clicks node
-          edge_direction: "ANY",
-          allowed_collections: settings.allowedCollections,
-          node_limit: settings.nodeLimit,
-          graph: settings.graphType,
-        }),
-      });
-      if (!response.ok) throw new Error("Expansion fetch failed");
-      return response.json();
-    };
-
-    getExpansionData()
-      .then((data) => {
-        if (
-          graphInstanceRef.current &&
-          data &&
-          data.nodes &&
-          data.nodes[nodeIdToExpand]
-        ) {
-          graphInstanceRef.current.updateGraph({
-            newNodes: data.nodes[nodeIdToExpand].map((d) => d.node),
-            newLinks: data.links || [],
-            centerNodeId: nodeIdToExpand,
-          });
-        }
-      })
-      .catch((error) => console.error("Expansion failed:", error));
-
+    // Remove this node from the collapsed list
+    dispatch(uncollapseNode(nodeIdToExpand));
+    // Expand
+    dispatch(expandNode(nodeIdToExpand));
     handlePopupClose();
   };
+
   const handleCollapse = () => {
     if (graphInstanceRef.current && popup.nodeId) {
       graphInstanceRef.current.updateGraph({ collapseNodes: [popup.nodeId] });

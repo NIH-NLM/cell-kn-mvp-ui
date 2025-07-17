@@ -903,7 +903,6 @@ function ForceGraphConstructor(
       d3,
       { nodeContainer, linkContainer },
       {
-        // Pass only rendering-specific options
         forceLink,
         nodeRadius: mergedOptions.nodeRadius,
         nodeFontSize: mergedOptions.nodeFontSize,
