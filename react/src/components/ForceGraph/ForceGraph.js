@@ -23,7 +23,10 @@ import {
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 
-const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
+const ForceGraph = ({
+  nodeIds: originNodeIdsFromProps,
+  settings: settingsFromProps,
+}) => {
   // Redux dispatch init
   const dispatch = useDispatch();
 
@@ -82,6 +85,25 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     });
   }, [dispatch]);
 
+  // Collect collectionsToPrune from props
+  useEffect(() => {
+    const collectionsToPrune = settingsFromProps?.collectionsToPrune;
+    if (collectionsToPrune === undefined || collections.length == 0) {
+      return;
+    }
+
+    const newAllowedCollections = collections.filter(
+        (coll) => !collectionsToPrune.includes(coll),
+    );
+
+    dispatch(
+        updateSetting({
+          setting: "allowedCollections",
+          value: newAllowedCollections,
+        }),
+    );
+  }, [settingsFromProps, collections, dispatch]);
+
   // Get new data whenever settings change
   useEffect(() => {
     if (originNodeIds && originNodeIds.length > 0) {
@@ -136,7 +158,14 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
   // Process data and update/create the D3 graph when new raw data arrives
   useEffect(() => {
     // Ignore actions that do not interact with D3 directly
-    if (["setGraphData", "setCollapsedNodes", "uncollapseNode", "clearNodeToCenter"].includes(lastActionType)) {
+    if (
+      [
+        "setGraphData",
+        "setCollapsedNodes",
+        "uncollapseNode",
+        "clearNodeToCenter",
+      ].includes(lastActionType)
+    ) {
       return;
     }
 

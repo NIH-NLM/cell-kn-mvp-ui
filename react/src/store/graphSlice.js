@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import undoable, { ActionCreators, excludeAction } from "redux-undo";
-import {performSetOperation} from "../components/ForceGraph/setOperation";
+import { performSetOperation } from "../components/ForceGraph/setOperation";
 
 // Helper function to fetch data
 const fetchGraphDataAPI = async (params) => {
@@ -166,6 +166,7 @@ const graphSlice = createSlice({
     // Action to set the available collections
     setAvailableCollections: (state, action) => {
       state.settings.allowedCollections = action.payload;
+      state.lastActionType = "setAvailableCollections";
     },
     // Action to set what nodes are currently collapsed
     setCollapsedNodes: (state, action) => {
