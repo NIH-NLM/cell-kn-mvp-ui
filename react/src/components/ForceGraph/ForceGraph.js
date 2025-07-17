@@ -19,6 +19,7 @@ import {
   expandNode,
   setCollapsedNodes,
   uncollapseNode,
+  clearNodeToCenter,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 
@@ -41,6 +42,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
     originNodeIds,
     lastActionType,
     collapsedNodes,
+    nodeToCenter,
   } = present;
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
@@ -133,15 +135,12 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
 
   // Process data and update/create the D3 graph when new raw data arrives
   useEffect(() => {
-    // Check last action to prevent infinite loop
-    if (lastActionType === "setGraphData") {
+    // Ignore actions that do not interact with D3 directly
+    if (["setGraphData", "setCollapsedNodes", "uncollapseNode", "clearNodeToCenter"].includes(lastActionType)) {
       return;
     }
 
-    if (
-      (status === "processing" || status === "succeeded") &&
-      Object.keys(rawData).length > 0
-    ) {
+    if (status === "processing" && Object.keys(rawData).length > 0) {
       // Process data
       const processedData = performSetOperation(
         rawData,
@@ -166,11 +165,11 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
         };
 
+        // Init empty graph
         const newGraphInstance = ForceGraphConstructor(
           svgRef.current,
-          processedData,
+          { nodes: [], links: [] },
           {
-            // TODO: check if missing any
             onSimulationEnd: handleSimulationEnd,
             originNodeIds: settings.useFocusNodes ? originNodeIds : [],
             nodeFontSize: settings.nodeFontSize,
@@ -206,7 +205,12 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
           newLinks: processedData.links,
           resetData: doReset,
           collapseNodes: collapsedNodes,
+          centerNodeId: nodeToCenter,
         });
+        // Clear center node
+        if (nodeToCenter) {
+          dispatch(clearNodeToCenter());
+        }
       }
     }
   }, [present]);
@@ -587,7 +591,7 @@ const ForceGraph = ({ nodeIds: originNodeIdsFromProps }) => {
                 <label htmlFor="depth-select">Traversal Direction:</label>
                 <select
                   id="edge-direction-select"
-                  value={settings.depth}
+                  value={settings.edgeDirection}
                   onChange={handleEdgeDirectionChange}
                 >
                   {["ANY", "INBOUND", "OUTBOUND"].map((value) => (

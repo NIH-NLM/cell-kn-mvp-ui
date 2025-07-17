@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import undoable, { ActionCreators, excludeAction } from "redux-undo";
+import {performSetOperation} from "../components/ForceGraph/setOperation";
 
 // Helper function to fetch data
 const fetchGraphDataAPI = async (params) => {
@@ -129,6 +130,7 @@ const initialState = {
     links: [],
   },
   collapsedNodes: [],
+  nodeToCenter: null,
   // Status for loading indicators
   status: "idle",
   error: null,
@@ -179,6 +181,11 @@ const graphSlice = createSlice({
       );
       state.lastActionType = "uncollapseNode";
     },
+    // Clear centering state
+    clearNodeToCenter: (state) => {
+      state.nodeToCenter = null;
+      state.lastActionType = "clearNodeToCenter";
+    },
   },
   // Handle async thunks
   extraReducers: (builder) => {
@@ -200,8 +207,6 @@ const graphSlice = createSlice({
       .addCase(expandNode.pending, (state) => {
         state.lastActionType = "expand/pending";
       })
-      // In your extraReducers builder chain...
-
       .addCase(expandNode.fulfilled, (state, action) => {
         const { newNodes, newLinks } = action.payload;
 
@@ -234,6 +239,9 @@ const graphSlice = createSlice({
         }
         state.rawData.links = currentLinks;
 
+        // Save centerNodeId
+        state.nodeToCenter = action.payload.centerNodeId;
+
         // Update status
         state.status = "processing";
         state.lastActionType = "expand/fulfilled";
@@ -253,6 +261,7 @@ export const {
   uncollapseNode,
   initializeGraph,
   setAvailableCollections,
+  clearNodeToCenter,
 } = graphSlice.actions;
 
 // Undo wrapper
