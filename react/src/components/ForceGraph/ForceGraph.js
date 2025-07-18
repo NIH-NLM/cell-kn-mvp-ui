@@ -202,7 +202,7 @@ const ForceGraph = ({
               { nodes: [], links: [] },
               {
                 onSimulationEnd: handleSimulationEnd,
-                runInitialOnSimulationEnd: false,
+                saveInitial: false,
                 originNodeIds: settings.useFocusNodes ? originNodeIds : [],
                 nodeFontSize: settings.nodeFontSize,
                 linkFontSize: settings.edgeFontSize,
@@ -354,7 +354,7 @@ const ForceGraph = ({
   // D3 Handlers
   const handleSimulationRestart = () => {
     if (graphInstanceRef.current?.updateGraph) {
-      graphInstanceRef.current.updateGraph({ simulate: true });
+      graphInstanceRef.current.updateGraph({ simulate: true});
     }
   };
 

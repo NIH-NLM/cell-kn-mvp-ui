@@ -628,7 +628,7 @@ function ForceGraphConstructor(
   updateGraph({
     newNodes: initialNodes,
     newLinks: initialLinks,
-    runOnSimulationEnd: mergedOptions.runInitialOnSimulationEnd,
+    save: mergedOptions.saveInitial,
   });
 
   // Handle movement
@@ -900,7 +900,7 @@ function ForceGraphConstructor(
     removeNode = false,
     centerNodeId = null,
     resetData = false,
-    runOnSimulationEnd = true,
+    save = true,
   } = {}) {
     // Check for reset
     if (resetData) {
@@ -1002,7 +1002,7 @@ function ForceGraphConstructor(
 
       // Callback to Redux to save the final state with positions for undo/redo
       if (
-        runOnSimulationEnd === true &&
+        save === true &&
         typeof mergedOptions.onSimulationEnd === "function"
       ) {
         const finalNodes = processedNodes.map(
