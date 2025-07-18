@@ -802,7 +802,7 @@ const ForceGraph = ({
                 <label>Graph History</label>
                 <div className="history-controls">
                   <button onClick={handleUndo} disabled={!canUndo}>
-                    <span className="history-icon">↶</span> Undo Last Action
+                    <span className="history-icon">↶</span> Undo
                   </button>
                   <button onClick={handleRedo} disabled={!canRedo}>
                     Redo <span className="history-icon">↷</span>
