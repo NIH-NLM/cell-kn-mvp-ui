@@ -128,7 +128,11 @@ const initialState = {
     nodes: [],
     links: [],
   },
-  collapsedNodes: [],
+  collapsed: {
+    initial: [], // Nodes collapsed by default on a new graph
+    userDefined: [], // Nodes the user has explicitly collapsed
+    userIgnored: [], // Nodes from the `initial` list the user has expanded
+  },
   nodeToCenter: null,
   // Status for loading indicators
   status: "idle",
@@ -161,6 +165,7 @@ const graphSlice = createSlice({
       state.lastActionType = "initializeGraph";
       state.rawData = {};
       state.graphData = { nodes: [], links: [] };
+      state.collapsed = { initial: [], userDefined: [], userIgnored: [] };
     },
     // Action to set the available collections
     setAvailableCollections: (state, action) => {
@@ -181,18 +186,43 @@ const graphSlice = createSlice({
       }
       state.lastActionType = "updateNodePosition";
     },
-    // Action to set what nodes are currently collapsed
-    setCollapsedNodes: (state, action) => {
-      state.collapsedNodes = action.payload;
-      state.lastActionType = "setCollapsedNodes";
+    setInitialCollapseList: (state, action) => {
+      state.collapsed.initial = action.payload;
+      state.lastActionType = "setInitialCollapseList";
     },
-    // Action to remove node from collapse list
+
+    // Remove from collapse list or add to ignore
     uncollapseNode: (state, action) => {
-      const nodeIdToUncollapse = action.payload;
-      state.collapsedNodes = state.collapsedNodes.filter(
-        (id) => id !== nodeIdToUncollapse,
+      const nodeId = action.payload;
+
+      // Remove from user-defined list
+      state.collapsed.userDefined = state.collapsed.userDefined.filter(
+        (id) => id !== nodeId,
       );
+
+      // Add to ignore if in initial list
+      if (
+        state.collapsed.initial.includes(nodeId) &&
+        !state.collapsed.userIgnored.includes(nodeId)
+      ) {
+        state.collapsed.userIgnored.push(nodeId);
+      }
       state.lastActionType = "uncollapseNode";
+    },
+    // Add to collapse list or remove from ignore
+    collapseNode: (state, action) => {
+      const nodeId = action.payload;
+
+      // Add to the user-defined list
+      if (!state.collapsed.userDefined.includes(nodeId)) {
+        state.collapsed.userDefined.push(nodeId);
+      }
+
+      // Remove from ignore
+      state.collapsed.userIgnored = state.collapsed.userIgnored.filter(
+        (id) => id !== nodeId,
+      );
+      state.lastActionType = "collapseNode";
     },
     // Clear centering state
     clearNodeToCenter: (state) => {
@@ -270,12 +300,13 @@ const graphSlice = createSlice({
 export const {
   updateSetting,
   setGraphData,
-  setCollapsedNodes,
-  uncollapseNode,
   initializeGraph,
   setAvailableCollections,
   clearNodeToCenter,
   updateNodePosition,
+  setInitialCollapseList,
+  uncollapseNode,
+  collapseNode,
 } = graphSlice.actions;
 
 // Undo wrapper

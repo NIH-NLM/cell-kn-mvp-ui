@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, memo, useCallback } from "react";
+import React, {useEffect, useState, useRef, memo, useCallback, useMemo} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
@@ -17,9 +17,11 @@ import {
   initializeGraph,
   setAvailableCollections,
   expandNode,
-  setCollapsedNodes,
+  setInitialCollapseList,
   uncollapseNode,
-  clearNodeToCenter, updateNodePosition,
+  collapseNode,
+  clearNodeToCenter,
+  updateNodePosition,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 
@@ -44,8 +46,8 @@ const ForceGraph = ({
     status,
     originNodeIds,
     lastActionType,
-    collapsedNodes,
     nodeToCenter,
+    collapsed,
   } = present;
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
@@ -167,6 +169,7 @@ const ForceGraph = ({
         graphInstance.restoreGraph({
           nodes: graphData.nodes,
           links: graphData.links,
+          labelStates: settings.labelStates,
         });
       }
       setIsRestoring(false);
@@ -205,7 +208,7 @@ const ForceGraph = ({
                 originNodeIds: settings.useFocusNodes ? originNodeIds : [],
                 nodeFontSize: settings.nodeFontSize,
                 linkFontSize: settings.edgeFontSize,
-                labelStates: settings.labelStates,
+                initialLabelStates: settings.labelStates,
                 nodeGroups: collections,
                 collectionsMap: collectionsMap,
                 onNodeClick: handleNodeClick,
@@ -229,16 +232,13 @@ const ForceGraph = ({
               );
             }
           } else {
-            // Update existing instance
-            let collapseList = collapsedNodes;
-            if (
-              lastActionType === "fetch/fulfilled" &&
-              settings.collapseOnStart
-            ) {
+            let collapseList = finalCollapseList;
+            // Check if collapsed is populated and set initial if not
+            if (lastActionType === "fetch/fulfilled" && collapsed?.initial?.length === 0) {
               const initialCollapseList = processedData.nodes
                 .filter((node) => !originNodeIds.includes(node._id))
                 .map((node) => node._id);
-              dispatch(setCollapsedNodes(initialCollapseList));
+              dispatch(setInitialCollapseList(initialCollapseList));
               collapseList = initialCollapseList;
             }
 
@@ -248,6 +248,7 @@ const ForceGraph = ({
               resetData: lastActionType === "fetch/fulfilled",
               collapseNodes: collapseList,
               centerNodeId: nodeToCenter,
+              labelStates: settings.labelStates,
             });
 
             if (nodeToCenter) {
@@ -288,6 +289,21 @@ const ForceGraph = ({
     }
   }, [settings.labelStates]);
 
+  // Parse and flatten collapseList
+  const finalCollapseList = useMemo(() => {
+    const nodesToCollapse = new Set(collapsed.userDefined);
+    if (settings.collapseOnStart) {
+      collapsed.initial.forEach((nodeId) => {
+        if (!collapsed.userIgnored.includes(nodeId)) {
+          nodesToCollapse.add(nodeId);
+        }
+      });
+    }
+
+    // Return the final list as a plain array for D3 to use
+    return Array.from(nodesToCollapse);
+  }, [settings.collapseOnStart, collapsed]);
+
   // Redux handlers
   const handleSettingChange = useCallback(
     (setting, value) => {
@@ -296,10 +312,13 @@ const ForceGraph = ({
     [dispatch],
   );
 
-  const handleNodeDragEnd = useCallback(({ nodeId, x, y }) => {
-    // dispatch node position
-    dispatch(updateNodePosition({ nodeId, x, y }));
-  }, [dispatch]);
+  const handleNodeDragEnd = useCallback(
+    ({ nodeId, x, y }) => {
+      // dispatch node position
+      dispatch(updateNodePosition({ nodeId, x, y }));
+    },
+    [dispatch],
+  );
 
   const handleUndo = () => {
     // isRestoring flag tells redux not to save new state
@@ -359,31 +378,37 @@ const ForceGraph = ({
   // D3 Handlers
   const handleSimulationRestart = () => {
     if (graphInstanceRef.current?.updateGraph) {
-      graphInstanceRef.current.updateGraph({ simulate: true });
+      graphInstanceRef.current.updateGraph({ simulate: true,               labelStates: settings.labelStates,
+ });
     }
   };
 
   const handleExpand = () => {
     const nodeIdToExpand = popup.nodeId;
     if (!nodeIdToExpand) return;
-    // Remove this node from the collapsed list
     dispatch(uncollapseNode(nodeIdToExpand));
-    // Expand
     dispatch(expandNode(nodeIdToExpand));
     handlePopupClose();
   };
 
   const handleCollapse = () => {
     if (graphInstanceRef.current && popup.nodeId) {
-      graphInstanceRef.current.updateGraph({ collapseNodes: [popup.nodeId] });
+      dispatch(collapseNode(popup.nodeId));
+      graphInstanceRef.current.updateGraph({
+        collapseNodes: [popup.nodeId],               labelStates: settings.labelStates,
+
+      });
     }
     handlePopupClose();
   };
+
   const handleRemove = () => {
     if (graphInstanceRef.current && popup.nodeId) {
+      dispatch(collapseNode(popup.nodeId));
       graphInstanceRef.current.updateGraph({
         collapseNodes: [popup.nodeId],
         removeNode: true,
+                      labelStates: settings.labelStates,
       });
     }
     handlePopupClose();

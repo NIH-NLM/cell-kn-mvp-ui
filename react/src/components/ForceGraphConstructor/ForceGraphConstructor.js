@@ -376,7 +376,7 @@ function ForceGraphConstructor(
     nodeForceStrength: -1000,
     targetLinkDistance: 175,
     centerForceStrength: 1,
-    labelStates: {},
+    initialLabelStates: {},
     color: null,
     parallelLinkCurvature: 0.25,
   };
@@ -402,9 +402,9 @@ function ForceGraphConstructor(
         event.subject.fx = null;
         event.subject.fy = null;
         mergedOptions.onNodeDragEnd({
-            nodeId: event.subject.id,
-            x: event.subject.x,
-            y: event.subject.y
+          nodeId: event.subject.id,
+          x: event.subject.x,
+          y: event.subject.y,
         });
       });
 
@@ -805,7 +805,7 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
-  function resetGraph(resetZoom= true) {
+  function resetGraph(resetZoom = true) {
     simulation.stop();
 
     processedNodes = [];
@@ -817,13 +817,13 @@ function ForceGraphConstructor(
     nodeContainer.selectAll("*").remove();
     linkContainer.selectAll("*").remove();
 
-    if (resetZoom == true){
+    if (resetZoom == true) {
       svg.call(zoomHandler.transform, d3.zoomIdentity);
     }
   }
 
   // Restore graph based on previous state
-  function restoreGraph({ nodes, links }) {
+  function restoreGraph({ nodes, links, labelStates }) {
     resetGraph(false);
 
     // Set object vars
@@ -887,8 +887,8 @@ function ForceGraphConstructor(
     });
 
     // Show labels
-    Object.keys(mergedOptions.labelStates).forEach((key) => {
-      toggleLabels(mergedOptions.labelStates[key], key);
+    Object.keys(labelStates).forEach((key) => {
+      toggleLabels(labelStates[key], key);
     });
   }
 
@@ -930,6 +930,7 @@ function ForceGraphConstructor(
     centerNodeId = null,
     resetData = false,
     save = true,
+      labelStates = mergedOptions.initialLabelStates,
   } = {}) {
     // Check for reset
     if (resetData) {
@@ -1025,8 +1026,8 @@ function ForceGraphConstructor(
       }
 
       // Restore label visibility after nodes have stopped moving
-      Object.keys(mergedOptions.labelStates).forEach((key) => {
-        toggleLabels(mergedOptions.labelStates[key], key);
+      Object.keys(labelStates).forEach((key) => {
+        toggleLabels(labelStates[key], key);
       });
 
       // Callback to Redux to save the final state with positions for undo/redo
