@@ -173,7 +173,6 @@ const graphSlice = createSlice({
       state.collapsedNodes = action.payload;
       state.lastActionType = "setCollapsedNodes";
     },
-
     // Action to remove node from collapse list
     uncollapseNode: (state, action) => {
       const nodeIdToUncollapse = action.payload;

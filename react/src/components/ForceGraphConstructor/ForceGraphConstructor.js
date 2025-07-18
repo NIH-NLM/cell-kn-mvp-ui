@@ -829,6 +829,7 @@ function ForceGraphConstructor(
     });
 
     // Add to simluation
+    // TODO: These are not correctly added to simulation. Can see when pressing 'undo' and then 'restart simulation'
     simulation.nodes(processedNodes);
     simulation.force("link").links(processedLinks);
     renderGraph(

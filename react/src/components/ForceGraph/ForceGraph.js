@@ -107,7 +107,7 @@ const ForceGraph = ({
 
   // Get new data whenever settings change
   useEffect(() => {
-    if (originNodeIds && originNodeIds.length > 0) {
+    if (isRestoring == false && originNodeIds && originNodeIds.length > 0) {
       dispatch(fetchAndProcessGraph());
     }
   }, [
@@ -162,7 +162,7 @@ const ForceGraph = ({
     const graphInstance = graphInstanceRef.current;
 
     // Restore state
-    if (isRestoring) {
+    if (isRestoring == true) {
       if (graphInstance) {
         graphInstance.restoreGraph({
           nodes: graphData.nodes,
@@ -170,7 +170,8 @@ const ForceGraph = ({
         });
       }
       setIsRestoring(false);
-    } else {
+    }
+    else {
       // Do something depending on action
       switch (lastActionType) {
         // Handle API data
@@ -262,7 +263,7 @@ const ForceGraph = ({
         }
       }
     }
-  }, [present, dispatch]);
+  }, [rawData]);
 
   // Handle font size changes by calling D3 instance method
   useEffect(() => {
