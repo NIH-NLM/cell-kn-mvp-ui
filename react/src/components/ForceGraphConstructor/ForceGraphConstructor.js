@@ -625,7 +625,11 @@ function ForceGraphConstructor(
   let processedLinks = [];
 
   // Call update graph for initial render
-  updateGraph({ newNodes: initialNodes, newLinks: initialLinks });
+  updateGraph({
+    newNodes: initialNodes,
+    newLinks: initialLinks,
+    runOnSimulationEnd: mergedOptions.runInitialOnSimulationEnd,
+  });
 
   // Handle movement
   function ticked() {
@@ -810,6 +814,54 @@ function ForceGraphConstructor(
     svg.call(zoomHandler.transform, d3.zoomIdentity);
   }
 
+  // Restore graph based on previous state
+  function restoreGraph({ nodes, links }) {
+    resetGraph();
+
+    // Set object vars
+    processedNodes = structuredClone(nodes);
+    processedLinks = structuredClone(links);
+
+    // Place nodes in old locations
+    processedNodes.forEach((node) => {
+      node.fx = node.x;
+      node.fy = node.y;
+    });
+
+    // Add to simluation
+    simulation.nodes(processedNodes);
+    simulation.force("link").links(processedLinks);
+    renderGraph(
+      simulation,
+      processedNodes,
+      processedLinks,
+      d3,
+      { nodeContainer, linkContainer },
+      {
+        forceLink,
+        nodeRadius: mergedOptions.nodeRadius,
+        nodeFontSize: mergedOptions.nodeFontSize,
+        linkStroke: mergedOptions.linkStroke,
+        linkStrokeOpacity: mergedOptions.linkStrokeOpacity,
+        linkStrokeWidth: mergedOptions.linkStrokeWidth,
+        linkStrokeLinecap: mergedOptions.linkStrokeLinecap,
+        linkFontSize: mergedOptions.linkFontSize,
+        onNodeClick: mergedOptions.onNodeClick,
+        drag: mergedOptions.drag,
+        originNodeIds: mergedOptions.originNodeIds,
+        collectionsMap: mergedOptions.collectionsMap,
+      },
+    );
+    updateLegend(processedNodes);
+
+    // Single animation tick to put everything in place
+    ticked();
+    // Show labels
+    Object.keys(mergedOptions.labelStates).forEach((key) => {
+      toggleLabels(mergedOptions.labelStates[key], key);
+    });
+  }
+
   function findLeafNodes(collapseNodes) {
     const leafNodes = [];
     processedNodes.forEach((node) => {
@@ -847,6 +899,7 @@ function ForceGraphConstructor(
     removeNode = false,
     centerNodeId = null,
     resetData = false,
+    runOnSimulationEnd = true,
   } = {}) {
     // Check for reset
     if (resetData) {
@@ -947,7 +1000,10 @@ function ForceGraphConstructor(
       });
 
       // Callback to Redux to save the final state with positions for undo/redo
-      if (typeof mergedOptions.onSimulationEnd === "function") {
+      if (
+        runOnSimulationEnd === true &&
+        typeof mergedOptions.onSimulationEnd === "function"
+      ) {
         const finalNodes = processedNodes.map(
           ({ x, y, index, vx, vy, ...rest }) => ({ x, y, ...rest }),
         );
@@ -965,6 +1021,7 @@ function ForceGraphConstructor(
 
   return {
     updateGraph,
+    restoreGraph,
     updateNodeFontSize,
     updateLinkFontSize,
     toggleLabels,

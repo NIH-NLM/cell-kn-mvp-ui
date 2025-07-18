@@ -53,6 +53,7 @@ const ForceGraph = ({
   // Local state
   const [collections, setCollections] = useState([]);
   const collectionsMap = new Map(collectionsMapData);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   // UI state for side panel and tabs
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -93,14 +94,14 @@ const ForceGraph = ({
     }
 
     const newAllowedCollections = collections.filter(
-        (coll) => !collectionsToPrune.includes(coll),
+      (coll) => !collectionsToPrune.includes(coll),
     );
 
     dispatch(
-        updateSetting({
-          setting: "allowedCollections",
-          value: newAllowedCollections,
-        }),
+      updateSetting({
+        setting: "allowedCollections",
+        value: newAllowedCollections,
+      }),
     );
   }, [settingsFromProps, collections, dispatch]);
 
@@ -155,94 +156,113 @@ const ForceGraph = ({
     };
   }, []);
 
-  // Process data and update/create the D3 graph when new raw data arrives
+  // Read updates in Redux
   useEffect(() => {
-    // Ignore actions that do not interact with D3 directly
-    if (
-      [
-        "setGraphData",
-        "setCollapsedNodes",
-        "uncollapseNode",
-        "clearNodeToCenter",
-      ].includes(lastActionType)
-    ) {
-      return;
-    }
+    // Get the D3 instance
+    const graphInstance = graphInstanceRef.current;
 
-    if (status === "processing" && Object.keys(rawData).length > 0) {
-      // Process data
-      const processedData = performSetOperation(
-        rawData,
-        settings.setOperation,
-        originNodeIds,
-      );
-
-      // On initial fetch
-      if (lastActionType === "fetch/fulfilled" && settings.collapseOnStart) {
-        // Calculate the list of leaf nodes to collapse
-        const initialCollapseList = processedData.nodes
-          .filter((node) => !originNodeIds.includes(node._id))
-          .map((node) => node._id);
-
-        // Save to state
-        dispatch(setCollapsedNodes(initialCollapseList));
-      }
-
-      // Create graph instance
-      if (!graphInstanceRef.current) {
-        const handleSimulationEnd = (finalNodes, finalLinks) => {
-          dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
-        };
-
-        // Init empty graph
-        const newGraphInstance = ForceGraphConstructor(
-          svgRef.current,
-          { nodes: [], links: [] },
-          {
-            onSimulationEnd: handleSimulationEnd,
-            originNodeIds: settings.useFocusNodes ? originNodeIds : [],
-            nodeFontSize: settings.nodeFontSize,
-            linkFontSize: settings.edgeFontSize,
-            labelStates: settings.labelStates,
-            nodeGroups: collections,
-            collectionsMap: collectionsMap,
-            onNodeClick: handleNodeClick,
-            interactionCallback: handlePopupClose,
-            nodeGroup: (d) => d._id.split("/")[0],
-            nodeHover: (d) => (d.label ? `${d._id}\n${d.label}` : `${d._id}`),
-            label: getLabel,
-            nodeStrength: -100,
-            width: svgRef.current.clientWidth,
-            height: svgRef.current.clientHeight,
-          },
-        );
-
-        graphInstanceRef.current = newGraphInstance;
-
-        // Initial label sync
-        for (const labelClass in settings.labelStates) {
-          graphInstanceRef.current.toggleLabels(
-            settings.labelStates[labelClass],
-            labelClass,
-          );
-        }
-      } else {
-        // Update graph
-        const doReset = lastActionType === "fetch/fulfilled";
-        graphInstanceRef.current.updateGraph({
-          newNodes: processedData.nodes,
-          newLinks: processedData.links,
-          resetData: doReset,
-          collapseNodes: collapsedNodes,
-          centerNodeId: nodeToCenter,
+    // Restore state
+    if (isRestoring) {
+      if (graphInstance) {
+        graphInstance.restoreGraph({
+          nodes: graphData.nodes,
+          links: graphData.links,
         });
-        // Clear center node
-        if (nodeToCenter) {
-          dispatch(clearNodeToCenter());
+      }
+      setIsRestoring(false);
+    } else {
+      // Do something depending on action
+      switch (lastActionType) {
+        // Handle API data
+        case "fetch/fulfilled":
+        case "expand/fulfilled": {
+          if (
+            status !== "processing" ||
+            !rawData ||
+            Object.keys(rawData).length === 0
+          ) {
+            return;
+          }
+
+          // Process
+          const processedData = performSetOperation(
+            rawData,
+            settings.setOperation,
+            originNodeIds,
+          );
+
+          // Initial instance creation
+          if (!graphInstance) {
+            const handleSimulationEnd = (finalNodes, finalLinks) => {
+              dispatch(setGraphData({ nodes: finalNodes, links: finalLinks }));
+            };
+            const newGraphInstance = ForceGraphConstructor(
+              svgRef.current,
+              { nodes: [], links: [] },
+              {
+                onSimulationEnd: handleSimulationEnd,
+                runInitialOnSimulationEnd: false,
+                originNodeIds: settings.useFocusNodes ? originNodeIds : [],
+                nodeFontSize: settings.nodeFontSize,
+                linkFontSize: settings.edgeFontSize,
+                labelStates: settings.labelStates,
+                nodeGroups: collections,
+                collectionsMap: collectionsMap,
+                onNodeClick: handleNodeClick,
+                interactionCallback: handlePopupClose,
+                nodeGroup: (d) => d._id.split("/")[0],
+                nodeHover: (d) =>
+                  d.label ? `${d._id}\n${d.label}` : `${d._id}`,
+                label: getLabel,
+                nodeStrength: -100,
+                width: svgRef.current.clientWidth,
+                height: svgRef.current.clientHeight,
+              },
+            );
+            graphInstanceRef.current = newGraphInstance;
+            // Initial label sync
+            for (const labelClass in settings.labelStates) {
+              newGraphInstance.toggleLabels(
+                settings.labelStates[labelClass],
+                labelClass,
+              );
+            }
+          } else {
+            // Update existing instance
+            let collapseList = collapsedNodes;
+            if (
+              lastActionType === "fetch/fulfilled" &&
+              settings.collapseOnStart
+            ) {
+              const initialCollapseList = processedData.nodes
+                .filter((node) => !originNodeIds.includes(node._id))
+                .map((node) => node._id);
+              dispatch(setCollapsedNodes(initialCollapseList));
+              collapseList = initialCollapseList;
+            }
+
+            graphInstance.updateGraph({
+              newNodes: processedData.nodes,
+              newLinks: processedData.links,
+              resetData: lastActionType === "fetch/fulfilled",
+              collapseNodes: collapseList,
+              centerNodeId: nodeToCenter,
+            });
+
+            if (nodeToCenter) {
+              dispatch(clearNodeToCenter());
+            }
+          }
+          break;
+        }
+
+        // All other actions are ignored
+        default: {
+          break;
         }
       }
     }
-  }, [present]);
+  }, [present, dispatch]);
 
   // Handle font size changes by calling D3 instance method
   useEffect(() => {
@@ -275,8 +295,17 @@ const ForceGraph = ({
     [dispatch],
   );
 
-  const handleUndo = () => dispatch(ActionCreators.undo());
-  const handleRedo = () => dispatch(ActionCreators.redo());
+  const handleUndo = () => {
+    // isRestoring flag tells redux not to save new state
+    setIsRestoring(true);
+    dispatch(ActionCreators.undo());
+  };
+
+  const handleRedo = () => {
+    // isRestoring flag tells redux not to save new state
+    setIsRestoring(true);
+    dispatch(ActionCreators.redo());
+  };
 
   // Settings handlers
   const handleDepthChange = (event) =>
