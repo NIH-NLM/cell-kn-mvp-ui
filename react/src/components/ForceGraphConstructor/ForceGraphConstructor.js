@@ -819,19 +819,32 @@ function ForceGraphConstructor(
     resetGraph();
 
     // Set object vars
-    processedNodes = structuredClone(nodes);
-    processedLinks = structuredClone(links);
+    processedNodes = processGraphData(
+      processedNodes,
+      nodes,
+      mergedOptions.nodeId,
+      mergedOptions.label,
+      mergedOptions.nodeHover,
+    );
+    processedLinks = processGraphLinks(
+      processedLinks,
+      links,
+      processedNodes,
+      mergedOptions.linkSource,
+      mergedOptions.linkTarget,
+      mergedOptions.label,
+    );
 
-    // Place nodes in old locations
+    // Fix nodes in place in stored location
     processedNodes.forEach((node) => {
       node.fx = node.x;
       node.fy = node.y;
     });
 
-    // Add to simluation
+    // Add to simulation
     // TODO: These are not correctly added to simulation. Can see when pressing 'undo' and then 'restart simulation'
     simulation.nodes(processedNodes);
-    simulation.force("link").links(processedLinks);
+    forceLink.links(processedLinks);
     renderGraph(
       simulation,
       processedNodes,
@@ -855,8 +868,16 @@ function ForceGraphConstructor(
     );
     updateLegend(processedNodes);
 
-    // Single animation tick to put everything in place
-    ticked();
+    // Ensure graph is stable and in correct position
+    simulation.alpha(0)
+    ticked()
+
+    // Unfix node position
+    processedNodes.forEach(node => {
+      node.fx = null;
+      node.fy = null;
+    });
+
     // Show labels
     Object.keys(mergedOptions.labelStates).forEach((key) => {
       toggleLabels(mergedOptions.labelStates[key], key);

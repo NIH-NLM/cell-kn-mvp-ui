@@ -170,8 +170,7 @@ const ForceGraph = ({
         });
       }
       setIsRestoring(false);
-    }
-    else {
+    } else {
       // Do something depending on action
       switch (lastActionType) {
         // Handle API data
@@ -354,7 +353,7 @@ const ForceGraph = ({
   // D3 Handlers
   const handleSimulationRestart = () => {
     if (graphInstanceRef.current?.updateGraph) {
-      graphInstanceRef.current.updateGraph({ simulate: true});
+      graphInstanceRef.current.updateGraph({ simulate: true });
     }
   };
 
