@@ -263,7 +263,7 @@ const ForceGraph = ({
         }
       }
     }
-  }, [rawData]);
+  }, [rawData, graphData]);
 
   // Handle font size changes by calling D3 instance method
   useEffect(() => {
