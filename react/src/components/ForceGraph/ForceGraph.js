@@ -19,7 +19,7 @@ import {
   expandNode,
   setCollapsedNodes,
   uncollapseNode,
-  clearNodeToCenter,
+  clearNodeToCenter, updateNodePosition,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
 
@@ -209,6 +209,7 @@ const ForceGraph = ({
                 nodeGroups: collections,
                 collectionsMap: collectionsMap,
                 onNodeClick: handleNodeClick,
+                onNodeDragEnd: handleNodeDragEnd,
                 interactionCallback: handlePopupClose,
                 nodeGroup: (d) => d._id.split("/")[0],
                 nodeHover: (d) =>
@@ -294,6 +295,11 @@ const ForceGraph = ({
     },
     [dispatch],
   );
+
+  const handleNodeDragEnd = useCallback(({ nodeId, x, y }) => {
+    // dispatch node position
+    dispatch(updateNodePosition({ nodeId, x, y }));
+  }, [dispatch]);
 
   const handleUndo = () => {
     // isRestoring flag tells redux not to save new state

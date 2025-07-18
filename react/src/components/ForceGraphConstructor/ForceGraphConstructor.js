@@ -361,6 +361,7 @@ function ForceGraphConstructor(
     nodeFontSize: 10,
     linkFontSize: 10,
     onNodeClick: () => {},
+    onNodeDragEnd: () => {},
     interactionCallback: () => {},
     nodeRadius: 16,
     linkSource: ({ _from }) => _from,
@@ -400,6 +401,11 @@ function ForceGraphConstructor(
         if (!event.active) simulation.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
+        mergedOptions.onNodeDragEnd({
+            nodeId: event.subject.id,
+            x: event.subject.x,
+            y: event.subject.y
+        });
       });
 
   if (mergedOptions.nodeGroup && mergedOptions.nodeGroups.length > 0) {
@@ -799,7 +805,7 @@ function ForceGraphConstructor(
       .style("font-size", newFontSize + "px");
   }
 
-  function resetGraph() {
+  function resetGraph(resetZoom= true) {
     simulation.stop();
 
     processedNodes = [];
@@ -811,12 +817,14 @@ function ForceGraphConstructor(
     nodeContainer.selectAll("*").remove();
     linkContainer.selectAll("*").remove();
 
-    svg.call(zoomHandler.transform, d3.zoomIdentity);
+    if (resetZoom == true){
+      svg.call(zoomHandler.transform, d3.zoomIdentity);
+    }
   }
 
   // Restore graph based on previous state
   function restoreGraph({ nodes, links }) {
-    resetGraph();
+    resetGraph(false);
 
     // Set object vars
     processedNodes = processGraphData(
@@ -842,9 +850,9 @@ function ForceGraphConstructor(
     });
 
     // Add to simulation
-    // TODO: These are not correctly added to simulation. Can see when pressing 'undo' and then 'restart simulation'
     simulation.nodes(processedNodes);
     forceLink.links(processedLinks);
+    // Render
     renderGraph(
       simulation,
       processedNodes,
@@ -869,11 +877,11 @@ function ForceGraphConstructor(
     updateLegend(processedNodes);
 
     // Ensure graph is stable and in correct position
-    simulation.alpha(0)
-    ticked()
+    simulation.alpha(0);
+    ticked();
 
     // Unfix node position
-    processedNodes.forEach(node => {
+    processedNodes.forEach((node) => {
       node.fx = null;
       node.fy = null;
     });

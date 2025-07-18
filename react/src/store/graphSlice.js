@@ -167,6 +167,20 @@ const graphSlice = createSlice({
       state.settings.allowedCollections = action.payload;
       state.lastActionType = "setAvailableCollections";
     },
+    // Action to update node position state
+    updateNodePosition: (state, action) => {
+      const { nodeId, x, y } = action.payload;
+
+      const nodeToUpdate = state.graphData.nodes.find(
+        (node) => node.id === nodeId,
+      );
+
+      if (nodeToUpdate) {
+        nodeToUpdate.x = x;
+        nodeToUpdate.y = y;
+      }
+      state.lastActionType = "updateNodePosition";
+    },
     // Action to set what nodes are currently collapsed
     setCollapsedNodes: (state, action) => {
       state.collapsedNodes = action.payload;
@@ -261,13 +275,17 @@ export const {
   initializeGraph,
   setAvailableCollections,
   clearNodeToCenter,
+  updateNodePosition,
 } = graphSlice.actions;
 
 // Undo wrapper
 const undoableGraphReducer = undoable(graphSlice.reducer, {
-  // Only include the `setGraphData` action in undo history
+  // Create history on setGraphData or updateNodePosition
   filter: (action, currentState, previousHistory) => {
-    return action.type === setGraphData.type;
+    return (
+      action.type === setGraphData.type ||
+      action.type === updateNodePosition.type
+    );
   },
   // Exclude other actions from triggering an undo state
   ignoreInitialState: true,
