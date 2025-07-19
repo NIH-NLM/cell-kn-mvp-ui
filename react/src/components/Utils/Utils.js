@@ -248,6 +248,9 @@ export const findFtuUrlById = (ftuPartsArray, searchId) => {
   return foundMatch?.ftu_digital_object || null;
 };
 
+// Helper to check if platform is running a variation on MacOS
+export const isMac = /mac/i.test(navigator.platform);
+
 // A helper to determine if a raw API graph response object is empty
 export const hasNodesInRawData = (data) => {
   if (!data || typeof data !== "object" || Object.keys(data).length === 0) {

@@ -1,4 +1,11 @@
-import React, {useEffect, useState, useRef, memo, useCallback, useMemo} from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  memo,
+  useCallback,
+  useMemo,
+} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import ForceGraphConstructor from "../ForceGraphConstructor/ForceGraphConstructor";
@@ -9,6 +16,7 @@ import {
   parseCollections,
   fetchCollections,
   hasNodesInRawData,
+  isMac,
 } from "../Utils/Utils";
 import {
   fetchAndProcessGraph,
@@ -24,6 +32,7 @@ import {
   updateNodePosition,
 } from "../../store/graphSlice";
 import { performSetOperation } from "./setOperation";
+import { useHotkeys } from "../../hooks/useHotkeys";
 
 const ForceGraph = ({
   nodeIds: originNodeIdsFromProps,
@@ -234,7 +243,10 @@ const ForceGraph = ({
           } else {
             let collapseList = finalCollapseList;
             // Check if collapsed is populated and set initial if not
-            if (lastActionType === "fetch/fulfilled" && collapsed?.initial?.length === 0) {
+            if (
+              lastActionType === "fetch/fulfilled" &&
+              collapsed?.initial?.length === 0
+            ) {
               const initialCollapseList = processedData.nodes
                 .filter((node) => !originNodeIds.includes(node._id))
                 .map((node) => node._id);
@@ -332,6 +344,30 @@ const ForceGraph = ({
     dispatch(ActionCreators.redo());
   };
 
+  // Placeholder handlers
+  const handleSave = useCallback(() => {
+    console.log("Save Graph triggered.");
+  }, [graphData]);
+
+  const handleLoad = useCallback(() => {
+    console.log("Load Graph triggered.");
+  }, []);
+
+  // Bind hotkeys
+  const hotkeyConfigs = useMemo(
+    () => [
+      { key: "z", ctrlKey: true, metaKey: true, handler: handleUndo },
+      ...(isMac
+        ? [{ key: "z", metaKey: true, shiftKey: true, handler: handleRedo }]
+        : [{ key: "y", ctrlKey: true, handler: handleRedo }]),
+      { key: "s", ctrlKey: true, metaKey: true, handler: handleSave },
+      { key: "o", ctrlKey: true, metaKey: true, handler: handleLoad },
+    ],
+    [handleUndo, handleRedo, handleSave, handleLoad],
+  );
+
+  useHotkeys(hotkeyConfigs, [hotkeyConfigs]);
+
   // Settings handlers
   const handleDepthChange = (event) =>
     handleSettingChange("depth", Number(event.target.value));
@@ -378,8 +414,10 @@ const ForceGraph = ({
   // D3 Handlers
   const handleSimulationRestart = () => {
     if (graphInstanceRef.current?.updateGraph) {
-      graphInstanceRef.current.updateGraph({ simulate: true,               labelStates: settings.labelStates,
- });
+      graphInstanceRef.current.updateGraph({
+        simulate: true,
+        labelStates: settings.labelStates,
+      });
     }
   };
 
@@ -395,8 +433,8 @@ const ForceGraph = ({
     if (graphInstanceRef.current && popup.nodeId) {
       dispatch(collapseNode(popup.nodeId));
       graphInstanceRef.current.updateGraph({
-        collapseNodes: [popup.nodeId],               labelStates: settings.labelStates,
-
+        collapseNodes: [popup.nodeId],
+        labelStates: settings.labelStates,
       });
     }
     handlePopupClose();
@@ -408,7 +446,7 @@ const ForceGraph = ({
       graphInstanceRef.current.updateGraph({
         collapseNodes: [popup.nodeId],
         removeNode: true,
-                      labelStates: settings.labelStates,
+        labelStates: settings.labelStates,
       });
     }
     handlePopupClose();
@@ -793,19 +831,16 @@ const ForceGraph = ({
           )}
 
           {activeTab === "history" && (
-            <div
-              id="tab-panel-history"
-              role="tabpanel"
-              className="tab-panel active"
-            >
+            <div id="tab-panel-history" /* ... */>
               <div className="option-group">
                 <label>Graph History</label>
                 <div className="history-controls">
                   <button onClick={handleUndo} disabled={!canUndo}>
-                    <span className="history-icon">↶</span> Undo
+                    <span className="history-icon">↶</span> Undo{" "}
+                    <kbd>{isMac ? "⌘Z" : "Ctrl+Z"}</kbd>
                   </button>
                   <button onClick={handleRedo} disabled={!canRedo}>
-                    Redo <span className="history-icon">↷</span>
+                    Redo <kbd>{isMac ? "⇧⌘Z" : "Ctrl+Y"}</kbd>
                   </button>
                 </div>
               </div>
@@ -813,8 +848,12 @@ const ForceGraph = ({
               <div className="option-group">
                 <label>Saved Graphs</label>
                 <div className="save-load-controls">
-                  <button>Save Current Graph</button>
-                  <button>Load a Saved Graph</button>
+                  <button onClick={handleSave}>
+                    Save Current Graph <kbd>{isMac ? "⌘S" : "Ctrl+S"}</kbd>
+                  </button>
+                  <button onClick={handleLoad}>
+                    Load a Saved Graph <kbd>{isMac ? "⌘O" : "Ctrl+O"}</kbd>
+                  </button>
                 </div>
               </div>
             </div>

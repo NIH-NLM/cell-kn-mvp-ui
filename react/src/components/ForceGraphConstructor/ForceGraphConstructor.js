@@ -930,7 +930,7 @@ function ForceGraphConstructor(
     centerNodeId = null,
     resetData = false,
     save = true,
-      labelStates = mergedOptions.initialLabelStates,
+    labelStates = mergedOptions.initialLabelStates,
   } = {}) {
     // Check for reset
     if (resetData) {
