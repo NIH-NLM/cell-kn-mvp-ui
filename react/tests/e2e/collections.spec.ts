@@ -78,8 +78,8 @@ test("Collections page: select, filter, and navigate to item", async ({ page }) 
   await itemsContainer.getByRole("link", { name: "Beta" }).click();
   await expect(page).toHaveURL(new RegExp(`#/collections/${TEST_COLL}/0002$`));
 
-  // Title shows collection + label
-  await expect(page.locator(".document-item-header h1")).toHaveText(
+  // Title shows collection + label (rendered once, in the graph title bar)
+  await expect(page.locator(".graph-title-bar .graph-title")).toHaveText(
     /Test document collection: Beta/i,
   );
 

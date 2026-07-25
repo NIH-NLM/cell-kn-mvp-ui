@@ -8,6 +8,7 @@ import {
 import { memo, useId } from "react";
 
 const COLLAPSE_LABELS = { off: "None", standard: "Exclude Origin", all: "All" };
+const DIRECTION_LABELS = { ANY: "Any", INBOUND: "Inbound", OUTBOUND: "Outbound" };
 
 /**
  * General settings panel for graph visualization.
@@ -32,8 +33,8 @@ const GeneralSettingsPanel = ({
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
     <div id="tab-panel-general" className="tab-panel active">
-      <div className="option-group">
-        <label htmlFor="depth-select">Depth:</label>
+      <div className="option-group field-row">
+        <label htmlFor="depth-select">Depth</label>
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <select id="depth-select" value={settings.depth} onChange={onDepthChange}>
           {DEPTH_OPTIONS.map((value) => (
@@ -44,8 +45,8 @@ const GeneralSettingsPanel = ({
         </select>
       </div>
 
-      <div className="option-group">
-        <label htmlFor="edge-direction-select">Traversal Direction:</label>
+      <div className="option-group field-row">
+        <label htmlFor="edge-direction-select">Traversal Direction</label>
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <select
           id="edge-direction-select"
@@ -54,47 +55,46 @@ const GeneralSettingsPanel = ({
         >
           {DIRECTION_OPTIONS.map((value) => (
             <option key={value} value={value}>
-              {value}
+              {DIRECTION_LABELS[value] ?? value}
             </option>
           ))}
         </select>
       </div>
 
-      <div className="option-group font-size-picker">
-        <div className="node-font-size-picker">
-          <label htmlFor="node-font-size-select">Node font size:</label>
-          {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
-          <select
-            id="node-font-size-select"
-            value={settings.nodeFontSize}
-            onChange={onNodeFontSizeChange}
-          >
-            {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
-              <option key={size} value={size}>
-                {size}px
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="edge-font-size-picker">
-          <label htmlFor="edge-font-size-select">Edge font size:</label>
-          {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
-          <select
-            id="edge-font-size-select"
-            value={settings.edgeFontSize}
-            onChange={onEdgeFontSizeChange}
-          >
-            {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map((size) => (
-              <option key={size} value={size}>
-                {size}px
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="option-group field-row">
+        <label htmlFor="node-font-size-select">Node font size</label>
+        {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
+        <select
+          id="node-font-size-select"
+          value={settings.nodeFontSize}
+          onChange={onNodeFontSizeChange}
+        >
+          {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
+            <option key={size} value={size}>
+              {size}px
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="option-group field-row">
+        <label htmlFor="edge-font-size-select">Edge font size</label>
+        {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
+        <select
+          id="edge-font-size-select"
+          value={settings.edgeFontSize}
+          onChange={onEdgeFontSizeChange}
+        >
+          {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28].map((size) => (
+            <option key={size} value={size}>
+              {size}px
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="option-group labels-toggle-container">
-        <h3 className="group-label">Toggle Labels:</h3>
+        <h3 className="group-label">Toggle Labels</h3>
         <div className="labels-toggle">
           {Object.entries(settings.labelStates).map(([labelKey, isChecked]) => (
             <div className="label-toggle-item" key={labelKey}>
@@ -116,8 +116,8 @@ const GeneralSettingsPanel = ({
         </div>
       </div>
 
-      <div className="option-group">
-        <label htmlFor={collapseLeafSelectId}>Collapse Leaf Nodes:</label>
+      <div className="option-group field-row">
+        <label htmlFor={collapseLeafSelectId}>Collapse Leaf Nodes</label>
         <select
           id={collapseLeafSelectId}
           value={settings.collapseOnStart}
@@ -132,7 +132,7 @@ const GeneralSettingsPanel = ({
       </div>
 
       <div className="option-group labels-toggle-container">
-        <h3 className="group-label">Highlight Origin Nodes:</h3>
+        <h3 className="group-label">Highlight Origin Nodes</h3>
         <div className="labels-toggle graph-source-toggle">
           <label className="switch">
             <input type="checkbox" checked={settings.useFocusNodes} onChange={onFocusNodesToggle} />
@@ -143,7 +143,7 @@ const GeneralSettingsPanel = ({
 
       {PHENOTYPES_ENABLED && (
         <div className="option-group labels-toggle-container">
-          <h3 className="group-label">Graph Source:</h3>
+          <h3 className="group-label">Graph Source</h3>
           <div className="labels-toggle graph-source-toggle">
             Evidence
             <label className="switch">
@@ -159,8 +159,8 @@ const GeneralSettingsPanel = ({
         </div>
       )}
 
-      <div className="option-group">
-        <label htmlFor={layoutModeSelectId}>Layout:</label>
+      <div className="option-group field-row">
+        <label htmlFor={layoutModeSelectId}>Layout</label>
         <select
           id={layoutModeSelectId}
           value={settings.layoutMode || "force"}

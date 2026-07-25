@@ -163,6 +163,16 @@ const ForceGraph = ({
   const collectionMenuTriggerRef = useRef(null);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [lassoMode, setLassoMode] = useState(false);
+  // Focus management for the options collapse control: the panel's collapse arrow
+  // unmounts when the panel closes, so restore focus to the "Show Options" button.
+  const showOptionsButtonRef = useRef(null);
+  const restoreFocusOnCloseRef = useRef(false);
+  useEffect(() => {
+    if (!optionsVisible && restoreFocusOnCloseRef.current) {
+      showOptionsButtonRef.current?.focus();
+      restoreFocusOnCloseRef.current = false;
+    }
+  }, [optionsVisible]);
 
   // State for two-tiered tab navigation.
   const [activePrimaryTab, setActivePrimaryTab] = useState("settings");
@@ -1071,7 +1081,17 @@ const ForceGraph = ({
     handlePopupClose();
   };
 
-  const toggleOptionsVisibility = () => setOptionsVisible(!optionsVisible);
+  // Opening the panel exits lasso mode, since the lasso toggle is hidden while
+  // the panel is open (Figma's expanded title bar carries no controls).
+  const openOptions = () => {
+    setLassoMode(false);
+    setOptionsVisible(true);
+  };
+  // Closing via the panel's collapse arrow returns focus to "Show Options".
+  const closeOptions = () => {
+    restoreFocusOnCloseRef.current = true;
+    setOptionsVisible(false);
+  };
 
   return (
     <div
@@ -1081,41 +1101,99 @@ const ForceGraph = ({
         <div className="graph-title-bar">
           <h2 className="graph-title">{title}</h2>
           <div className="graph-title-actions">
-            <button
-              type="button"
-              onClick={toggleOptionsVisibility}
-              className="toggle-options-button"
-              aria-expanded={optionsVisible}
-              aria-controls="graph-options-panel"
-            >
-              <svg
-                aria-hidden="true"
-                focusable="false"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="currentColor"
-                style={{ marginRight: "5px", verticalAlign: "middle" }}
+            {/* Collapsed: a "Show Options" button opens the panel. When the panel
+                is open, the collapse control is the arrow on the panel's left edge
+                (below), matching the Figma design. */}
+            {!optionsVisible && (
+              <button
+                type="button"
+                ref={showOptionsButtonRef}
+                onClick={openOptions}
+                className="toggle-options-button"
+                aria-expanded={optionsVisible}
+                aria-controls="graph-options-panel"
               >
-                <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-              </svg>
-              {optionsVisible ? "Hide Options" : "Show Options"}
-            </button>
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  style={{ marginRight: "5px", verticalAlign: "middle" }}
+                >
+                  <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg>
+                Show Options
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setLassoMode((m) => !m)}
-              className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
-              aria-pressed={lassoMode}
-              title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
-            >
-              {lassoMode ? "Lasso: on" : "Lasso"}
-            </button>
+            {/* Figma's expanded title bar is just the title; the Lasso (app-only)
+                control shows when the panel is closed. */}
+            {!optionsVisible && (
+              <button
+                type="button"
+                onClick={() => setLassoMode((m) => !m)}
+                className={`lasso-toggle-button${lassoMode ? " active" : ""}`}
+                aria-pressed={lassoMode}
+                title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
+              >
+                {lassoMode ? "Lasso: on" : "Lasso"}
+              </button>
+            )}
           </div>
         </div>
 
+        {/* Collapse handle pinned to the panel's left edge (Figma "Close arrow" 682:3573). */}
+        {optionsVisible && (
+          <button
+            type="button"
+            className="options-collapse-arrow"
+            onClick={closeOptions}
+            aria-expanded={optionsVisible}
+            aria-controls="graph-options-panel"
+            aria-label="Hide options"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="currentColor"
+            >
+              <path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </button>
+        )}
+
         {status === "loading" && <LoadingBar />}
+
+        {/* Floating download button — a sibling of the canvas wrapper so the wrapper
+            holds ONLY the graph <svg>: useGraphExport and the e2e suite both select
+            `#chart-container-wrapper svg`, which must resolve to the graph alone.
+            bottom/right are relative to .graph-main-area, whose canvas fills it below
+            the title bar, so the button still lands at the canvas bottom-right. */}
+        <button
+          type="button"
+          className="graph-canvas-icon-button graph-canvas-download"
+          aria-label="Download graph"
+          onClick={() => exportGraph("png")}
+        >
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="currentColor"
+          >
+            <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
+          </svg>
+        </button>
 
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
         <div id="chart-container-wrapper" ref={wrapperRef}>

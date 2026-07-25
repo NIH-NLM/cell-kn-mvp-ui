@@ -75,7 +75,8 @@ g.node.pinned .node-pin-marker path {
   max-width: 320px;
   height: 100%;
   background-color: var(--color-white);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -98,36 +99,43 @@ g.node.pinned .node-pin-marker path {
 .options-tabs-nav {
   display: flex;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-gray-lighter);
   padding: 5px 5px 0 5px;
-  background-color: var(--color-light-bg);
+  background-color: var(--color-gray-lightest);
   flex-shrink: 0;
 }
 
+/* Primary/secondary tab rows stay on one line (Figma shows all tabs in a row). */
+.options-tabs-nav.primary-tabs,
+.options-tabs-nav.secondary-tabs {
+  flex-wrap: nowrap;
+}
+
 .tab-button {
-  padding: 10px 15px;
+  padding: 10px 10px;
   cursor: pointer;
   background-color: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
-  color: var(--color-gray);
+  color: var(--color-gray-dark);
   font-size: 0.9em;
   font-weight: 500;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   transition:
     background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease;
+    color 0.2s ease;
 }
 
 .tab-button:hover {
-  color: var(--color-main);
+  background-color: var(--color-gray-lighter);
+  color: var(--color-gray-dark);
 }
 
-.tab-button.active {
-  color: var(--color-main);
+/* Active tab: blue text only — no fill, no underline (Figma 682:3576). */
+.tab-button.active,
+.tab-button.active:hover {
+  background-color: transparent;
+  color: var(--color-primary);
   font-weight: 600;
-  border-bottom-color: var(--color-main);
 }
 
 .options-tabs-content {
@@ -152,8 +160,8 @@ g.node.pinned .node-pin-marker path {
 .option-group {
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px dashed var(--color-light);
-  text-align: center;
+  border-bottom: 1px solid var(--color-gray-lighter);
+  text-align: left;
 }
 
 .option-group:last-child {
@@ -168,17 +176,20 @@ g.node.pinned .node-pin-marker path {
   color: var(--color-dark);
   margin-bottom: 8px;
   font-size: 0.95em;
+  text-align: left;
 }
 
 .option-group select,
 .option-group input[type="text"],
 .option-group button:not(.tab-button):not(.popup-button) {
   width: 100%;
+  height: 40px;
   padding: 8px 10px;
   margin: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border: 1px solid var(--color-gray-light);
+  border-radius: var(--radius-md);
   font-size: 0.9em;
+  color: var(--color-text);
   background-color: var(--color-white);
   box-sizing: border-box;
 }
@@ -200,7 +211,7 @@ g.node.pinned .node-pin-marker path {
 }
 
 .option-group button:not(.tab-button):not(.popup-button):hover {
-  background-color: var(--color-border);
+  background-color: var(--color-gray-lighter);
 }
 
 .option-group button:disabled {
@@ -208,20 +219,66 @@ g.node.pinned .node-pin-marker path {
   cursor: not-allowed;
 }
 
-.font-size-picker {
+/* Options-panel field rows: label left, fixed 114px dropdown right (Figma 682:3584).
+   Values pulled from Figma — see docs/superpowers/figma-reference/design-context.md. */
+.option-group.field-row {
   display: flex;
-  gap: 15px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.font-size-picker > div {
-  flex: 1;
+.option-group.field-row label:not(.switch) {
+  display: inline;
+  margin-bottom: 0;
+  color: var(--color-gray-dark);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.25px;
+}
+
+.option-group.field-row select {
+  width: 114px;
+  height: 40px;
+  padding: 8px 28px 8px 16px;
+  background-color: #f9fafd;
+  border: 1px solid #e9edf0;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--color-base);
+  font-size: 14px;
+}
+
+/* Centered section heading (Figma "Toggle Labels" — Body Large 16px Medium). */
+.group-label {
+  margin: 0 0 4px;
+  text-align: center;
+  color: var(--color-gray-dark);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.5px;
+}
+
+/* Restart-Simulation action button — filled navy (Figma 682:3640). */
+.option-group button.simulation-toggle:not(.tab-button):not(.popup-button) {
+  background-color: var(--color-primary-darkest);
+  border-color: #dce4ef;
+  color: var(--color-gray-lightest);
+  border-radius: var(--radius-sm, 4px);
+  height: 40px;
+  padding: 2px 16px;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+.option-group button.simulation-toggle:not(.tab-button):not(.popup-button):hover {
+  background-color: #1c3d63;
 }
 
 /* Label Toggles */
 
 .labels-toggle-container {
-  text-align: center;
+  text-align: left;
 }
 
 .labels-toggle-container .labels-toggle {
@@ -237,11 +294,12 @@ g.node.pinned .node-pin-marker path {
   align-items: center;
   font-size: 0.9em;
   padding: 6px 0;
+  color: var(--color-text);
 }
 
 .labels-toggle-container .option-group .graph-source-toggle {
   flex-direction: row;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
@@ -276,33 +334,104 @@ g.node.pinned .node-pin-marker path {
   gap: var(--spacing-sm);
 }
 
-.toggle-options-button {
-  padding: 8px 12px;
-  margin: 0;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Lasso-mode toggle now sits alongside the options toggle in the title bar. */
+/* Figma Button spec (639:3059 / 685:5797): transparent resting state, gray-lighter
+   hover fill, radius-md, 40px height. The two title-bar toggles share this base;
+   only their active-state color differs (options = primary-darkest; lasso = focus).
+   The lasso toggle sits alongside the options toggle in the title bar. */
+.toggle-options-button,
 .lasso-toggle-button {
-  padding: 8px 12px;
+  height: 40px;
+  padding: 4px 12px;
   margin: 0;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: transparent;
+  color: var(--color-gray-dark);
+  border: 1px solid var(--color-gray-light);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.9em;
-  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
-.lasso-toggle-button.active {
-  background-color: #ffb74d;
-  border-color: #f9a825;
-  color: #1a1a1a;
+.toggle-options-button:hover,
+.lasso-toggle-button:hover {
+  background-color: var(--color-gray-lighter);
+}
+
+/* Options panel open — filled primary-darkest. Pair :hover so the active color
+   wins by specificity, not cascade order. */
+.toggle-options-button[aria-expanded="true"],
+.toggle-options-button[aria-expanded="true"]:hover {
+  background-color: var(--color-primary-darkest);
+  border-color: var(--color-primary-darkest);
+  color: var(--color-white);
+}
+
+/* Lasso mode armed — distinct focus accent so the mode reads clearly. Pair
+   :hover so the active color wins by specificity, not cascade order. */
+.lasso-toggle-button.active,
+.lasso-toggle-button.active:hover {
+  background-color: var(--color-focus);
+  border-color: var(--color-focus);
+  color: var(--color-white);
+}
+
+/* Figma "Icon Button - filled" spec (639:3201 / 631:2950): filled primary-darkest
+   circular button, floated bottom-right of the canvas. */
+.graph-canvas-icon-button {
+  position: absolute;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  background-color: var(--color-primary-darkest);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: background-color var(--transition-fast);
+}
+
+.graph-canvas-icon-button:hover {
+  background-color: var(--color-primary-darker);
+}
+
+.graph-canvas-download {
+  bottom: 16px;
+  right: 16px;
+}
+
+/* Options collapse handle on the panel's left edge (Figma "Close arrow" 682:3573):
+   light-gray tab with a right chevron, attached to the panel boundary. */
+.options-collapse-arrow {
+  position: absolute;
+  top: 8px;
+  /* Reach across the graph-main-area right margin (10px) + panel left margin
+     (--spacing-lg) so the tab attaches to the panel's left edge. */
+  right: calc(-10px - var(--spacing-lg));
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  background-color: var(--color-gray-lightest);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-sm, 4px) 0 0 var(--radius-sm, 4px);
+  color: var(--color-gray);
+  cursor: pointer;
+}
+
+.options-collapse-arrow:hover {
+  background-color: var(--color-gray-lighter);
 }
 
 /* Floating bar shown above the graph when there is an active lasso selection. */
@@ -640,11 +769,18 @@ g.node.pinned .node-pin-marker path {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* Figma Graph Section framing (662:3068): #fefefe/#e9edf0 have no direct
+     token equivalents in variables.css, so the nearest tokens are used. */
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-lighter);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .graph-workspace-canvas #chart-container-wrapper {
   flex-grow: 1;
   min-height: 400px;
+  padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
 .graph-workspace-shelf {
