@@ -110,7 +110,8 @@ test("options panel opens and closes on mobile without overflow", async ({ page 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - 390);
   expect(overflow).toBeLessThanOrEqual(1);
 
-  // Close — the toggle must remain reachable (not covered by the panel)
-  await toggle.click();
+  // Close — when open, the collapse control is the arrow on the panel's edge,
+  // which must remain reachable (not covered by the panel).
+  await page.locator(".graph-workspace-canvas .options-collapse-arrow").click();
   await expect(panel).not.toBeInViewport();
 });

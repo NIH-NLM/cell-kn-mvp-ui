@@ -721,7 +721,7 @@ table a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-light);
+  background-color: var(--color-gray-light);
   transition: 0.4s;
 }
 
@@ -737,7 +737,7 @@ table a:hover {
 }
 
 input:checked + .slider {
-  background-color: var(--color-main);
+  background-color: var(--color-gray-dark);
 }
 
 input:focus + .slider {

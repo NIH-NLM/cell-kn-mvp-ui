@@ -114,7 +114,6 @@ const DocumentPage = () => {
           ]}
         />
         <div className="document-item-header">
-          <h1>{getTitle(document)}</h1>
           {document.term && <span>Term: {document.term}</span>}{" "}
         </div>
         {ftuIllustrationUrl && (

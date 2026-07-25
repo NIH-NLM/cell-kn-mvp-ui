@@ -127,7 +127,7 @@ test("Graph generates from one origin, shows nodes/links, and options toggle aff
 
   // Toggle labels on (scope to labels group)
   const labelToggles = page.locator(
-    '.labels-toggle-container:has-text("Toggle Labels:") .labels-toggle .switch input[type="checkbox"]',
+    '.labels-toggle-container:has-text("Toggle Labels") .labels-toggle .switch input[type="checkbox"]',
   );
   await labelToggles.evaluateAll((inputs: Element[]) => {
     (inputs as HTMLInputElement[]).forEach((input) => {

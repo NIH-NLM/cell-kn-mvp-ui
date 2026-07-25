@@ -7,6 +7,7 @@ import nodesReducer from "../../store/nodesSlice";
 import savedGraphsReducer, { selectOriginHistory } from "../../store/savedGraphsSlice";
 import { ToastProvider } from "../Toast";
 import ForceGraph from "./ForceGraph";
+import { useGraphExport } from "./hooks";
 
 // Mock ResizeObserver for jsdom
 global.ResizeObserver = class ResizeObserver {
@@ -14,6 +15,14 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// jsdom does not implement the Blob URL APIs used by the graph export path
+if (!global.URL.createObjectURL) {
+  global.URL.createObjectURL = jest.fn(() => "blob:mock-url");
+}
+if (!global.URL.revokeObjectURL) {
+  global.URL.revokeObjectURL = jest.fn();
+}
 
 // Capture the onNodeClick callback so tests can trigger the popup directly
 let capturedOnNodeClick = null;
@@ -36,6 +45,11 @@ jest.mock("components/ForceGraphConstructor/ForceGraphConstructor", () => ({
   __esModule: true,
   default: jest.fn(),
 }));
+
+jest.mock("./hooks", () => {
+  const actual = jest.requireActual("./hooks");
+  return { ...actual, useGraphExport: jest.fn() };
+});
 
 const ForceGraphConstructorMock =
   require("components/ForceGraphConstructor/ForceGraphConstructor").default;
@@ -125,6 +139,8 @@ describe("ForceGraph", () => {
     });
     mockGraphInstance.getCurrentGraph.mockReturnValue(null);
     mockGraphInstance.isDragging.mockReturnValue(false);
+    // Re-arm the export hook mock (resetMocks clears implementations between tests)
+    useGraphExport.mockImplementation(() => jest.fn());
     // Default return values for service mocks
     fetchCollections.mockResolvedValue([]);
     fetchEdgeFilterOptions.mockResolvedValue([]);
@@ -172,6 +188,21 @@ describe("ForceGraph", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Test Graph Title" })).toBeInTheDocument();
+  });
+
+  it("renders a download button on the canvas that triggers the export handler", () => {
+    render(
+      <Provider store={createTestStore()}>
+        <ForceGraph title="Test Graph Title" />
+      </Provider>,
+    );
+
+    const downloadButton = screen.getByRole("button", { name: /download graph/i });
+    expect(downloadButton).toBeInTheDocument();
+
+    const exportMock = useGraphExport.mock.results.at(-1).value;
+    fireEvent.click(downloadButton);
+    expect(exportMock).toHaveBeenCalledWith("png");
   });
 
   describe("Expand by Collection submenu", () => {
