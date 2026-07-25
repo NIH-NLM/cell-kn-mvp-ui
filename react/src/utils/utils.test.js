@@ -1,6 +1,8 @@
 import {
   capitalCase,
   filterBrowsableCollections,
+  formatFieldValue,
+  getDisplayFields,
   getLabel,
   getTitle,
   getUrl,
@@ -50,6 +52,30 @@ jest.mock(
         "nodes_c",
         {
           individual_labels: [{ field_to_use: "description" }],
+        },
+      ],
+      [
+        "nodes_d",
+        {
+          display_name: "Nodes D",
+          individual_labels: [{ field_to_use: "name" }],
+          individual_fields: [
+            { field_to_display: "name", display_field_as: "Name" },
+            {
+              field_to_display: "ontology_purl",
+              display_field_as: "Ontology term",
+              field_url: "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
+              field_to_use: "ontology_purl",
+              to_be_replaced: ":",
+              replace_with: "_",
+            },
+            {
+              field_to_display: "publication",
+              display_field_as: "Publication (DOI)",
+              field_url: "https://doi.org/<FIELD_TO_USE>",
+              field_to_use: "publication",
+            },
+          ],
         },
       ],
     ],
@@ -284,6 +310,59 @@ describe("Utils Module", () => {
     it("should return null if config has no url", () => {
       const item = { _id: "nodes_b/1", title: "Test Title" }; // nodes_b has no URL config in mock
       expect(getUrl(item)).toBeNull();
+    });
+  });
+
+  // --- getDisplayFields ---
+  describe("getDisplayFields", () => {
+    it("should rewrite CURIEs before building a field URL", () => {
+      const item = { _id: "nodes_d/1", name: "item", ontology_purl: "CL:0002399" };
+      const purl = getDisplayFields(item).find((field) => field.key === "ontology_purl");
+      expect(purl.url).toBe("http://purl.obolibrary.org/obo/CL_0002399");
+      expect(purl.value).toBe("CL:0002399");
+    });
+
+    it("should build field URLs without a replacement rule unchanged", () => {
+      const item = { _id: "nodes_d/1", name: "item", publication: "10.1038/s41467-023-40173-5" };
+      const doi = getDisplayFields(item).find((field) => field.key === "publication");
+      expect(doi.url).toBe("https://doi.org/10.1038/s41467-023-40173-5");
+    });
+
+    it("should omit fields the document does not carry", () => {
+      const item = { _id: "nodes_d/1", name: "item" };
+      expect(getDisplayFields(item).map((field) => field.key)).toEqual(["name"]);
+    });
+  });
+
+  // --- formatFieldValue ---
+  describe("formatFieldValue", () => {
+    it("should round full-precision decimal strings to three places", () => {
+      expect(formatFieldValue("0.6556691514777705")).toBe("0.656");
+      expect(formatFieldValue("0.5901353591296488")).toBe("0.59");
+    });
+
+    it("should keep significant digits for values below the rounding threshold", () => {
+      expect(formatFieldValue("0.0000123456")).toBe("0.0000123");
+    });
+
+    it("should add thousands separators to large integers only", () => {
+      expect(formatFieldValue("236977")).toBe("236,977");
+      expect(formatFieldValue("2594")).toBe("2594");
+      expect(formatFieldValue("2021")).toBe("2021");
+    });
+
+    it("should leave identifiers, CURIEs and DOIs untouched", () => {
+      expect(formatFieldValue("CL:0002399")).toBe("CL:0002399");
+      expect(formatFieldValue("10.1038/s41467-023-40173-5")).toBe("10.1038/s41467-023-40173-5");
+      expect(formatFieldValue("2d9f0e25-3e7f-4e4b-86ea-18fda98dc8be")).toBe(
+        "2d9f0e25-3e7f-4e4b-86ea-18fda98dc8be",
+      );
+    });
+
+    it("should join arrays and stringify booleans and objects", () => {
+      expect(formatFieldValue(["a", "b"])).toBe("a, b");
+      expect(formatFieldValue(true)).toBe("true");
+      expect(formatFieldValue({ a: 1 })).toBe('{\n  "a": 1\n}');
     });
   });
 
