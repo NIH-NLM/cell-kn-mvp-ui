@@ -347,33 +347,151 @@
         "individual_fields": [
           {
             "field_to_display": "author_cell_term",
-            "display_field_as": "Author_cell_term",
+            "display_field_as": "Author cell term",
             "field_url": "",
             "field_to_use": ""
           },
           {
-            "field_to_display": "cell_count",
-            "display_field_as": "Cell_count",
+            "field_to_display": "ontology_purl",
+            "display_field_as": "Cell Ontology term",
+            "field_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
+            "field_to_use": "ontology_purl",
+            "to_be_replaced": ":",
+            "replace_with": "_"
+          },
+          {
+            "field_to_display": "species",
+            "display_field_as": "Species",
             "field_url": "",
             "field_to_use": ""
+          },
+          {
+            "field_to_display": "anatomical_structure",
+            "display_field_as": "Anatomical structure",
+            "field_url": "http://purl.obolibrary.org/obo/<FIELD_TO_USE>",
+            "field_to_use": "anatomical_structure",
+            "to_be_replaced": ":",
+            "replace_with": "_"
           },
           {
             "field_to_display": "biomarker_combination",
-            "display_field_as": "Biomarker_combination",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "f_beta_score",
-            "display_field_as": "F_beta_score",
+            "display_field_as": "Biomarker combination",
             "field_url": "",
             "field_to_use": ""
           },
           {
             "field_to_display": "binary_gene_set",
-            "display_field_as": "Binary_gene_set",
+            "display_field_as": "Binary gene set",
             "field_url": "",
             "field_to_use": ""
+          },
+          {
+            "field_to_display": "expressed_genes",
+            "display_field_as": "Expressed genes",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "cell_count",
+            "display_field_as": "Cell count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "cluster_cell_count",
+            "display_field_as": "Cluster cell count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "f_beta_score",
+            "display_field_as": "F-beta score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "precision",
+            "display_field_as": "Precision",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "recall",
+            "display_field_as": "Recall",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "on_target",
+            "display_field_as": "On target",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "true_positive",
+            "display_field_as": "True positives",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "false_positive",
+            "display_field_as": "False positives",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "false_negative",
+            "display_field_as": "False negatives",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "silhouette_score",
+            "display_field_as": "Silhouette score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "mean_silhouette",
+            "display_field_as": "Mean silhouette",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "median_silhouette",
+            "display_field_as": "Median silhouette",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "first_quartile_silhouette",
+            "display_field_as": "First quartile silhouette",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "third_quartile_silhouette",
+            "display_field_as": "Third quartile silhouette",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "standard_deviation_of_silhouette",
+            "display_field_as": "Silhouette standard deviation",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "cellxgene_dataset",
+            "display_field_as": "CELLxGENE dataset",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "cellxgene_dataset"
+          },
+          {
+            "field_to_display": "publication",
+            "display_field_as": "Publication (DOI)",
+            "field_url": "https://doi.org/<FIELD_TO_USE>",
+            "field_to_use": "publication"
           }
         ],
         "more_info": "Author defined names for cell clusters"
@@ -418,12 +536,12 @@
           {
             "field_to_display": "Citation",
             "display_field_as": "Citation",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "Link_to_publication"
+            "field_url": "https://doi.org/<FIELD_TO_USE>",
+            "field_to_use": "publication"
           },
           {
             "field_to_display": "dataset_name",
-            "display_field_as": "Dataset_name",
+            "display_field_as": "Dataset name",
             "field_url": "",
             "field_to_use": ""
           },
@@ -435,45 +553,111 @@
           },
           {
             "field_to_display": "anatomical_structure",
-            "display_field_as": "Anatomical_structure",
+            "display_field_as": "Anatomical structure",
             "field_url": "",
             "field_to_use": ""
           },
           {
             "field_to_display": "disease_status",
-            "display_field_as": "Disease_status",
+            "display_field_as": "Disease status",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "tissue_annotation",
+            "display_field_as": "Tissue annotation",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "assay_summary",
+            "display_field_as": "Assay summary",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "cluster_annotation",
+            "display_field_as": "Cluster annotation",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "embedding",
+            "display_field_as": "Embedding",
             "field_url": "",
             "field_to_use": ""
           },
           {
             "field_to_display": "cell_count",
-            "display_field_as": "Cell_count",
+            "display_field_as": "Cell count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "filtered_cell_count",
+            "display_field_as": "Filtered cell count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "donor_id_count",
+            "display_field_as": "Donor count",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "mean_f_beta_score",
+            "display_field_as": "Mean F-beta score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "median_of_f_beta_scores",
+            "display_field_as": "Median F-beta score",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "mean_silhouette",
+            "display_field_as": "Mean silhouette",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "standard_deviation_of_silhouette",
+            "display_field_as": "Silhouette standard deviation",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "dataset_identifier",
+            "display_field_as": "Dataset identifier",
             "field_url": "",
             "field_to_use": ""
           },
           {
             "field_to_display": "collection_id",
-            "display_field_as": "Collection_id",
-            "field_url": "",
-            "field_to_use": ""
-          },
-          {
-            "field_to_display": "cellxgene_collection",
-            "display_field_as": "CELLxGENE_collection",
-            "field_url": "https://<FIELD_TO_USE>",
-            "field_to_use": "cellxgene_collection"
-          },
-          {
-            "field_to_display": "dataset_identifier",
-            "display_field_as": "Dataset_identifier",
+            "display_field_as": "Collection ID",
             "field_url": "",
             "field_to_use": ""
           },
           {
             "field_to_display": "cellxgene_dataset",
-            "display_field_as": "CELLxGENE_dataset",
+            "display_field_as": "CELLxGENE dataset",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_dataset"
+          },
+          {
+            "field_to_display": "cellxgene_collection",
+            "display_field_as": "CELLxGENE collection",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "cellxgene_collection"
+          },
+          {
+            "field_to_display": "publication",
+            "display_field_as": "Publication (DOI)",
+            "field_url": "https://doi.org/<FIELD_TO_USE>",
+            "field_to_use": "publication"
           }
         ],
         "more_info": "Single cell datasets"
@@ -1112,7 +1296,6 @@
             "field_url": "",
             "field_to_use": ""
           },
-
           {
             "field_to_display": "definition",
             "display_field_as": "Definition",

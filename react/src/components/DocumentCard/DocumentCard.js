@@ -1,4 +1,4 @@
-import { getDisplayFields, getUrl } from "utils";
+import { formatFieldValue, getDisplayFields, getUrl } from "utils";
 
 /**
  * Renders structured card for single document.
@@ -10,21 +10,6 @@ const DocumentCard = ({ document }) => {
   const url = getUrl(document);
   const legendContent = document._id.replace("/", "_");
   const displayFields = getDisplayFields(document);
-
-  /**
-   * Formats attribute value for display in table cell.
-   * Handles boolean, array, and object types appropriately.
-   * @param {*} value - The value to format.
-   * @returns {string} Formatted value for rendering.
-   */
-  const formatValue = (value) => {
-    if (typeof value === "boolean") return value.toString();
-    if (Array.isArray(value)) return value.join(", ");
-    if (value !== null && typeof value === "object") {
-      return JSON.stringify(value, null, 2);
-    }
-    return value;
-  };
 
   return (
     <div className="document-item-list-wrapper inspector-overview">
@@ -60,10 +45,10 @@ const DocumentCard = ({ document }) => {
                       rel="noopener noreferrer"
                       className="external-link"
                     >
-                      {formatValue(field.value)}
+                      {formatFieldValue(field.value)}
                     </a>
                   ) : (
-                    formatValue(field.value)
+                    formatFieldValue(field.value)
                   )}
                 </td>
               </tr>

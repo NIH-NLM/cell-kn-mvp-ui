@@ -30,6 +30,46 @@ export const capitalCase = (input) => {
 };
 
 /**
+ * Numeric values arrive from the graph as strings, often at full float precision
+ * (e.g. "0.6556691514777705"). Matches plain integers and decimals only, so
+ * identifiers, DOIs and CURIEs are left untouched.
+ */
+const PLAIN_NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?$/;
+
+/**
+ * Format a document attribute value for display.
+ * Joins arrays, serialises objects, and renders numbers readably: large integers
+ * get thousands separators, decimals are rounded to three places. Four digit
+ * integers are left as-is so years are not rendered as "2,021".
+ * @param {*} value - Raw attribute value.
+ * @returns {string} Display-ready value.
+ */
+export const formatFieldValue = (value) => {
+  if (typeof value === "boolean") return value.toString();
+  if (Array.isArray(value)) return value.map(formatFieldValue).join(", ");
+  if (value !== null && typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+
+  const asString = typeof value === "number" ? String(value) : value;
+  if (typeof asString !== "string" || !PLAIN_NUMBER.test(asString)) {
+    return value;
+  }
+
+  const asNumber = Number(asString);
+  if (Number.isInteger(asNumber)) {
+    return Math.abs(asNumber) >= 10000 ? asNumber.toLocaleString("en-US") : asString;
+  }
+
+  // Values below the rounding threshold would collapse to "0", so keep
+  // significant digits instead.
+  if (asNumber !== 0 && Math.abs(asNumber) < 0.001) {
+    return String(Number(asNumber.toPrecision(3)));
+  }
+  return String(Number(asNumber.toFixed(3)));
+};
+
+/**
  * Truncate a string to a maximum length with ellipsis.
  * @param {string} text - Text to truncate.
  * @param {number} maxLength - Maximum length.

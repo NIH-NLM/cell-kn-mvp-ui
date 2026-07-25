@@ -163,7 +163,22 @@ export const getDisplayFields = (item) => {
         if (config.field_url && config.field_to_use) {
           const urlValue = item[config.field_to_use];
           if (urlValue !== null && urlValue !== undefined) {
-            fieldUrl = config.field_url.replace("<FIELD_TO_USE>", urlValue);
+            let replacement = String(urlValue);
+
+            // CURIEs such as "CL:0002399" need rewriting to "CL_0002399"
+            // before they can be appended to an ontology base URL.
+            if (config.to_be_replaced) {
+              replacement = replacement.replaceAll(
+                config.to_be_replaced,
+                config.replace_with || "",
+              );
+            }
+
+            if (config.make_lower_case) {
+              replacement = replacement.toLowerCase();
+            }
+
+            fieldUrl = config.field_url.replace("<FIELD_TO_USE>", replacement);
           }
         }
 
