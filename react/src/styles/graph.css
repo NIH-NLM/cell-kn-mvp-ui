@@ -408,14 +408,50 @@ g.node.pinned .node-pin-marker path {
   right: 16px;
 }
 
+/* Bottom-right canvas action group: full screen (disabled), lasso, download. */
+.graph-canvas-actions {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.graph-canvas-actions .graph-canvas-icon-button {
+  position: static;
+}
+/* Full screen isn't enabled yet — dim it, but keep it clickable for the notice. */
+.graph-canvas-fullscreen[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Lasso armed — distinct focus accent (matches the old lasso-active treatment). */
+.graph-canvas-lasso.active {
+  background-color: var(--color-focus);
+}
+.graph-canvas-disabled-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  padding: 6px 10px;
+  background-color: var(--color-primary-darkest);
+  color: var(--color-white);
+  font-size: 12px;
+  line-height: 16px;
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+
 /* Options collapse handle on the panel's left edge (Figma "Close arrow" 682:3573):
    light-gray tab with a right chevron, attached to the panel boundary. */
 .options-collapse-arrow {
   position: absolute;
   top: 8px;
-  /* Reach across the graph-main-area right margin (10px) + panel left margin
-     (--spacing-lg) so the tab attaches to the panel's left edge. */
-  right: calc(-10px - var(--spacing-lg));
+  /* Tuck the tab flush against the panel's left edge (its right edge meets the
+     panel). Offset measured across the graph-main-area + panel margins. */
+  right: -50px;
   z-index: 15;
   display: flex;
   align-items: center;
@@ -676,15 +712,157 @@ g.node.pinned .node-pin-marker path {
   border-collapse: collapse;
 }
 
+/* Flat fallback table — same flat, hairline-divider, Figma-coloured rows as the
+   sectioned inspector (overrides the global tr:nth-of-type(even) striping). */
+.inspector-overview .document-attributes-table tr {
+  background-color: transparent;
+}
+.inspector-overview .document-attributes-table td {
+  border-bottom: 0.4px solid #f2f3f7;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.inspector-overview .document-attributes-table tr:last-child td {
+  border-bottom: none;
+}
 .inspector-overview .document-attributes-table .attribute-key {
-  color: var(--color-text-muted);
+  color: var(--color-gray); /* #5B616B */
   font-weight: 500;
-  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  padding-right: var(--spacing-sm);
   vertical-align: top;
 }
 
 .inspector-overview .document-attributes-table .attribute-value {
-  padding: var(--spacing-xs) 0;
+  color: var(--color-base); /* #212121 */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+
+/* Sectioned Inspector Card */
+
+.inspector-card {
+  background: var(--color-white); /* #FEFEFE */
+  border: 1px solid #e9edf0; /* untokenized */
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 12px;
+}
+.inspector-card-title {
+  color: var(--color-base); /* #212121 */
+  font-weight: 500; /* Roboto Medium */
+  font-size: 12px;
+  line-height: 1.125;
+  margin: 0;
+}
+.inspector-section {
+  background: #f7fbfd; /* untokenized section surface */
+  border: 0.4px solid #f2f3f7; /* untokenized */
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inspector-section-title {
+  color: var(--color-gray-dark); /* #323A45 */
+  font-weight: 500; /* Roboto Medium */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+.inspector-section-description {
+  color: var(--color-gray); /* #5B616B */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+/* Field rows within a section: label #5B616B, value #212121, both 12px; hairline divider. */
+.inspector-section .document-attributes-table {
+  width: 100%;
+}
+.inspector-section .attribute-key {
+  color: var(--color-gray); /* #5B616B */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+.inspector-section .attribute-value {
+  color: var(--color-base); /* #212121 */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+/* Flat rows to match Figma 682:3499: no zebra striping (overrides the global
+   tr:nth-of-type(even) rule), thin #F2F3F7 hairline dividers, tight vertical
+   padding. Horizontal label/value spacing is left to the base table rules. */
+.inspector-section .document-attributes-table tr {
+  background-color: transparent;
+}
+.inspector-section .document-attributes-table td {
+  border-bottom: 0.4px solid #f2f3f7;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.inspector-section .document-attributes-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Inspector FTU illustration */
+
+.inspector-ftu {
+  width: 100%;
+}
+.inspector-ftu :is(svg, img, canvas, hra-medical-illustration) {
+  max-width: 100%;
+  height: auto;
+}
+.inspector-ftu .max-height-limited {
+  height: 220px;
+}
+
+/* Learn & Explore footer */
+
+.learn-explore {
+  border: 0.4px solid #f2f3f7; /* untokenized */
+  border-radius: 4px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.learn-explore-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 0.4px solid #f2f3f7; /* hairline under the header */
+  color: var(--color-gray-dark); /* #323A45 */
+  font-weight: 500; /* Roboto Medium */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+.learn-explore-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-primary); /* #0071BC */
+  font-weight: 400; /* Roboto Regular */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  text-decoration: none; /* Figma shows no underline */
+}
+.learn-explore-link:hover {
+  text-decoration: underline; /* hover affordance only (not in the static frame) */
 }
 
 /* Desktop and up: Side-by-Side Layout */
@@ -785,11 +963,26 @@ g.node.pinned .node-pin-marker path {
 
 .graph-workspace-shelf {
   flex: 0 0 auto;
-  width: 100%;
   /* No design-token equivalent for the shelf strip's light-blue background; value taken directly from Figma */
   background: #f7fbfd;
   border-top: 1px solid var(--color-gray-lighter);
   padding: var(--spacing-sm);
+}
+
+/* History strip heading = the graph's origin (Figma Body Small 12px Medium).
+   Single-line box that ellipsis-truncates when too long, so long/multi-origin
+   titles don't wrap and disturb the strip spacing. */
+.graph-history-title {
+  margin: 0 0 8px;
+  max-width: 100%;
+  color: var(--color-gray-dark);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {

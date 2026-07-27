@@ -13,6 +13,7 @@ import DocumentPage from "./pages/DocumentPage/DocumentPage";
 import FTUExplorerPage from "./pages/FTUExplorerPage/FTUExplorerPage";
 import GraphPage from "./pages/GraphPage/GraphPage";
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
+import SchemaPage from "./pages/SchemaPage/SchemaPage";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import SunburstPage from "./pages/SunburstPage/SunburstPage";
 import TreePage from "./pages/TreePage/TreePage";
@@ -36,6 +37,7 @@ function App() {
                     <Route path="/workflow-builder" element={<WorkflowBuilderPage />} />
                     <Route path="/ftu" element={<FTUExplorerPage />} />
                     <Route path="/about" element={<AboutPage />} />
+                    <Route path="/schema" element={<SchemaPage />} />
                     <Route path="/tree" element={<TreePage />} />
                     <Route path="/sunburst" element={<SunburstPage />} />
                     <Route path="/" element={<SearchPage />} />

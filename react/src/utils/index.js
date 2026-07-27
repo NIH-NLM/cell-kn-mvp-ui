@@ -13,6 +13,7 @@ export {
   getLinkSourceText,
   getNodeExternalUrl,
   getNodeLabel,
+  getSectionedFields,
   getTitle,
   getUrl,
   NON_BROWSABLE_COLLECTIONS,

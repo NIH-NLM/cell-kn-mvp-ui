@@ -8,8 +8,8 @@ import { selectOriginHistory } from "store";
 import { getTitle } from "utils";
 
 /**
- * Host-agnostic graph workspace: left node-inspector, center force graph,
- * bottom saved-graph shelf.
+ * Host-agnostic graph workspace: left node-inspector, center force graph
+ * with the saved-graph shelf beneath it.
  *
  * The Collections host feeds it an explicit origin document. Hosts without a
  * single origin (Graph Builder, Workflow) omit `originDocument`; the inspector
@@ -69,11 +69,13 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
             title={graphTitle}
             onNodeSelect={setSelectedNodeId}
           />
+          <div className="graph-workspace-shelf">
+            {/* History heading = the graph's origin node(s). */}
+            <h3 className="graph-history-title">{graphTitle}</h3>
+            <SavedGraphShelf />
+          </div>
         </section>
       </div>
-      <footer className="graph-workspace-shelf">
-        <SavedGraphShelf />
-      </footer>
     </div>
   );
 };

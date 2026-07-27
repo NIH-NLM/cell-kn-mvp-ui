@@ -1,16 +1,67 @@
-import { formatFieldValue, getDisplayFields, getUrl } from "utils";
+import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUrl } from "utils";
 
 /**
- * Renders structured card for single document.
- * Displays document ID as link and key-value pairs from configuration.
- * @param {object} props - Component props.
+ * Renders a structured inspector card for a single document.
+ * For collections with a UI section config, renders titled Overview/Metadata/
+ * Provenance sections; otherwise renders a single flat Overview table.
+ * @param {object} props
  * @param {object} props.document - The document data object to display.
  */
 const DocumentCard = ({ document }) => {
+  const sections = getSectionedFields(document);
+
+  /**
+   * Renders a field's value, as an external link when it carries a URL.
+   * @param {object} field - { value, url }
+   */
+  const renderValue = (field) =>
+    field.url ? (
+      <a href={field.url} target="_blank" rel="noopener noreferrer" className="external-link">
+        {formatFieldValue(field.value)}
+      </a>
+    ) : (
+      formatFieldValue(field.value)
+    );
+
+  // Sectioned path (configured collections, e.g. CSD).
+  if (sections && sections.length > 0) {
+    return (
+      <div className="document-item-list-wrapper inspector-card">
+        <h3 className="inspector-card-title">{getTitle(document)}</h3>
+        {sections.map(({ section, fields }) => {
+          const descriptions = fields.filter((f) => f.variant === "description");
+          const rows = fields.filter((f) => f.variant !== "description");
+          return (
+            <section className="inspector-section" key={section}>
+              <h4 className="inspector-section-title">{section}</h4>
+              {descriptions.map((f) => (
+                <p className="inspector-section-description" key={f.key}>
+                  {formatFieldValue(f.value)}
+                </p>
+              ))}
+              {rows.length > 0 && (
+                <table className="document-attributes-table">
+                  <tbody>
+                    {rows.map((field) => (
+                      <tr key={field.key}>
+                        <td className="attribute-key wrap">{field.label}</td>
+                        <td className="attribute-value wrap">{renderValue(field)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Flat fallback (collections without a section config).
   const url = getUrl(document);
   const legendContent = document._id.replace("/", "_");
   const displayFields = getDisplayFields(document);
-
   return (
     <div className="document-item-list-wrapper inspector-overview">
       <h3 className="inspector-overview-title">Overview</h3>
@@ -32,25 +83,10 @@ const DocumentCard = ({ document }) => {
         </legend>
         <table className="document-attributes-table">
           <tbody>
-            {/* Map over structured field data from helper function. */}
             {displayFields.map((field) => (
               <tr key={field.key}>
                 <td className="attribute-key wrap">{field.label}</td>
-                <td className="attribute-value wrap">
-                  {/* Render value as link if field-specific URL exists. */}
-                  {field.url ? (
-                    <a
-                      href={field.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="external-link"
-                    >
-                      {formatFieldValue(field.value)}
-                    </a>
-                  ) : (
-                    formatFieldValue(field.value)
-                  )}
-                </td>
+                <td className="attribute-value wrap">{renderValue(field)}</td>
               </tr>
             ))}
           </tbody>

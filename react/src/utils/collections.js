@@ -1,6 +1,7 @@
 /**
  * Collection and label utilities for processing collection data and generating labels/URLs.
  */
+import { fieldSections } from "config/fieldSections";
 import collMaps from "../assets/nlm-ckn-collection-maps.json";
 import { capitalCase } from "./strings";
 
@@ -193,6 +194,61 @@ export const getDisplayFields = (item) => {
   } catch (error) {
     console.error(`getDisplayFields failed with exception: ${error}`);
     return [];
+  }
+};
+
+/**
+ * Groups an item's fields into UI-local sidebar sections.
+ * Configured keys resolve their value/URL via getDisplayFields (DRY URLs);
+ * keys absent from the collection map resolve their plain value from the
+ * document. Empty values and empty sections are dropped.
+ * @param {object} item - Data object. Must contain `_id`.
+ * @returns {Array<{section: string, fields: Array<object>}>|null} Sections, or
+ *   null when the item's collection has no section config (caller falls back).
+ */
+export const getSectionedFields = (item) => {
+  try {
+    const itemCollection = item._id.split("/")[0];
+    const sections = fieldSections[itemCollection];
+    if (!Array.isArray(sections)) {
+      return null;
+    }
+
+    const displayFields = getDisplayFields(item);
+    const byKey = new Map(displayFields.map((f) => [f.key, f]));
+    const isPresent = (v) => v !== null && v !== undefined && v !== "";
+    const placed = new Set();
+
+    const curated = sections.map(({ section, fields }) => {
+      const resolved = fields
+        .map(({ key, label, variant }) => {
+          placed.add(key);
+          const configured = byKey.get(key);
+          return {
+            key,
+            label,
+            variant,
+            value: configured ? configured.value : item[key],
+            url: configured ? configured.url : null,
+          };
+        })
+        .filter((f) => isPresent(f.value));
+      return { section, fields: resolved };
+    });
+
+    // Show-all: every configured attribute not placed in a curated section lands
+    // in a catch-all "Additional" section, so nothing is hidden.
+    const extras = displayFields
+      .filter((f) => !placed.has(f.key) && isPresent(f.value))
+      .map((f) => ({ key: f.key, label: f.label, value: f.value, url: f.url }));
+    if (extras.length > 0) {
+      curated.push({ section: "Additional", fields: extras });
+    }
+
+    return curated.filter((s) => s.fields.length > 0);
+  } catch (error) {
+    console.error(`getSectionedFields failed with exception: ${error}`);
+    return null;
   }
 };
 

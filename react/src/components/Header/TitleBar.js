@@ -17,7 +17,7 @@ const TitleBar = () => (
       />
       <span className="app-title-wordmark">NLM Cell Knowledge Network</span>
     </div>
-    <SearchBar placeholder="Search gene, tissue, cell set, publication..." />
+    <SearchBar placeholder="Search" />
   </div>
 );
 
