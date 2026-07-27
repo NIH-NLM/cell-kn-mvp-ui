@@ -86,4 +86,34 @@ describe("DocumentCard", () => {
     // Check if array values are joined correctly in the table
     expect(screen.getByText("value1, value2")).toBeInTheDocument();
   });
+
+  it("renders section headings and the card title for a configured (CSD) document", () => {
+    const document = {
+      _id: "CSD/abc",
+      Citation: "Sikkema (2023) Nat Med",
+      dataset_identifier: "4cb45d80",
+      dataset_name: "An integrated cell atlas of the human lung.",
+      species: "Homo sapiens",
+      cell_count: 584944,
+    };
+    render(<DocumentCard document={document} />);
+    // Section headings from the config
+    expect(screen.getByText("Overview")).toBeInTheDocument();
+    expect(screen.getByText("Metadata")).toBeInTheDocument();
+    // Configured field resolved through getDisplayFields (formatFieldValue adds
+    // thousands separators to large integers)
+    expect(screen.getByText("Total Cell Count")).toBeInTheDocument();
+    expect(screen.getByText("584,944")).toBeInTheDocument();
+    // Overview description renders as text (not a label/value row)
+    expect(screen.getByText("An integrated cell atlas of the human lung.")).toBeInTheDocument();
+  });
+
+  it("falls back to the flat Overview card for a non-configured collection", () => {
+    const document = { _id: "PUB/xyz", label: "Some paper" };
+    render(<DocumentCard document={document} />);
+    expect(screen.getByText("Overview")).toBeInTheDocument();
+    // No CSD section headings for a PUB document
+    expect(screen.queryByText("Metadata")).not.toBeInTheDocument();
+    expect(screen.queryByText("Provenance")).not.toBeInTheDocument();
+  });
 });

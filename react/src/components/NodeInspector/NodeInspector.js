@@ -1,5 +1,27 @@
 import DocumentCard from "components/DocumentCard";
+import FTUIllustration from "components/FTUIllustration";
+import LearnExplore from "components/LearnExplore";
+import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
+import { useFtuParts } from "contexts";
 import { useNodeDocument } from "hooks";
+import { findFtuUrlById } from "utils";
+
+/**
+ * Derives the FTU illustration URL for a document, if one exists.
+ * @param {object|null} inspectedDocument - The document currently shown in the inspector.
+ * @param {Array|null|undefined} ftuParts - The FTU parts index from useFtuParts().
+ * @returns {string|null} The illustration URL, or null when unavailable.
+ */
+const resolveFtuUrl = (inspectedDocument, ftuParts) => {
+  if (!inspectedDocument?._id || !ftuParts || ftuParts.length === 0) {
+    return null;
+  }
+  const [coll, id] = inspectedDocument._id.split("/");
+  if (!coll || !id) {
+    return null;
+  }
+  return findFtuUrlById(ftuParts, `${coll}_${id}`);
+};
 
 /**
  * Left-panel inspector. Shows the origin document until a node is selected,
@@ -11,6 +33,7 @@ import { useNodeDocument } from "hooks";
  */
 const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
   const { document, loading, error } = useNodeDocument(selectedNodeId);
+  const { ftuParts } = useFtuParts();
 
   if (!selectedNodeId) {
     // No selection: show the origin document if the host provides one, otherwise
@@ -22,9 +45,19 @@ const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
         </div>
       );
     }
+    const ftuUrl = resolveFtuUrl(originDocument, ftuParts);
     return (
       <div className="node-inspector">
         <DocumentCard document={originDocument} />
+        {ftuUrl && (
+          <div className="inspector-ftu">
+            <FTUIllustration
+              selectedIllustration={ftuUrl}
+              illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
+            />
+          </div>
+        )}
+        <LearnExplore />
       </div>
     );
   }
@@ -47,9 +80,19 @@ const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
       </div>
     );
   }
+  const ftuUrl = resolveFtuUrl(document, ftuParts);
   return (
     <div className="node-inspector">
       <DocumentCard document={document} />
+      {ftuUrl && (
+        <div className="inspector-ftu">
+          <FTUIllustration
+            selectedIllustration={ftuUrl}
+            illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
+          />
+        </div>
+      )}
+      <LearnExplore />
     </div>
   );
 };

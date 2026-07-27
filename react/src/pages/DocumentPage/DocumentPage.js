@@ -1,23 +1,17 @@
 import collectionDefaults from "assets/collection-defaults.json";
-import Breadcrumbs from "components/Breadcrumbs";
-import FTUIllustration from "components/FTUIllustration";
 import GraphWorkspace from "components/GraphWorkspace";
-import { FTU_ILLUSTRATIONS_JSONLD_URL } from "constants/index";
-import { useFtuParts } from "contexts";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
 import { fetchDocument } from "services";
 import { initializeGraph } from "store";
-import { findFtuUrlById, getTitle, parseId } from "utils";
+import { parseId } from "utils";
 
 const DocumentPage = () => {
   const dispatch = useDispatch();
   const { coll, id } = useParams();
   const [document, setDocument] = useState(null);
   const [nodeIds, setNodeIds] = useState(null);
-
-  const { ftuParts } = useFtuParts();
 
   useEffect(() => {
     let cancelled = false;
@@ -45,14 +39,6 @@ const DocumentPage = () => {
     };
   }, [id, coll, dispatch]);
 
-  const ftuIllustrationUrl = useMemo(() => {
-    if (!document || !ftuParts || ftuParts.length === 0) {
-      return null;
-    }
-    const ftuUrl = findFtuUrlById(ftuParts, `${coll}_${id}`);
-    return ftuUrl;
-  }, [document, ftuParts, id, coll]);
-
   const forceGraphSettings = useMemo(() => {
     // Use collection-specific defaults, falling back to _defaults for unknown collections
     const collectionConfig = collectionDefaults[coll] || collectionDefaults._defaults || {};
@@ -76,12 +62,6 @@ const DocumentPage = () => {
   if (isLoading) {
     return (
       <div className="content-page-layout">
-        <Breadcrumbs
-          crumbs={[
-            { label: "Collections", path: "/collections" },
-            { label: id, path: "" },
-          ]}
-        />
         <div className="loading-message">Loading document details...</div>
       </div>
     );
@@ -90,12 +70,6 @@ const DocumentPage = () => {
   if (!document) {
     return (
       <div className="content-page-layout">
-        <Breadcrumbs
-          crumbs={[
-            { label: "Collections", path: "/collections" },
-            { label: id, path: "" },
-          ]}
-        />
         <div className="error-message">
           Document not found or failed to load. Please check the URL or try again.
         </div>
@@ -107,21 +81,9 @@ const DocumentPage = () => {
   return (
     <div className="content-page-layout document-details-page-layout">
       <div className="content-box document-details-content-box">
-        <Breadcrumbs
-          crumbs={[
-            { label: "Collections", path: "/collections" },
-            { label: getTitle(document), path: "" },
-          ]}
-        />
         <div className="document-item-header">
           {document.term && <span>Term: {document.term}</span>}{" "}
         </div>
-        {ftuIllustrationUrl && (
-          <FTUIllustration
-            selectedIllustration={ftuIllustrationUrl}
-            illustrations={FTU_ILLUSTRATIONS_JSONLD_URL}
-          />
-        )}
         <div className="document-page-main-content-area">
           <GraphWorkspace
             originDocument={document}
