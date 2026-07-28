@@ -39,8 +39,10 @@ const PLAIN_NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?$/;
 /**
  * Format a document attribute value for display.
  * Joins arrays, serialises objects, and renders numbers readably: large integers
- * get thousands separators, decimals are rounded to three places. Four digit
+ * get thousands separators, decimals are rounded to two places. Four digit
  * integers are left as-is so years are not rendered as "2,021".
+ * Exception: magnitudes below 0.01 would round away to "0", so they keep two
+ * significant digits instead and can exceed two decimals (0.004 stays "0.004").
  * @param {*} value - Raw attribute value.
  * @returns {string} Display-ready value.
  */
@@ -63,10 +65,10 @@ export const formatFieldValue = (value) => {
 
   // Values below the rounding threshold would collapse to "0", so keep
   // significant digits instead.
-  if (asNumber !== 0 && Math.abs(asNumber) < 0.001) {
-    return String(Number(asNumber.toPrecision(3)));
+  if (asNumber !== 0 && Math.abs(asNumber) < 0.01) {
+    return String(Number(asNumber.toPrecision(2)));
   }
-  return String(Number(asNumber.toFixed(3)));
+  return String(Number(asNumber.toFixed(2)));
 };
 
 /**

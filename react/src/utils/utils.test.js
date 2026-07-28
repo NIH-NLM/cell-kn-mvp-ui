@@ -336,13 +336,22 @@ describe("Utils Module", () => {
 
   // --- formatFieldValue ---
   describe("formatFieldValue", () => {
-    it("should round full-precision decimal strings to three places", () => {
-      expect(formatFieldValue("0.6556691514777705")).toBe("0.656");
+    it("should round full-precision decimal strings to two places", () => {
+      expect(formatFieldValue("0.6556691514777705")).toBe("0.66");
       expect(formatFieldValue("0.5901353591296488")).toBe("0.59");
+      expect(formatFieldValue(0.8412340000000001)).toBe("0.84");
     });
 
     it("should keep significant digits for values below the rounding threshold", () => {
-      expect(formatFieldValue("0.0000123456")).toBe("0.0000123");
+      expect(formatFieldValue("0.0000123456")).toBe("0.000012");
+      expect(formatFieldValue("0.004")).toBe("0.004");
+      expect(formatFieldValue("-0.004")).toBe("-0.004");
+      expect(formatFieldValue("0.009")).toBe("0.009");
+    });
+
+    it("should round at the threshold itself", () => {
+      expect(formatFieldValue("0.01")).toBe("0.01");
+      expect(formatFieldValue("0.014")).toBe("0.01");
     });
 
     it("should add thousands separators to large integers only", () => {
