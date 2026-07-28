@@ -961,6 +961,39 @@ g.node.pinned .node-pin-marker path {
   padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
+.graph-workspace-canvas-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px 0;
+}
+
+.origins-toggle-button {
+  border: 1px solid var(--color-gray-lightest, #f1f1f1);
+  background: var(--color-white, #ffffff);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--color-primary-darkest, #112e51);
+}
+
+.origins-toggle-button[aria-pressed="true"] {
+  background: var(--color-primary, #0071bc);
+  color: var(--color-white, #ffffff);
+  border-color: var(--color-primary, #0071bc);
+}
+
+.graph-workspace-canvas-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.graph-workspace-canvas-body > .graph-component-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
 .graph-workspace-shelf {
   flex: 0 0 auto;
   /* No design-token equivalent for the shelf strip's light-blue background; value taken directly from Figma */

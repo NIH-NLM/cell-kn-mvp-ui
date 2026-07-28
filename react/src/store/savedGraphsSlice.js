@@ -51,6 +51,16 @@ const savedGraphsSlice = createSlice({
       state.originHistory = state.originHistory.filter((h) => h.id !== action.payload);
       if (state.activeHistoryId === action.payload) state.activeHistoryId = null;
     },
+    // Refreshes an existing history entry's captured graph (and optionally its
+    // thumbnail) so it holds the most recent version rather than a stale
+    // first-resolve snapshot. No-op if the entry no longer exists.
+    updateHistoryEntry: (state, action) => {
+      const { id, subgraph, thumbnail } = action.payload;
+      const entry = state.originHistory.find((h) => h.id === id);
+      if (!entry) return;
+      if (subgraph) entry.subgraph = subgraph;
+      if (thumbnail !== undefined) entry.thumbnail = thumbnail;
+    },
     setActiveHistory: (state, action) => {
       state.activeHistoryId = action.payload;
     },
@@ -64,6 +74,7 @@ export const {
   addHistoryEntry,
   deleteHistoryEntry,
   setActiveHistory,
+  updateHistoryEntry,
 } = savedGraphsSlice.actions;
 
 // Stable empty reference so the fallback doesn't churn selector identity.
@@ -98,6 +109,19 @@ export const restoreHistoryEntry = (id) => (dispatch, getState) => {
   if (!entry) return;
   dispatch(setGraphData({ graphData: entry.subgraph, isRestore: true, skipUndo: true }));
   dispatch(setActiveHistory(id));
+};
+
+/**
+ * Keeps the currently active history entry's captured graph and thumbnail in
+ * sync with the live graph, so restoring it later shows the most recent version
+ * instead of the first-resolve snapshot. No-op when no entry is active.
+ * @param {{ nodes: Array, links: Array }} subgraph
+ * @param {string|null} [thumbnail]
+ */
+export const syncActiveHistoryEntry = (subgraph, thumbnail) => (dispatch, getState) => {
+  const activeId = getState().savedGraphs.activeHistoryId;
+  if (!activeId) return;
+  dispatch(updateHistoryEntry({ id: activeId, subgraph, thumbnail }));
 };
 
 export default savedGraphsSlice.reducer;

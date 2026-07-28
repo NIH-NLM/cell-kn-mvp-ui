@@ -275,8 +275,8 @@ test("Graph export buttons exist and trigger download", async ({ page }) => {
   // Wait for results
   await page.locator(".unified-search-results-list").waitFor({ state: "visible" });
 
-  // Add to Graph
-  await page.getByTitle("Add to Graph").first().click();
+  // Add as origin
+  await page.getByTitle("Add as origin").first().click();
 
   // Go to Graph Page
   await page.goto("/#/graph");

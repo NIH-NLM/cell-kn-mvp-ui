@@ -1,5 +1,6 @@
 // Graph slice actions and thunks
 export {
+  addOriginNode,
   addToLassoSelection,
   clearAllPins,
   clearGraphData,
@@ -14,6 +15,8 @@ export {
   initializeGraph,
   loadGraph,
   loadGraphFromJson,
+  pruneOrigins,
+  removeOriginNode,
   setAllCollections,
   setAvailableCollections,
   setEdgeFilterMode,
@@ -50,6 +53,8 @@ export {
   selectSavedGraphs,
   setActiveGraph as setActiveSavedGraph,
   setActiveHistory,
+  syncActiveHistoryEntry,
+  updateHistoryEntry,
 } from "./savedGraphsSlice";
 // Store configuration
 export { persistor, store } from "./store";

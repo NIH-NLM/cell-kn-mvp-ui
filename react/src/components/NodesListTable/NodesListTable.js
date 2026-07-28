@@ -38,7 +38,7 @@ const NodeListTable = () => {
 
   return (
     <div className="node-list-container">
-      <h3>Nodes Added to Graph</h3>
+      <h3>Origin Nodes</h3>
       <table className="node-list-table">
         <thead>
           <tr>

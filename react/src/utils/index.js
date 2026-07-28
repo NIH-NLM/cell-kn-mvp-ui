@@ -28,6 +28,8 @@ export {
 } from "./colors";
 // Shared components
 export { LoadingBar } from "./components";
+// Compositional graph helper
+export { composeGraph } from "./composeGraph";
 // CSV and file download utilities
 export { downloadBlob, downloadFile, generateCsv } from "./csvHelpers";
 // FTU utilities

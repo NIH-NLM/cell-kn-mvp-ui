@@ -1,5 +1,6 @@
 import ForceGraph from "components/ForceGraph/ForceGraph";
 import NodeInspector from "components/NodeInspector";
+import OriginsSidebar from "components/OriginsSidebar";
 import SavedGraphShelf from "components/SavedGraphShelf";
 import { useNodeDocument } from "hooks";
 import { useState } from "react";
@@ -27,6 +28,7 @@ import { getTitle } from "utils";
  */
 const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [isOriginsOpen, setIsOriginsOpen] = useState(false);
   const originNodeIds = useSelector((state) => state.graph.present.originNodeIds);
   const originHistory = useSelector(selectOriginHistory);
   const activeHistoryId = useSelector((state) => state.savedGraphs.activeHistoryId);
@@ -63,12 +65,25 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
           <NodeInspector selectedNodeId={inspectedNodeId} originDocument={currentOriginDoc} />
         </aside>
         <section className="graph-workspace-canvas">
-          <ForceGraph
-            nodeIds={nodeIds}
-            settings={settings}
-            title={graphTitle}
-            onNodeSelect={setSelectedNodeId}
-          />
+          <div className="graph-workspace-canvas-toolbar">
+            <button
+              type="button"
+              className="origins-toggle-button"
+              onClick={() => setIsOriginsOpen((open) => !open)}
+              aria-pressed={isOriginsOpen}
+            >
+              Origins
+            </button>
+          </div>
+          <div className="graph-workspace-canvas-body">
+            <ForceGraph
+              nodeIds={nodeIds}
+              settings={settings}
+              title={graphTitle}
+              onNodeSelect={setSelectedNodeId}
+            />
+            <OriginsSidebar isOpen={isOriginsOpen} onClose={() => setIsOriginsOpen(false)} />
+          </div>
           <div className="graph-workspace-shelf">
             {/* History heading = the graph's origin node(s). */}
             <h3 className="graph-history-title">{graphTitle}</h3>
