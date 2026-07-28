@@ -11,6 +11,7 @@ import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   collectionConfigMap,
   downloadFile,
+  formatFieldValue as formatScalarValue,
   generateCsv,
   getCollectionColor,
   getCollectionDisplayName,
@@ -21,17 +22,20 @@ import {
 
 /**
  * Format a field value for display (handles arrays, objects, etc.)
+ * Scalars are delegated to the shared formatter so numbers round consistently
+ * with the document inspector.
  */
 const formatFieldValue = (value) => {
   if (value === null || value === undefined) return "-";
   if (Array.isArray(value)) {
-    return value.length > 3
-      ? `${value.slice(0, 3).join(", ")}... (+${value.length - 3})`
-      : value.join(", ");
+    const formatted = value.map(formatScalarValue);
+    return formatted.length > 3
+      ? `${formatted.slice(0, 3).join(", ")}... (+${formatted.length - 3})`
+      : formatted.join(", ");
   }
   if (typeof value === "object") return JSON.stringify(value);
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
+  return String(formatScalarValue(value));
 };
 
 /** Fields to skip when generating nodes CSV. */
