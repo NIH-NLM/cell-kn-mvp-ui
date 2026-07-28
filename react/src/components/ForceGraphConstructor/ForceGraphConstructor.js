@@ -1043,6 +1043,21 @@ function ForceGraphConstructor(
     );
   }
 
+  // Updates which nodes are treated as origins and redraws their donut markers
+  // in place. Needed after a compositional add/remove-origin changes the origin
+  // set: the merged graph keeps existing node elements, so a promoted node
+  // gains its donut and a demoted one loses it without a full rebuild.
+  function setOriginNodeIds(ids) {
+    mergedOptions.originNodeIds = ids || [];
+    toggleFocusNodeRendering(
+      d3,
+      nodeContainer,
+      mergedOptions.useFocusNodes,
+      mergedOptions.originNodeIds,
+      mergedOptions.nodeRadius,
+    );
+  }
+
   // Expose public API for graph manipulation.
   return {
     updateGraph,
@@ -1051,6 +1066,7 @@ function ForceGraphConstructor(
     updateLinkFontSize,
     toggleLabels,
     toggleFocusNodes,
+    setOriginNodeIds,
     centerOnNode,
     resize,
     isDragging: () => activeDrags > 0,

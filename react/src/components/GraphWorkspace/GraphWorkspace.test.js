@@ -184,4 +184,14 @@ describe("GraphWorkspace", () => {
     expect(inspector).toHaveAttribute("data-origin", "CS/pending");
     expect(inspector).toHaveAttribute("data-selected", "");
   });
+
+  it("toggles the origins panel open and closed", () => {
+    renderWorkspace();
+    // Panel starts closed.
+    expect(screen.queryByRole("complementary", { name: /current origins/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^origins$/i }));
+    expect(screen.getByRole("complementary", { name: /current origins/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /close origins panel/i }));
+    expect(screen.queryByRole("complementary", { name: /current origins/i })).toBeNull();
+  });
 });

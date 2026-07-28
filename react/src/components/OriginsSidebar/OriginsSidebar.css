@@ -1,0 +1,77 @@
+.origins-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 260px;
+  padding: 16px;
+  background: var(--color-white, #ffffff);
+  border-left: 1px solid var(--color-gray-lightest, #f1f1f1);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+.origins-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.origins-sidebar-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary-darkest, #112e51);
+}
+
+.origins-sidebar-close {
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-gray, #5b616b);
+}
+
+.origins-sidebar-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-gray, #5b616b);
+}
+
+.origins-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.origins-sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-gray-lightest, #f1f1f1);
+  border-radius: 4px;
+}
+
+.origins-sidebar-label {
+  font-size: 14px;
+  color: var(--color-base, #212121);
+  /* min-width:0 lets the label shrink inside the flex row so the ellipsis
+     engages instead of a long label pushing the Remove control out of view. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.origins-sidebar-remove {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-primary, #0071bc);
+}

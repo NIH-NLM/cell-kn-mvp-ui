@@ -17,11 +17,80 @@ import {
 } from "../constants";
 import {
   fetchEdgeFilterOptions as fetchEdgeFilterOptionsAPI,
+  fetchEdgesBetween,
   fetchGraphData,
   fetchNodeExpansion,
 } from "../services";
-import { getFilterableEdgeFields, performSetOperation } from "../utils";
+import { composeGraph, getFilterableEdgeFields, performSetOperation } from "../utils";
 import { splitEdgeFiltersByMode } from "../utils/edgeFilters";
+
+/**
+ * Compose the union of the current origins' subgraphs and fill in cross-origin
+ * connecting edges via the edges-between scan. Deduped by id. Pure of Redux —
+ * takes the pieces it needs so both thunks share one path.
+ *
+ * @param {string[]} originNodeIds
+ * @param {{ [id]: { nodes, links } }} originSubgraphs
+ * @param {{ graphType: string, edgeFilters: object, excludeEdgeFilters: object }} query
+ * @returns {Promise<{ nodes: object[], links: object[] }>}
+ */
+async function composeWithCrossOriginEdges(originNodeIds, originSubgraphs, query) {
+  const composed = composeGraph(originNodeIds, originSubgraphs);
+  const nodeIds = composed.nodes.map((n) => n._id ?? n.id);
+  const crossEdges = await fetchEdgesBetween(
+    nodeIds,
+    query.graphType,
+    query.edgeFilters,
+    query.excludeEdgeFilters,
+  );
+
+  const linkById = new Map(composed.links.map((l) => [l._id ?? `${l._from}-${l._to}`, l]));
+  for (const edge of crossEdges || []) {
+    const id = edge._id ?? `${edge._from}-${edge._to}`;
+    if (id != null && !linkById.has(id)) {
+      linkById.set(id, edge);
+    }
+  }
+  return { nodes: composed.nodes, links: Array.from(linkById.values()) };
+}
+
+/**
+ * Ensure every id in `originIds` has a captured subgraph, fetching the
+ * neighborhood for any that are missing (e.g. after a history restore/load
+ * cleared originSubgraphs). Returns a new subgraphs map covering all ids so
+ * composeGraph never recomposes over stale/partial data.
+ *
+ * When a fetched neighborhood omits its own seed node, fall back to the live
+ * rendered node from `existingNodes` (which carries the full document —
+ * collection, label, position) before resorting to a bare `{ _id }` stub, so
+ * a healed origin never contributes a display-less node to the composed graph.
+ */
+async function ensureOriginSubgraphs(originIds, subgraphs, settings, existingNodes = []) {
+  const { include, exclude } = splitEdgeFiltersByMode(
+    settings.edgeFilters,
+    settings.edgeFilterModes,
+  );
+  const result = { ...subgraphs };
+  for (const id of originIds) {
+    if (result[id]) continue;
+    const expansion = await fetchNodeExpansion(
+      id,
+      settings.graphType,
+      settings.allowedCollections,
+      settings.includeInterNodeEdges ?? true,
+      include,
+      exclude,
+    );
+    const fetched = expansion?.[id] ?? { nodes: [], links: [] };
+    const nodes = [...(fetched.nodes || [])];
+    if (!nodes.some((n) => (n._id ?? n.id) === id)) {
+      const existing = existingNodes.find((n) => (n._id ?? n.id) === id);
+      nodes.push(existing ?? { _id: id });
+    }
+    result[id] = { nodes, links: fetched.links || [] };
+  }
+  return result;
+}
 
 // Async thunk for fetching graph data.
 export const fetchAndProcessGraph = createAsyncThunk(
@@ -133,6 +202,111 @@ export const expandNode = createAsyncThunk(
   },
 );
 
+// Adds a node as a live origin: fetches its neighborhood, stores it as that
+// origin's subgraph, recomposes the union, fills cross-origin edges, and
+// returns the composed graph for the fulfilled reducer to apply. No full
+// re-query of the other origins.
+export const addOriginNode = createAsyncThunk(
+  "graph/addOriginNode",
+  async (nodeId, { getState }) => {
+    const { settings, originNodeIds, originSubgraphs, graphData } = getState().graph.present;
+    const { include, exclude } = splitEdgeFiltersByMode(
+      settings.edgeFilters,
+      settings.edgeFilterModes,
+    );
+
+    const expansion = await fetchNodeExpansion(
+      nodeId,
+      settings.graphType,
+      settings.allowedCollections,
+      settings.includeInterNodeEdges ?? true,
+      include,
+      exclude,
+    );
+    const fetched = expansion?.[nodeId] ?? { nodes: [], links: [] };
+
+    // Guarantee the origin node itself is in its subgraph even if the
+    // neighborhood query omits the seed — fall back to the node already in the
+    // live graph (this thunk is invoked on a node already rendered).
+    const subgraphNodes = [...(fetched.nodes || [])];
+    const hasOrigin = subgraphNodes.some((n) => (n._id ?? n.id) === nodeId);
+    if (!hasOrigin) {
+      const existing = graphData.nodes.find((n) => (n._id ?? n.id) === nodeId);
+      if (existing) subgraphNodes.push(existing);
+    }
+    const subgraph = { nodes: subgraphNodes, links: fetched.links || [] };
+
+    const nextOriginIds = originNodeIds.includes(nodeId)
+      ? originNodeIds
+      : [...originNodeIds, nodeId];
+    const nextSubgraphs = { ...originSubgraphs, [nodeId]: subgraph };
+
+    const healedSubgraphs = await ensureOriginSubgraphs(
+      nextOriginIds,
+      nextSubgraphs,
+      settings,
+      graphData.nodes,
+    );
+    const graph = await composeWithCrossOriginEdges(nextOriginIds, healedSubgraphs, {
+      graphType: settings.graphType,
+      edgeFilters: include,
+      excludeEdgeFilters: exclude,
+    });
+
+    return {
+      nodeId,
+      originSubgraphs: healedSubgraphs,
+      originNodeIds: nextOriginIds,
+      graphData: graph,
+    };
+  },
+);
+
+// Removes a node from the live origins: drops its subgraph, recomposes over the
+// remaining origins (shared nodes survive, this origin's unshared nodes drop),
+// and refills cross-origin edges. No re-query of the surviving origins.
+export const removeOriginNode = createAsyncThunk(
+  "graph/removeOriginNode",
+  async (nodeId, { getState }) => {
+    const { settings, originNodeIds, originSubgraphs, graphData } = getState().graph.present;
+    const { include, exclude } = splitEdgeFiltersByMode(
+      settings.edgeFilters,
+      settings.edgeFilterModes,
+    );
+
+    const nextOriginIds = originNodeIds.filter((id) => id !== nodeId);
+    const nextSubgraphs = { ...originSubgraphs };
+    delete nextSubgraphs[nodeId];
+
+    if (nextOriginIds.length === 0) {
+      return {
+        nodeId,
+        originNodeIds: [],
+        graphData: { nodes: [], links: [] },
+      };
+    }
+
+    const healedSubgraphs = await ensureOriginSubgraphs(
+      nextOriginIds,
+      nextSubgraphs,
+      settings,
+      graphData.nodes,
+    );
+    const graph = await composeWithCrossOriginEdges(nextOriginIds, healedSubgraphs, {
+      graphType: settings.graphType,
+      edgeFilters: include,
+      excludeEdgeFilters: exclude,
+    });
+
+    return {
+      nodeId,
+      originSubgraphs: healedSubgraphs,
+      originNodeIds: nextOriginIds,
+      graphData: graph,
+    };
+  },
+);
+
 // Initial state for graph slice.
 const initialState = {
   // User-configurable settings for graph generation and appearance.
@@ -168,6 +342,8 @@ const initialState = {
   lastAppliedSettings: null,
   // Core graph data and state.
   originNodeIds: [], // Initial nodes for graph query.
+  // Per-origin captured neighborhoods; the live graph is their client-side union.
+  originSubgraphs: {},
   rawData: {}, // Unprocessed data directly from API.
   graphData: {
     // Processed data with positions, ready for D3.
@@ -214,6 +390,11 @@ const graphSlice = createSlice({
       if (action.payload.graphData) {
         state.graphData = action.payload.graphData;
         state.rawData = action.payload.graphData;
+        // A restore/replace of graphData invalidates any previously captured
+        // per-origin subgraphs — they described the pre-restore composition.
+        // Reset here so a later add/remove-origin recomposes over fresh data
+        // instead of stale or partial subgraphs.
+        state.originSubgraphs = {};
         if (action.payload.originNodeIds) {
           state.originNodeIds = action.payload.originNodeIds;
           state.lastAppliedOriginNodeIds = action.payload.originNodeIds;
@@ -239,6 +420,12 @@ const graphSlice = createSlice({
           } catch (_err) {
             state.lastAppliedSettings = { ...state.settings };
           }
+        } else if (action.payload.isRestore) {
+          // A history restore replaces graphData without carrying origins;
+          // clear the live origins so the OriginsSidebar doesn't list phantom
+          // origins from the pre-restore composition (matches loadGraphFromJson).
+          state.originNodeIds = [];
+          state.lastAppliedOriginNodeIds = [];
         }
       } else {
         const graphData = action.payload.nodes
@@ -265,6 +452,7 @@ const graphSlice = createSlice({
       state.graphData = { nodes: [], links: [] };
       state.rawData = {};
       state.originNodeIds = [];
+      state.originSubgraphs = {};
       state.source = null;
       state.lassoSelectedNodeIds = [];
       state.lastActionType = null;
@@ -273,6 +461,7 @@ const graphSlice = createSlice({
     initializeGraph: (state, action) => {
       const { nodeIds, isAdvancedMode, perNodeSettings } = action.payload;
       state.originNodeIds = nodeIds;
+      state.originSubgraphs = {};
       state.lastAppliedOriginNodeIds = nodeIds;
 
       // Store the advanced mode configuration that will be used for the fetch.
@@ -398,6 +587,7 @@ const graphSlice = createSlice({
     loadGraph: (state, action) => {
       const { originNodeIds, settings, graphData } = action.payload;
       state.originNodeIds = originNodeIds;
+      state.originSubgraphs = {};
       state.settings = settings;
       state.graphData = graphData;
       state.status = GRAPH_STATUS.SUCCEEDED;
@@ -419,6 +609,7 @@ const graphSlice = createSlice({
 
       // Since the file doesn't specify origin nodes, assume no origin nodes
       state.originNodeIds = [];
+      state.originSubgraphs = {};
       state.lastAppliedOriginNodeIds = [];
 
       // Reset settings to a default state.
@@ -507,6 +698,19 @@ const graphSlice = createSlice({
       }
       state.lastActionType = "clearAllPins";
     },
+    // Removes node ids from the compositional origin bookkeeping without
+    // recomposing. Used when nodes are deleted from the view directly (context
+    // menu "Remove Node", lasso bulk delete) so a later add/remove-origin
+    // recompose can't resurrect a node the user already deleted.
+    pruneOrigins: (state, action) => {
+      const ids = new Set(action.payload || []);
+      if (ids.size === 0) return;
+      state.originNodeIds = state.originNodeIds.filter((id) => !ids.has(id));
+      for (const id of ids) {
+        delete state.originSubgraphs[id];
+      }
+      state.lastActionType = "pruneOrigins";
+    },
   },
   // Reducers for handling async thunk lifecycle actions.
   extraReducers: (builder) => {
@@ -538,6 +742,20 @@ const graphSlice = createSlice({
         }
 
         state.rawData = action.payload;
+        // Capture each origin's neighborhood so the compositional add/remove-origin
+        // flow can recompose from a graph built by the ordinary bulk fetch, not
+        // only from graphs assembled via "Add as origin". The standard-traversal
+        // payload is keyed by origin id; shortest-path/advanced payloads are not,
+        // so we leave originSubgraphs empty for those.
+        const capturedSubgraphs = {};
+        if (!state.settings.findShortestPaths && !state.isAdvancedMode && action.payload) {
+          for (const id of state.originNodeIds) {
+            if (action.payload[id]) {
+              capturedSubgraphs[id] = action.payload[id];
+            }
+          }
+        }
+        state.originSubgraphs = capturedSubgraphs;
         state.lastActionType = "fetch/fulfilled";
       })
       .addCase(fetchAndProcessGraph.rejected, (state, action) => {
@@ -599,6 +817,40 @@ const graphSlice = createSlice({
         console.error("Expansion failed:", action.error.message);
         state.status = GRAPH_STATUS.FAILED;
         state.lastActionType = "expand/rejected";
+      })
+      // Reducers for compositional origin add.
+      .addCase(addOriginNode.fulfilled, (state, action) => {
+        const { originSubgraphs, originNodeIds, graphData } = action.payload;
+        state.originSubgraphs = originSubgraphs;
+        state.originNodeIds = originNodeIds;
+        state.graphData = graphData;
+        state.rawData = graphData;
+        state.status = GRAPH_STATUS.SUCCEEDED;
+        state.lastActionType = "recompose/add";
+      })
+      .addCase(addOriginNode.rejected, (state, action) => {
+        state.status = GRAPH_STATUS.FAILED;
+        state.error = action.error.message;
+        state.lastActionType = "recompose/rejected";
+      })
+      // Reducers for compositional origin remove.
+      .addCase(removeOriginNode.fulfilled, (state, action) => {
+        const { originNodeIds, graphData, originSubgraphs } = action.payload;
+        if (originSubgraphs) {
+          state.originSubgraphs = originSubgraphs;
+        } else {
+          state.originSubgraphs = {};
+        }
+        state.originNodeIds = originNodeIds;
+        state.graphData = graphData;
+        state.rawData = graphData;
+        state.status = GRAPH_STATUS.SUCCEEDED;
+        state.lastActionType = "recompose/remove";
+      })
+      .addCase(removeOriginNode.rejected, (state, action) => {
+        state.status = GRAPH_STATUS.FAILED;
+        state.error = action.error.message;
+        state.lastActionType = "recompose/rejected";
       });
   },
 });
@@ -628,6 +880,7 @@ export const {
   clearLassoSelection,
   syncSettingsToLastApplied,
   clearAllPins,
+  pruneOrigins,
 } = graphSlice.actions;
 
 // Wrap base reducer with redux-undo.
@@ -650,7 +903,9 @@ const undoableGraphReducer = undoable(graphSlice.reducer, {
       action.type === setGraphData.type ||
       action.type === updateNodePosition.type ||
       action.type === updateNodePositions.type ||
-      action.type === expandNode.fulfilled.type
+      action.type === expandNode.fulfilled.type ||
+      action.type === addOriginNode.fulfilled.type ||
+      action.type === removeOriginNode.fulfilled.type
     );
   },
   ignoreInitialState: true,

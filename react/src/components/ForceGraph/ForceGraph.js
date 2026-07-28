@@ -1,15 +1,16 @@
 import collMaps from "assets/nlm-ckn-collection-maps.json";
-import AddToGraphButton from "components/AddToGraphButton";
 import DocumentPopup from "components/DocumentPopup";
 import ForceGraphConstructor from "components/ForceGraphConstructor/ForceGraphConstructor";
 import LoadGraphModal from "components/LoadGraphModal";
 import { useGraphDataInit, useHotkeyHold, useHotkeys } from "hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { shallowEqual, useDispatch, useSelector } from "react-redux";
+import { shallowEqual, useDispatch, useSelector, useStore } from "react-redux";
 import { ActionCreators } from "redux-undo";
 import { fetchNeighborCollections } from "services";
 import {
   addHistoryEntry,
+  addNodesToSlice,
+  addOriginNode,
   addToLassoSelection,
   clearAllPins,
   clearGraphData,
@@ -20,11 +21,16 @@ import {
   expandNode,
   fetchAndProcessGraph,
   initializeGraph,
+  pruneOrigins,
+  removeNodeFromSlice,
+  removeOriginNode,
   saveGraph,
   selectOriginHistory,
   setGraphData,
   setInitialCollapseList,
   setLassoSelection,
+  setNodesSlice,
+  syncActiveHistoryEntry,
   syncSettingsToLastApplied,
   uncollapseNode,
   updateNodePositions,
@@ -50,6 +56,33 @@ import {
 } from "./panels";
 
 /**
+ * Ids of nodes that were in the graph before a recompose but not after — the
+ * nodes a "remove as origin" made vanish. Used to drop them from the live D3
+ * instance without resetting the layout of survivors.
+ * @param {{ nodes: object[] } | null} beforeGraph
+ * @param {{ nodes: object[] }} afterGraph
+ * @returns {string[]}
+ */
+export function computeDroppedNodeIds(beforeGraph, afterGraph) {
+  if (!beforeGraph?.nodes?.length) return [];
+  const surviving = new Set((afterGraph?.nodes || []).map((n) => n._id ?? n.id));
+  return beforeGraph.nodes
+    .map((n) => n._id ?? n.id)
+    .filter((id) => id != null && !surviving.has(id));
+}
+
+/**
+ * Context-menu label for the origin toggle on a node: an existing origin can be
+ * removed, any other node can be added.
+ * @param {string} nodeId
+ * @param {string[]} originNodeIds
+ * @returns {"Add as origin" | "Remove as origin"}
+ */
+export function originMenuLabel(nodeId, originNodeIds) {
+  return originNodeIds?.includes(nodeId) ? "Remove as origin" : "Add as origin";
+}
+
+/**
  * Main React component for D3 force-directed graph visualization.
  * Orchestrates Redux state, user interactions, and D3 instance.
  */
@@ -61,6 +94,7 @@ const ForceGraph = ({
   title,
 }) => {
   const dispatch = useDispatch();
+  const store = useStore();
 
   // Refs for DOM elements and D3 graph instance.
   const wrapperRef = useRef();
@@ -121,6 +155,14 @@ const ForceGraph = ({
 
   // Origins already captured as history entries (used to auto-append new ones below).
   const originHistory = useSelector(selectOriginHistory);
+  // The active history entry gets its snapshot + thumbnail kept current on every
+  // settle (see handleSimulationEnd). Mirror it into a ref so the constructor's
+  // onSimulationEnd closure reads the latest value, not a stale one.
+  const activeHistoryId = useSelector((state) => state.savedGraphs.activeHistoryId);
+  const activeHistoryIdRef = useRef(null);
+  useEffect(() => {
+    activeHistoryIdRef.current = activeHistoryId;
+  }, [activeHistoryId]);
 
   // Use extracted hooks
   const { nodeNameMap, cachedNames } = useNodeNames(graphData, originNodeIds, settings.graphType);
@@ -334,6 +376,15 @@ const ForceGraph = ({
       // and clobber the drag's gentle warmup.
       if (graphInstanceRef.current?.isDragging?.()) return;
       dispatch(setGraphData({ nodes: finalNodes, links: finalLinks, skipUndo: true }));
+      // Keep the active history entry's snapshot + thumbnail current, so
+      // restoring it later shows the most recent version of the graph rather
+      // than its first-resolve capture. Only do the (async, best-effort)
+      // thumbnail work when an entry is actually active.
+      if (!activeHistoryIdRef.current) return;
+      const subgraph = { nodes: finalNodes, links: finalLinks };
+      captureGraphThumbnail(svgRef.current)
+        .then((thumbnail) => dispatch(syncActiveHistoryEntry(subgraph, thumbnail)))
+        .catch(() => dispatch(syncActiveHistoryEntry(subgraph, null)));
     },
     [dispatch],
   );
@@ -644,6 +695,51 @@ const ForceGraph = ({
           }
           break;
         }
+        // Add and remove reconcile the D3 view to the composed graph the same
+        // way: merge in composed nodes/links (covering additions a self-heal
+        // re-fetch introduced), drop nodes no longer composed, drop stale edges
+        // between survivors, and redraw origin donut markers. resetData:false
+        // preserves the positions of nodes that persist.
+        case "recompose/add":
+        case "recompose/remove": {
+          const currentInstance = graphInstanceRef.current;
+          if (!currentInstance) break;
+          const before = currentInstance.getCurrentGraph?.();
+          const dropped = computeDroppedNodeIds(before, graphData);
+          currentInstance.updateGraph({
+            newOriginNodeIds: originNodeIds,
+            newNodes: graphData.nodes,
+            newLinks: graphData.links,
+            collapseNodes: dropped,
+            removeNode: dropped.length > 0,
+            resetData: false,
+            labelStates: settings.labelStates,
+          });
+          // Drop edges the recompose removed whose endpoints both survived
+          // (e.g. an edge contributed only by a removed origin between two
+          // shared nodes). removeNode above already dropped edges of removed
+          // nodes; these removeLink calls are no-ops for those.
+          const composedLinkIds = new Set((graphData.links || []).map((l) => l._id));
+          const staleLinks = (before?.links || []).filter(
+            (l) => l._id && !composedLinkIds.has(l._id),
+          );
+          for (const staleLink of staleLinks) {
+            currentInstance.updateGraph({
+              removeLink: staleLink._id,
+              resetData: false,
+              labelStates: settings.labelStates,
+            });
+          }
+          // Redraw origin donut markers for the new origin set: the merged
+          // render reuses existing node elements, so a promoted node gains its
+          // donut and a demoted (but surviving/shared) node loses it.
+          currentInstance.setOriginNodeIds?.(originNodeIds);
+          lastRenderedNodeIdsRef.current = new Set(graphData.nodes.map((n) => n._id || n.id));
+          lastRenderedLinkIdsRef.current = new Set(
+            graphData.links.map((l) => l._id || `${l.source}-${l.target}`),
+          );
+          break;
+        }
         default:
           break;
       }
@@ -796,6 +892,8 @@ const ForceGraph = ({
       removeNode: true,
       labelStates: settings.labelStates,
     });
+    dispatch(pruneOrigins(ids));
+    for (const id of ids) dispatch(removeNodeFromSlice(id));
     dispatch(clearLassoSelection());
   }, [dispatch, lassoSelectedNodeIds, settings.labelStates]);
 
@@ -804,13 +902,15 @@ const ForceGraph = ({
     setIsRestoring(true);
     dispatch(ActionCreators.undo());
     dispatch(syncSettingsToLastApplied());
-  }, [dispatch]);
+    dispatch(setNodesSlice(store.getState().graph.present.originNodeIds));
+  }, [dispatch, store]);
 
   const handleRedo = useCallback(() => {
     setIsRestoring(true);
     dispatch(ActionCreators.redo());
     dispatch(syncSettingsToLastApplied());
-  }, [dispatch]);
+    dispatch(setNodesSlice(store.getState().graph.present.originNodeIds));
+  }, [dispatch, store]);
 
   const handleSave = useCallback(() => {
     const graphName = window.prompt("Please enter a name for your graph:");
@@ -1058,6 +1158,8 @@ const ForceGraph = ({
       removeNode: true,
       labelStates: settings.labelStates,
     });
+    dispatch(pruneOrigins([targetId]));
+    dispatch(removeNodeFromSlice(targetId));
     handlePopupClose();
   };
 
@@ -1082,6 +1184,21 @@ const ForceGraph = ({
       removeLink: linkId,
       labelStates: settings.labelStates,
     });
+    handlePopupClose();
+  };
+
+  // "Add as origin" / "Remove as origin" from the node context menu. Both keep
+  // the nodesSlice staging cart coherent with the live compositional set.
+  const handleOriginToggle = () => {
+    if (!popup.nodeId || popup.isEdge) return;
+    const nodeId = popup.nodeId;
+    if (originNodeIds.includes(nodeId)) {
+      dispatch(removeOriginNode(nodeId));
+      dispatch(removeNodeFromSlice(nodeId));
+    } else {
+      dispatch(addOriginNode(nodeId));
+      dispatch(addNodesToSlice(nodeId));
+    }
     handlePopupClose();
   };
 
@@ -1394,7 +1511,14 @@ const ForceGraph = ({
           >
             Remove Edge
           </button>
-          <AddToGraphButton nodeId={popup.nodeId} text="Add to Graph" />
+          <button
+            type="button"
+            className="document-popup-button"
+            onClick={handleOriginToggle}
+            style={{ display: !popup.isEdge ? "block" : "none" }}
+          >
+            {originMenuLabel(popup.nodeId, originNodeIds)}
+          </button>
         </DocumentPopup>
       </div>
 

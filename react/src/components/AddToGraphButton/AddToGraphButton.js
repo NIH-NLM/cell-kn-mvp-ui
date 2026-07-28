@@ -24,7 +24,7 @@ const AddToGraphButton = ({ nodeId, text }) => {
     if (!isAdded) {
       showToast(
         <>
-          Added to Graph. <Link to="/graph">View Graph</Link>
+          Added as origin. <Link to="/graph">View Graph</Link>
         </>,
       );
     }
@@ -39,7 +39,7 @@ const AddToGraphButton = ({ nodeId, text }) => {
       type="button"
       className={buttonClass}
       onClick={handleToggle}
-      title={isAdded ? "Remove from Graph" : "Add to Graph"}
+      title={isAdded ? "Remove as origin" : "Add as origin"}
     >
       {/* Icon target */}
       <span className="icon-container" />

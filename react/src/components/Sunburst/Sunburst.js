@@ -543,7 +543,7 @@ const Sunburst = ({ addSelectedItem }) => {
               >
                 Go To Page
               </a>
-              <AddToGraphButton nodeId={clickedItem._id} text="Add to Graph" />
+              <AddToGraphButton nodeId={clickedItem._id} text="Add as origin" />
             </>
           )}
         </DocumentPopup>
