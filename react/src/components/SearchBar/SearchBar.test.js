@@ -100,4 +100,20 @@ describe("SearchBar Component", () => {
 
   // TODO: Add test for searchDocuments service call - requires fixing mock isolation issues
   it.todo("calls searchDocuments service after debounce when input changes");
+
+  it("uses an external search object when provided (controlled mode)", () => {
+    const external = {
+      query: "pericyte",
+      setQuery: jest.fn(),
+      results: [],
+      isOpen: false,
+      setIsOpen: jest.fn(),
+      containerRef: { current: null },
+    };
+    renderWithContext(<SearchBar search={external} />);
+    const input = screen.getByPlaceholderText("Search NLM-CKN...");
+    expect(input).toHaveValue("pericyte");
+    fireEvent.change(input, { target: { value: "lung" } });
+    expect(external.setQuery).toHaveBeenCalledWith("lung");
+  });
 });

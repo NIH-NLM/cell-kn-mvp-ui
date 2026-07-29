@@ -22,10 +22,10 @@ const renderHeader = (initialEntries = ["/"]) =>
 
 describe("Header", () => {
   it("renders the brand, the header search, and the nav links", () => {
-    renderHeader();
+    renderHeader(["/graph"]);
     expect(screen.getByAltText(/NLM Cell Knowledge Network logo/i)).toBeInTheDocument();
     expect(screen.getByText("NLM Cell Knowledge Network")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Collections" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Graph" })).toBeInTheDocument();
   });

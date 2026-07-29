@@ -257,8 +257,6 @@ a.document-popup-button {
   color: var(--color-secondary-red);
 }
 
-/* AboutPage */
-
 .about-section-container {
   background-color: var(--color-white);
   padding: 25px 30px;
@@ -266,7 +264,7 @@ a.document-popup-button {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 900px;
-  margin: 0 auto;
+  margin: 24px auto 0;
   text-align: left;
 }
 
@@ -302,6 +300,8 @@ a.document-popup-button {
 .about-section-container p:last-child {
   margin-bottom: 0;
 }
+
+/* AboutPage */
 
 .about-content-box {
   max-width: 900px;
@@ -733,4 +733,61 @@ a.document-popup-button {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   margin-top: var(--spacing-md);
+}
+
+/* Search landing — example searches */
+.example-searches-list {
+  list-style: none;
+  /* Match the search box: same 700px centered column and offset. */
+  max-width: 700px;
+  margin: 16px auto 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 10px;
+}
+.example-search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-gray-lightest, #f1f1f1);
+  border-radius: 16px;
+  background: var(--color-white, #ffffff);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-primary, #0071bc);
+}
+.example-search-chip:hover {
+  border-color: var(--color-primary, #0071bc);
+}
+.example-search-icon {
+  font-size: 14px;
+  color: var(--color-gray, #5b616b);
+}
+
+/* Search landing — network stats */
+.network-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 40px;
+  margin: 24px 0 0;
+  padding: 0;
+}
+.network-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.network-stat-value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-primary-darkest, #112e51);
+  font-variant-numeric: tabular-nums;
+}
+.network-stat-label {
+  font-size: 13px;
+  color: var(--color-gray, #5b616b);
 }
