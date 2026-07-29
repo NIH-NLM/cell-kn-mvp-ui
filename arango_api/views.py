@@ -382,9 +382,13 @@ class WorkflowPresetsView(APIView):
 
 
 class VersionView(APIView):
-    """Return the UI and ETL versions for display to the user.
+    """Return the backend, dataset, and pinned dataset versions.
 
-    The UI version comes from the ``UI_VERSION`` setting (injected at deploy time).
+    ``backend_version`` is the backend image tag (the ``UI_VERSION`` setting,
+    injected at build time). It is reported for diagnosis but not displayed: the
+    UI version users see is baked into the frontend bundle, which deploys
+    independently of this image.
+
     The ETL version is read from the ``ckn_meta`` marker stamped into ArangoDB by
     whichever script restored the data, so it describes the dataset actually
     loaded. ``pinned_etl_version`` is the committed ``ETL_VERSION`` file — the
@@ -407,7 +411,7 @@ class VersionView(APIView):
 
         return Response(
             {
-                "ui_version": settings.UI_VERSION,
+                "backend_version": settings.UI_VERSION,
                 "etl_version": version_service.get_loaded_etl_version(),
                 "pinned_etl_version": pinned_etl_version,
             }

@@ -17,6 +17,11 @@ const Footer = () => {
     };
   }, []);
 
+  // Baked into the bundle at build time (see scripts/app/deploy-frontend.sh), so
+  // it describes the code actually running rather than whatever the backend was
+  // last built from. Falls back to "dev" for local builds.
+  const uiVersion = process.env.REACT_APP_VERSION || "dev";
+
   // The pin (ETL_VERSION in the repo) is what this checkout intends to run; the
   // loaded version is what the database actually holds. They agree in normal
   // operation, so show the pin only when it would tell the user something.
@@ -67,13 +72,11 @@ const Footer = () => {
           </a>
         </div>
 
-        {versions && (versions.ui_version || etlLabel) && (
-          <div className="footer-section footer-versions">
-            {versions.ui_version && <span>UI {versions.ui_version}</span>}
-            {versions.ui_version && etlLabel && <span> · </span>}
-            {etlLabel && <span>{etlLabel}</span>}
-          </div>
-        )}
+        <div className="footer-section footer-versions">
+          <span>UI {uiVersion}</span>
+          {etlLabel && <span> · </span>}
+          {etlLabel && <span>{etlLabel}</span>}
+        </div>
 
         <div className="footer-section footer-copyright">
           <p>© {currentYear} National Library of Medicine (NLM).</p>

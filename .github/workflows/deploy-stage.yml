@@ -40,6 +40,8 @@ jobs:
           node-version: '20'
 
       - name: Deploy frontend (build, sync to S3, invalidate CloudFront)
+        env:
+          VERSION: ${{ github.ref_name }}
         run: ./scripts/app/deploy-frontend.sh stage
 
       - name: Deploy dataset
