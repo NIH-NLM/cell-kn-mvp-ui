@@ -17,10 +17,12 @@ Test Configuration:
 
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 from django.test import SimpleTestCase, TestCase, override_settings, tag
 from django.urls import reverse
 
+from arango_api.services import version_service
 from arango_api.tests.seed_test_db import seed_test_databases
 
 
@@ -418,40 +420,65 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
 
 
 class VersionViewTestCase(SimpleTestCase):
-    """Tests for the version endpoint. Reads a file and a setting; no ArangoDB."""
+    """Tests for the version endpoint.
 
-    def test_returns_both_version_keys(self):
-        response = self.client.get(reverse("get_version"))
+    The endpoint must answer even when ArangoDB is unreachable, so the loaded
+    ETL version is patched at the service seam rather than requiring a live DB.
+    """
+
+    def setUp(self):
+        version_service.reset_cache()
+
+    def _patch_loaded(self, value):
+        return mock.patch.object(
+            version_service, "get_loaded_etl_version", return_value=value
+        )
+
+    def test_returns_all_version_keys(self):
+        with self._patch_loaded("v1.5.0-rc.1"):
+            response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("ui_version", data)
         self.assertIn("etl_version", data)
+        self.assertIn("pinned_etl_version", data)
 
-    def test_etl_version_reflects_stripped_file_contents(self):
+    def test_etl_version_reports_the_loaded_dataset(self):
+        with self._patch_loaded("v1.4.6-rc.6"):
+            response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.json()["etl_version"], "v1.4.6-rc.6")
+
+    def test_unreadable_marker_yields_unknown_without_failing_the_request(self):
+        with self._patch_loaded("unknown"):
+            response = self.client.get(reverse("get_version"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["etl_version"], "unknown")
+
+    def test_pinned_version_reflects_stripped_file_contents(self):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "ETL_VERSION").write_text("v9.9.9-test\n")
-            with override_settings(BASE_DIR=Path(tmp)):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["etl_version"], "v9.9.9-test")
+        self.assertEqual(response.json()["pinned_etl_version"], "v9.9.9-test")
 
-    def test_missing_etl_version_file_returns_unknown(self):
+    def test_missing_pin_file_returns_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with override_settings(BASE_DIR=Path(tmp)):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["etl_version"], "unknown")
+        self.assertEqual(response.json()["pinned_etl_version"], "unknown")
 
-    def test_blank_etl_version_file_returns_unknown(self):
+    def test_blank_pin_file_returns_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "ETL_VERSION").write_text("   \n")
-            with override_settings(BASE_DIR=Path(tmp)):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["etl_version"], "unknown")
+        self.assertEqual(response.json()["pinned_etl_version"], "unknown")
 
     def test_ui_version_reflects_setting(self):
-        with override_settings(UI_VERSION="v9.9.9"):
+        with override_settings(UI_VERSION="v9.9.9"), self._patch_loaded("v1.5.0-rc.1"):
             response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["ui_version"], "v9.9.9")
