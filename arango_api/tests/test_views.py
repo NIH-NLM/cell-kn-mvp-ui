@@ -439,7 +439,7 @@ class VersionViewTestCase(SimpleTestCase):
             response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("ui_version", data)
+        self.assertIn("backend_version", data)
         self.assertIn("etl_version", data)
         self.assertIn("pinned_etl_version", data)
 
@@ -477,11 +477,11 @@ class VersionViewTestCase(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["pinned_etl_version"], "unknown")
 
-    def test_ui_version_reflects_setting(self):
+    def test_backend_version_reflects_setting(self):
         with override_settings(UI_VERSION="v9.9.9"), self._patch_loaded("v1.5.0-rc.1"):
             response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["ui_version"], "v9.9.9")
+        self.assertEqual(response.json()["backend_version"], "v9.9.9")
 
 
 class CircuitBreakerOpenResponseTestCase(SimpleTestCase):

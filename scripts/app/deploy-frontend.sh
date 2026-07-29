@@ -139,7 +139,23 @@ echo -e "${YELLOW}Running npm install (if needed)...${NC}"
 npm ci --prefer-offline --no-audit
 
 echo -e "${YELLOW}Building React application...${NC}"
-npm run build-react
+# Bake the version into the bundle so the string ships inside the artifact it
+# names. The backend image tag cannot serve this: frontend and backend deploy
+# independently and conditionally (ci.yml), so a frontend-only change would
+# leave the backend — and any version it reported — untouched.
+#
+# Same resolution rule as deploy-backend.sh's IMAGE_TAG, so both halves report
+# the same shape of version in a given environment: an explicit override if
+# set, otherwise the short git SHA.
+if [ -z "${VERSION:-}" ]; then
+  VERSION=$(git rev-parse --short HEAD 2>/dev/null) || {
+    echo -e "${RED}Error: could not determine a version (not a git checkout?)${NC}"
+    echo "Set the VERSION environment variable to override."
+    exit 1
+  }
+fi
+echo -e "${YELLOW}Building with REACT_APP_VERSION=$VERSION${NC}"
+REACT_APP_VERSION="$VERSION" npm run build-react
 
 if [ ! -d "build" ]; then
     echo -e "${RED}Error: Build directory not found!${NC}"
