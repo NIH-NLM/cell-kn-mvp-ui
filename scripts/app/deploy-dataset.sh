@@ -442,6 +442,45 @@ echo "==> arango-green healthy (all expected databases present)"
 # the next boot (clobbering any in-place writes since this restore).
 echo "$VERSION" > "$GREEN_DATA/.dataset-version"
 
+# Stamp the same version *inside* green's databases so the running application
+# can report the dataset it is actually serving. The file marker above is on the
+# EBS volume and readable only from this instance; the backend runs on ECS and
+# can reach the version only through ArangoDB itself.
+#
+# Written pre-swap for the same reason as the file marker: green is promoted by
+# the intra-filesystem rename below, so data and marker land together and there
+# is no window where new data is live under an old version.
+#
+# Deliberately non-fatal. The post-restore health check has already passed, so
+# the data is good; failing a 90-minute restore over a display string would be
+# the wrong trade. A missing marker surfaces as "unknown" in the UI, which is
+# honest, and the next deploy repairs it.
+echo "==> Stamping dataset version into green databases..."
+# In this remote script VERSION is the S3 key (runs/<version>/06-golden-dump.tar.gz),
+# not a version string — see the download above. Extract the version for the marker
+# so the UI reports a version rather than a storage path.
+STAMP_VERSION="${VERSION#runs/}"
+STAMP_VERSION="${STAMP_VERSION%%/*}"
+STAMP_AUTH="$(printf 'root:%s' "$ARANGO_PASSWORD" | base64 | tr -d '\n')"
+STAMP_URL="http://localhost:8530"
+STAMP_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+for STAMP_DB in $EXPECTED_DBS; do
+  # 409 = collection already exists; harmless on a re-run.
+  curl -s -o /dev/null -X POST \
+    -H "Authorization: Basic $STAMP_AUTH" -H "Content-Type: application/json" \
+    -d '{"name":"ckn_meta"}' \
+    "$STAMP_URL/_db/$STAMP_DB/_api/collection" || true
+  STAMP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+    -H "Authorization: Basic $STAMP_AUTH" -H "Content-Type: application/json" \
+    -d "{\"_key\":\"dataset\",\"etl_version\":\"$STAMP_VERSION\",\"restored_at\":\"$STAMP_AT\"}" \
+    "$STAMP_URL/_db/$STAMP_DB/_api/document/ckn_meta?overwriteMode=replace") || true
+  if [[ "$STAMP_STATUS" =~ ^20[0-9]$ ]]; then
+    echo "  $STAMP_DB: stamped $STAMP_VERSION"
+  else
+    echo "  WARNING: $STAMP_DB stamp returned HTTP ${STAMP_STATUS:-000} (non-fatal; UI will show 'unknown')"
+  fi
+done
+
 # ── Swap: blue → green (downtime window starts here) ─────────────────────────
 # /var/lib/arangodb3 is the EBS mount point and cannot be mv'd directly.
 # Instead we rename entries *within* the mount (same filesystem → instant)
