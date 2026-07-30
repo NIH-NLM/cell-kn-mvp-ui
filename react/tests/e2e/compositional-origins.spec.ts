@@ -210,7 +210,7 @@ test("Removing an origin drops its unshared nodes and preserves shared node posi
   }
 
   // Origins panel lists the remaining origin (ORIGIN_A) and can be closed.
-  await page.getByRole("button", { name: /^origins$/i }).click();
+  await page.getByRole("button", { name: /^origins \(\d+\)$/i }).click();
   const panel = page.getByRole("complementary", { name: /current origins/i });
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("Origin A");
@@ -280,7 +280,7 @@ test("Undo after removing an origin restores it in both the graph and the Origin
 
   // The Origins panel (live origins) also lists ORIGIN_B again (its display
   // name may not have resolved post-undo, so match on the raw id too).
-  await page.getByRole("button", { name: /^origins$/i }).click();
+  await page.getByRole("button", { name: /^origins \(\d+\)$/i }).click();
   const panel = page.getByRole("complementary", { name: /current origins/i });
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("Origin A");

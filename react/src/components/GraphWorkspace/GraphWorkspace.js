@@ -65,22 +65,16 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
           <NodeInspector selectedNodeId={inspectedNodeId} originDocument={currentOriginDoc} />
         </aside>
         <section className="graph-workspace-canvas">
-          <div className="graph-workspace-canvas-toolbar">
-            <button
-              type="button"
-              className="origins-toggle-button"
-              onClick={() => setIsOriginsOpen((open) => !open)}
-              aria-pressed={isOriginsOpen}
-            >
-              Origins
-            </button>
-          </div>
           <div className="graph-workspace-canvas-body">
+            {/* The origins toggle lives among the canvas action icons (ForceGraph
+                renders it) so the panel is opened from the graph itself. */}
             <ForceGraph
               nodeIds={nodeIds}
               settings={settings}
               title={graphTitle}
               onNodeSelect={setSelectedNodeId}
+              originsOpen={isOriginsOpen}
+              onToggleOrigins={() => setIsOriginsOpen((open) => !open)}
             />
             <OriginsSidebar isOpen={isOriginsOpen} onClose={() => setIsOriginsOpen(false)} />
           </div>

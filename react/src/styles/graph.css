@@ -379,11 +379,14 @@ g.node.pinned .node-pin-marker path {
 }
 
 /* Figma "Icon Button - filled" spec (639:3201 / 631:2950): filled primary-darkest
-   circular button, floated bottom-right of the canvas. */
+   circular button. Every instance sits in the .graph-canvas-actions flex row,
+   which positions the group; position:relative here only anchors each button's
+   tooltip and the origins count badge. flex-shrink:0 keeps the circles from
+   deforming if the row ever runs short of space. */
 .graph-canvas-icon-button {
-  position: absolute;
-  z-index: 20;
+  position: relative;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 40px;
@@ -403,23 +406,19 @@ g.node.pinned .node-pin-marker path {
   background-color: var(--color-primary-darker);
 }
 
-.graph-canvas-download {
-  bottom: 16px;
-  right: 16px;
-}
-
-/* Bottom-right canvas action group: full screen (disabled), lasso, download. */
+/* Bottom-right canvas action group: origins (optional), full screen (disabled),
+   lasso, download. z-index sits above the OriginsSidebar overlay (30) so a
+   tooltip rising off these icons is never tucked underneath it. The icons
+   themselves don't overlap the panel — it stops at bottom:72px, clearing this
+   row. */
 .graph-canvas-actions {
   position: absolute;
   bottom: 16px;
   right: 16px;
-  z-index: 20;
+  z-index: 35;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.graph-canvas-actions .graph-canvas-icon-button {
-  position: static;
 }
 /* Full screen isn't enabled yet — dim it, but keep it clickable for the notice. */
 .graph-canvas-fullscreen[aria-disabled="true"] {
@@ -430,6 +429,95 @@ g.node.pinned .node-pin-marker path {
 .graph-canvas-lasso.active {
   background-color: var(--color-focus);
 }
+/* Origins panel open — same armed treatment as the lasso. */
+.graph-canvas-origins.active {
+  background-color: var(--color-focus);
+}
+/* Origin count badge, pinned to the button's top-right corner. */
+.graph-canvas-origins-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-white);
+  color: var(--color-primary-darkest);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.25));
+}
+/* Hover/focus notes for the icon-only canvas actions. These buttons carry no
+   visible text, so the tooltip is the primary explanation of what each does.
+   Driven by a data-tooltip attribute; the accessible name still comes from
+   aria-label, so the bubble is decorative (aria-hidden by virtue of being a
+   pseudo-element) and no native `title` is set — two overlapping tooltips
+   otherwise. Anchored to each button's right edge and extending leftward so
+   the rightmost icon can't overflow the canvas. */
+.graph-canvas-actions [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 1;
+  padding: 6px 10px;
+  background-color: var(--color-primary-darkest);
+  color: var(--color-white);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast);
+}
+
+/* Arrow, roughly centered under the 40px button. */
+.graph-canvas-actions [data-tooltip]::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 3px);
+  right: 16px;
+  z-index: 1;
+  border: 5px solid transparent;
+  border-top-color: var(--color-primary-darkest);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast);
+}
+
+/* :focus-visible so keyboard users get the note too, without it firing on
+   every mouse click. */
+.graph-canvas-actions [data-tooltip]:hover::after,
+.graph-canvas-actions [data-tooltip]:hover::before,
+.graph-canvas-actions [data-tooltip]:focus-visible::after,
+.graph-canvas-actions [data-tooltip]:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* The click-triggered "feature disabled" notice occupies the same space as the
+   full-screen tooltip — suppress the tooltip while it's showing. */
+.graph-canvas-actions:has(.graph-canvas-disabled-popup) [data-tooltip]::after,
+.graph-canvas-actions:has(.graph-canvas-disabled-popup) [data-tooltip]::before {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-canvas-actions [data-tooltip]::after,
+  .graph-canvas-actions [data-tooltip]::before {
+    transition: none;
+  }
+}
+
 .graph-canvas-disabled-popup {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -961,29 +1049,10 @@ g.node.pinned .node-pin-marker path {
   padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
-.graph-workspace-canvas-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px 0;
-}
-
-.origins-toggle-button {
-  border: 1px solid var(--color-gray-lightest, #f1f1f1);
-  background: var(--color-white, #ffffff);
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  color: var(--color-primary-darkest, #112e51);
-}
-
-.origins-toggle-button[aria-pressed="true"] {
-  background: var(--color-primary, #0071bc);
-  color: var(--color-white, #ffffff);
-  border-color: var(--color-primary, #0071bc);
-}
-
+/* position:relative anchors the OriginsSidebar overlay, which floats over the
+   graph instead of taking a flex column of its own. */
 .graph-workspace-canvas-body {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;

@@ -148,6 +148,30 @@ describe("ForceGraph", () => {
     fetchNeighborCollections.mockResolvedValue([]);
   });
 
+  // The canvas actions are icon-only, so the hover/focus note is the only thing
+  // explaining them. data-tooltip drives the CSS bubble; aria-label stays the
+  // accessible name. No native `title`, or the browser draws a second tooltip.
+  it("gives every canvas action a hover note and no native title", () => {
+    render(
+      <Provider store={createTestStore()}>
+        <ForceGraph onToggleOrigins={() => {}} />
+      </Provider>,
+    );
+
+    const expected = [
+      [/^origins \(\d+\)$/i, /^Origins \(\d+\)$/],
+      [/^full screen$/i, /^Full screen/],
+      [/^lasso select$/i, /select multiple nodes/i],
+      [/^download graph$/i, /^Download graph/],
+    ];
+
+    for (const [name, tooltip] of expected) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("data-tooltip", expect.stringMatching(tooltip));
+      expect(button).not.toHaveAttribute("title");
+    }
+  });
+
   it("Should toggle options when toggle options button is clicked", () => {
     render(
       <Provider store={createTestStore()}>

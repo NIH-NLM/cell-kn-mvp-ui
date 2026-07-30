@@ -1,15 +1,28 @@
+/* Overlay card floating above the graph canvas rather than a flex column that
+   shrinks it — the toggle now lives on the canvas, so the graph shouldn't
+   reflow when the panel opens. `bottom` clears the canvas action icons so the
+   origins toggle stays reachable to close the panel. Positioning context is
+   .graph-workspace-canvas-body (see graph.css). */
 .origins-sidebar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 72px;
+  z-index: 30;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 260px;
   padding: 16px;
+  overflow: hidden;
   background: var(--color-white, #ffffff);
-  border-left: 1px solid var(--color-gray-lightest, #f1f1f1);
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-gray-lightest, #f1f1f1);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .origins-sidebar-header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,6 +50,8 @@
   color: var(--color-gray, #5b616b);
 }
 
+/* The list scrolls, not the card, so the header stays pinned with many origins.
+   min-height:0 lets it actually shrink inside the flex column. */
 .origins-sidebar-list {
   list-style: none;
   margin: 0;
@@ -44,6 +59,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .origins-sidebar-item {
