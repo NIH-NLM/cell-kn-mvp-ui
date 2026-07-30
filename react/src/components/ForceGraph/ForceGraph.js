@@ -92,6 +92,10 @@ const ForceGraph = ({
   settings: settingsFromProps,
   onNodeSelect = () => {},
   title,
+  // Origins panel wiring. Hosts that render an OriginsSidebar pass a toggle;
+  // without one the canvas omits the origins action entirely.
+  originsOpen = false,
+  onToggleOrigins = null,
 }) => {
   const dispatch = useDispatch();
   const store = useStore();
@@ -179,6 +183,9 @@ const ForceGraph = ({
   } = usePerNodeSettings(settings, originNodeIds, lastAppliedSettings, lastAppliedPerNodeSettings);
 
   const exportGraph = useGraphExport(wrapperRef, graphData, originNodeIds);
+
+  // Badge count on the canvas origins action.
+  const originCount = originNodeIds?.length ?? 0;
 
   // Local component state for UI
   const collectionMaps = useMemo(() => new Map(collMaps.maps), []);
@@ -1275,16 +1282,51 @@ const ForceGraph = ({
 
         {status === "loading" && <LoadingBar />}
 
-        {/* Bottom-right canvas actions: full screen (disabled), lasso, download.
-            A sibling of the canvas wrapper so the wrapper holds ONLY the graph <svg>
-            (useGraphExport and the e2e suite select `#chart-container-wrapper svg`). */}
+        {/* Bottom-right canvas actions: origins (optional), full screen (disabled),
+            lasso, download. A sibling of the canvas wrapper so the wrapper holds ONLY
+            the graph <svg> (useGraphExport and the e2e suite select
+            `#chart-container-wrapper svg`). */}
         <div className="graph-canvas-actions">
+          {onToggleOrigins && (
+            <button
+              type="button"
+              className={`graph-canvas-icon-button graph-canvas-origins${originsOpen ? " active" : ""}`}
+              aria-label={`Origins (${originCount})`}
+              aria-pressed={originsOpen}
+              data-tooltip={`Origins (${originCount})`}
+              onClick={onToggleOrigins}
+            >
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              >
+                <path d="M12 9.6V6.9M12 14.4l-3.6 2.4M12 14.4l3.6 2.4" />
+                <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="5.2" r="1.8" />
+                <circle cx="6.6" cy="18" r="1.8" />
+                <circle cx="17.4" cy="18" r="1.8" />
+              </svg>
+              {originCount > 0 && (
+                <span className="graph-canvas-origins-count" aria-hidden="true">
+                  {originCount}
+                </span>
+              )}
+            </button>
+          )}
           <button
             type="button"
             className="graph-canvas-icon-button graph-canvas-fullscreen"
             aria-label="Full screen"
             aria-disabled="true"
-            title="Full screen"
+            data-tooltip="Full screen (currently disabled)"
             onClick={() => {
               window.clearTimeout(disabledMsgTimeoutRef.current);
               setShowDisabledMsg(true);
@@ -1311,7 +1353,7 @@ const ForceGraph = ({
             className={`graph-canvas-icon-button graph-canvas-lasso${lassoMode ? " active" : ""}`}
             aria-label="Lasso select"
             aria-pressed={lassoMode}
-            title="Drag to select multiple nodes (shift to add to selection, Esc to exit)"
+            data-tooltip="Drag to select multiple nodes (Esc to exit)"
             onClick={() => setLassoMode((m) => !m)}
           >
             <svg
@@ -1336,6 +1378,7 @@ const ForceGraph = ({
             type="button"
             className="graph-canvas-icon-button graph-canvas-download"
             aria-label="Download graph"
+            data-tooltip="Download graph as PNG"
             onClick={() => exportGraph("png")}
           >
             <svg
