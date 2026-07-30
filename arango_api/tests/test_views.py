@@ -290,28 +290,31 @@ class EdgesBetweenViewTestCase(ArangoDBViewTestCase):
 class SearchViewsTestCase(ArangoDBViewTestCase):
     """Tests for search API endpoints."""
 
-    def test_get_all(self):
-        response = self.client.get(reverse("get_all"))
-        self.assertEqual(response.status_code, 200)
-        self.assertGreater(len(response.json()), 0)
-
-    def test_aql_query(self):
-        response = self.client.post(
-            reverse("run_aql_query"),
-            data={"query": "RETURN 1 + 1"},
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), 2)
-
-    def test_aql_write_operations_blocked(self):
-        """Verify the API blocks write operations (serializer validation works end-to-end)."""
-        response = self.client.post(
-            reverse("run_aql_query"),
-            data={"query": "INSERT {name: 'test'} INTO users"},
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
+    # Disabled: these exercise the /get_all/ and /aql/ endpoints, whose routes
+    # are commented out in arango_api/urls.py (unused by the app). Restore these
+    # tests alongside the routes.
+    # def test_get_all(self):
+    #     response = self.client.get(reverse("get_all"))
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertGreater(len(response.json()), 0)
+    #
+    # def test_aql_query(self):
+    #     response = self.client.post(
+    #         reverse("run_aql_query"),
+    #         data={"query": "RETURN 1 + 1"},
+    #         content_type="application/json",
+    #     )
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(response.json(), 2)
+    #
+    # def test_aql_write_operations_blocked(self):
+    #     """Verify the API blocks write operations (serializer validation works end-to-end)."""
+    #     response = self.client.post(
+    #         reverse("run_aql_query"),
+    #         data={"query": "INSERT {name: 'test'} INTO users"},
+    #         content_type="application/json",
+    #     )
+    #     self.assertEqual(response.status_code, 400)
 
 
 class SunburstViewsTestCase(ArangoDBViewTestCase):
@@ -494,21 +497,23 @@ class CircuitBreakerOpenResponseTestCase(SimpleTestCase):
     silently.
     """
 
-    def test_aql_view_open_breaker_surfaces_as_500(self):
-        from unittest import mock
-
-        from arango_api.circuit_breaker import CircuitBreakerOpen
-
-        with mock.patch(
-            "arango_api.services.search_service.run_aql_query",
-            side_effect=CircuitBreakerOpen("arango circuit open; failing fast"),
-        ):
-            response = self.client.post(
-                reverse("run_aql_query"),
-                data={"query": "RETURN 1"},
-                content_type="application/json",
-            )
-
-        # The view's `except Exception` maps it to a 500 with an error body.
-        self.assertEqual(response.status_code, 500)
-        self.assertIn("error", response.json())
+    # Disabled: exercises the /aql/ endpoint, whose route is commented out in
+    # arango_api/urls.py (unused by the app). Restore alongside the route.
+    # def test_aql_view_open_breaker_surfaces_as_500(self):
+    #     from unittest import mock
+    #
+    #     from arango_api.circuit_breaker import CircuitBreakerOpen
+    #
+    #     with mock.patch(
+    #         "arango_api.services.search_service.run_aql_query",
+    #         side_effect=CircuitBreakerOpen("arango circuit open; failing fast"),
+    #     ):
+    #         response = self.client.post(
+    #             reverse("run_aql_query"),
+    #             data={"query": "RETURN 1"},
+    #             content_type="application/json",
+    #         )
+    #
+    #     # The view's `except Exception` maps it to a 500 with an error body.
+    #     self.assertEqual(response.status_code, 500)
+    #     self.assertIn("error", response.json())

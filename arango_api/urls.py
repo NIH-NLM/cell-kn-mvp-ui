@@ -16,8 +16,10 @@ from arango_api.views import (
     ConnectingPathsView,
     EdgesBetweenView,
     SearchView,
-    GetAllView,
-    AQLQueryView,
+    # Disabled endpoints — views kept for future use; routes commented out below
+    # (unused by the app; sensitive raw-query / bulk-dump surface).
+    # GetAllView,
+    # AQLQueryView,
     SunburstView,
     EdgeFilterOptionsView,
     DocumentsView,
@@ -67,8 +69,11 @@ urlpatterns = [
     ),
     # Search endpoints
     path("search/", SearchView.as_view(), name="get_search_items"),
-    path("get_all/", GetAllView.as_view(), name="get_all"),
-    path("aql/", AQLQueryView.as_view(), name="run_aql_query"),
+    # Disabled (unused by the app; raw-AQL and bulk-dump surface). View classes
+    # and services are retained; uncomment these two routes (and their imports
+    # above) to restore.
+    # path("get_all/", GetAllView.as_view(), name="get_all"),
+    # path("aql/", AQLQueryView.as_view(), name="run_aql_query"),
     # Visualization endpoints
     path("sunburst/", SunburstView.as_view(), name="get_sunburst"),
     # Document endpoints
