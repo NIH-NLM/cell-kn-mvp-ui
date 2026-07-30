@@ -571,13 +571,16 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "leber-rpe65-uc7",
-        "name": "RPE65-related Leber congenital amaurosis (UC7)",
+        "id": "leber-congenital-amaurosis-uc7",
+        "name": "Leber congenital amaurosis (UC7)",
         "description": (
-            "Big Dipper exploration of RPE65-related Leber congenital "
-            "amaurosis. Starting from the disease, finds the causal "
-            "gene (RPE65) and gene therapy (voretigene neparvovec-rzyl), "
-            "then traces to expressing cell types and anatomy."
+            "Big Dipper exploration of Leber congenital amaurosis. "
+            "Starting from the disease, finds the causal genes "
+            "(ABCA4, AIPL1, LRAT, KCNJ13) and any treating compounds, "
+            "then traces to expressing cell types and anatomy. "
+            "Anchored on the parent MONDO term because the "
+            "RPE65-specific subtype and the RPE65 gene set are not "
+            "present in the current ETL release."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -586,7 +589,7 @@ WORKFLOW_PRESETS = [
                 "id": "preset-uc7-phase-1",
                 "name": "Disease genes and treatments",
                 "originSource": "manual",
-                "originNodeIds": ["MONDO/0008765"],
+                "originNodeIds": ["MONDO/0018998"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
