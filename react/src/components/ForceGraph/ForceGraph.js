@@ -404,8 +404,13 @@ const ForceGraph = ({
   };
 
   // Lasso selection callback: replace the selection by default; shift-drag
-  // unions with the existing selection. Auto-exits lasso mode so pan/zoom
-  // resumes immediately after a drag completes.
+  // unions with the existing selection.
+  //
+  // A plain drag auto-exits lasso mode so pan/zoom resumes immediately. A
+  // shift-drag stays armed: shift means "keep adding", and disarming would
+  // strand the user — the next shift-drag is gated out by the lasso's
+  // isEnabled() check and the zoom behavior would swallow it as a pan, so the
+  // gesture silently panned the graph instead of extending the selection.
   const handleLassoSelection = useCallback(
     (ids, { shift } = {}) => {
       if (shift) {
@@ -413,7 +418,7 @@ const ForceGraph = ({
       } else {
         dispatch(setLassoSelection(ids));
       }
-      setLassoMode(false);
+      setLassoMode(!!shift);
     },
     [dispatch],
   );
@@ -1353,7 +1358,7 @@ const ForceGraph = ({
             className={`graph-canvas-icon-button graph-canvas-lasso${lassoMode ? " active" : ""}`}
             aria-label="Lasso select"
             aria-pressed={lassoMode}
-            data-tooltip="Drag to select multiple nodes (Esc to exit)"
+            data-tooltip="Drag to select multiple nodes (Shift-drag to add, Esc to exit)"
             onClick={() => setLassoMode((m) => !m)}
           >
             <svg
