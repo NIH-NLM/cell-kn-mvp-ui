@@ -82,6 +82,74 @@ export function runSimulation(
 let phaseTimeout = null;
 
 /**
+ * Star slots of the Big Dipper asterism, keyed by the collection that occupies
+ * each one. Positions are a unit frame centered on the seven-star centroid,
+ * scaled at apply time. y is screen-space (down-positive), so the shape renders
+ * in the same orientation as a sky chart.
+ *
+ * The bowl is the dipper motif's closed four-cycle, one edge per side:
+ *   Megrez (gene) -PRODUCES-> Dubhe (protein)
+ *     -MOLECULARLY_INTERACTS_WITH-> Merak (compound)
+ *     -IS_SUBSTANCE_THAT_TREATS-> Phecda (disease)
+ *     -IS_GENETIC_BASIS_FOR_CONDITION-> back to Megrez
+ *
+ * Because the treats-edge is the Merak-Phecda side, a broken dipper — the
+ * repurposing case, where the compound does not already treat the disease —
+ * renders as a visibly open bowl.
+ *
+ * The handle attaches at Megrez, where the cell leg hangs off the gene:
+ *   Megrez (gene) -> Alioth (cell set) -> Mizar (cell type) -> Alkaid (anatomy)
+ */
+export const BIG_DIPPER_STARS = {
+  PR: { star: "Dubhe", x: 0.543, y: -0.264 },
+  CHEMBL: { star: "Merak", x: 0.523, y: 0.264 },
+  MONDO: { star: "Phecda", x: 0.163, y: 0.336 },
+  GS: { star: "Megrez", x: 0.183, y: -0.034 },
+  CS: { star: "Alioth", x: -0.127, y: -0.074 },
+  CL: { star: "Mizar", x: -0.457, y: -0.184 },
+  UBERON: { star: "Alkaid", x: -0.828, y: -0.044 },
+};
+
+/** Unit-frame y for the row that holds collections outside the asterism. */
+const OFF_MOTIF_ROW_Y = 0.55;
+
+/**
+ * Map each present collection to an (x, y) layout target shaped like the Big
+ * Dipper. Collections on the motif get their star slot; anything else is spread
+ * along a row below the asterism so it stays visible without distorting the
+ * shape.
+ *
+ * @param {string[]} collections - Collection names present in the graph
+ * @param {number} width - SVG width
+ * @param {number} height - SVG height
+ * @returns {Object} Map of collection name to { x, y }
+ */
+export function computeBigDipperTargets(collections, width, height) {
+  const scale = Math.min(width, height) * 0.9;
+  const targets = {};
+
+  const offMotif = collections.filter((coll) => !BIG_DIPPER_STARS[coll]);
+
+  for (const coll of collections) {
+    const slot = BIG_DIPPER_STARS[coll];
+    if (slot) {
+      targets[coll] = { x: slot.x * scale, y: slot.y * scale };
+    }
+  }
+
+  // Spread the leftovers evenly across the asterism's width, centered.
+  offMotif.forEach((coll, i) => {
+    const offset = offMotif.length === 1 ? 0.5 : i / (offMotif.length - 1);
+    targets[coll] = {
+      x: (offset - 0.5) * scale,
+      y: OFF_MOTIF_ROW_Y * scale,
+    };
+  });
+
+  return targets;
+}
+
+/**
  * Apply a layout mode to the simulation using a two-phase approach:
  *   Phase 1 (dispersal): Force-like physics with charge + links, no clustering.
  *   Phase 2 (constraint): Apply clustering/radial forces on dispersed nodes.
@@ -275,6 +343,46 @@ export function applyLayoutMode(
     waitForAlpha(simulation, 0.3, generation).then((stillValid) => {
       if (!stillValid) return;
       phase2Radial();
+    });
+    return;
+  }
+
+  if (mode === "big-dipper" && collections.length > 0) {
+    // Pull each collection toward its star slot. Nodes are never pinned, so a
+    // star with forty compounds reads as one bright cluster rather than a
+    // single representative, and drag still works afterwards.
+    const targets = computeBigDipperTargets(collections, width, height);
+
+    const phase2BigDipper = () => {
+      simulation.force(
+        "cluster-x",
+        d3.forceX((d) => targets[getCollection(d)]?.x ?? 0).strength(0.7),
+      );
+      simulation.force(
+        "cluster-y",
+        d3.forceY((d) => targets[getCollection(d)]?.y ?? 0).strength(0.7),
+      );
+      // Short-range collision separates nodes within a star without the
+      // long-range explosion that strong charge causes.
+      simulation.force("collide", d3.forceCollide(14).strength(0.9));
+      simulation.force("charge")?.strength(-30);
+      // A dipper result is edge-dense (152 edges on a 70-node FLT1 dipper) and
+      // those links pull the stars toward each other hard enough to compress
+      // the asterism into a V. The star targets already encode the topology,
+      // so let them own the geometry outright.
+      if (linkForce) linkForce.strength(0);
+      simulation.alpha(0.6).restart();
+      onComplete?.();
+    };
+
+    // Phase 1: force-like dispersal so nodes arrive at their star from a spread
+    // state rather than collapsing along one axis.
+    simulation.force("charge")?.strength(-1000);
+    if (linkForce) linkForce.strength(linkForceStrength);
+    simulation.alpha(1).restart();
+    waitForAlpha(simulation, 0.3, generation).then((stillValid) => {
+      if (!stillValid) return;
+      phase2BigDipper();
     });
     return;
   }

@@ -41,6 +41,7 @@ export {
   hasNodesInRawData,
   mergeChildren,
   parseId,
+  resolvePresetLabelStates,
 } from "./graph";
 export { captureGraphThumbnail } from "./graphThumbnail";
 // Platform utilities
