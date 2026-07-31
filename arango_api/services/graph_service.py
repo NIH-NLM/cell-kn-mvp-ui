@@ -295,8 +295,12 @@ def traverse_graph(
                      FILTER LENGTH(closing) {'> 0' if require_mode else '== 0'}
                      RETURN p
              )
-             LET all_nodes = UNION_DISTINCT(
-                 FLATTEN(surviving[*].vertices), [start_node_doc]
+             LET all_nodes = (
+                 FOR node IN UNION_DISTINCT(
+                     FLATTEN(surviving[*].vertices), [start_node_doc]
+                 )
+                     FILTER node != null
+                     RETURN node
              )
              LET all_links = UNIQUE(FLATTEN(surviving[*].edges))
              RETURN {{
@@ -323,9 +327,17 @@ def traverse_graph(
                  RETURN DISTINCT {{ v: v, e: e }}
          )
 
-         LET all_nodes = UNION_DISTINCT(
-             traversal[*].v,
-             [start_node_doc]
+         // DOCUMENT() yields null when the start id is not in the collection,
+         // which happens whenever a saved workflow outlives the key format it
+         // was anchored on. Emitting that null hands the client a [null] node
+         // list, so drop it here and let the phase come back empty instead.
+         LET all_nodes = (
+             FOR node IN UNION_DISTINCT(
+                 traversal[*].v,
+                 [start_node_doc]
+             )
+                 FILTER node != null
+                 RETURN node
          )
 
          LET all_links = UNIQUE(traversal[*].e)

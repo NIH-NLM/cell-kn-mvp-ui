@@ -416,3 +416,104 @@ describe("executePhase caps collection origins at originLimit", () => {
     expect(Object.keys(params.advancedSettings)).toHaveLength(2);
   });
 });
+
+describe("executePhase drops null nodes from server responses", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // A retired origin id makes the backend's DOCUMENT() lookup yield null, and
+  // older deployments still ship that null inside the node list. Anything that
+  // reads a property off each node (the results table does) dies on it, so the
+  // store drops nulls before they reach the reducers.
+  it("filters nulls out of the phase result", async () => {
+    services.fetchGraphData.mockResolvedValue({
+      "CSD/retired": {
+        nodes: [null, { _id: "CL/real" }],
+        links: [null, { _id: "CL-CL/e1", _from: "CL/real", _to: "CL/real" }],
+      },
+    });
+    services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CSD/retired"],
+            previousPhaseId: null,
+            settings: {
+              graphType: "phenotypes",
+              depth: 1,
+              edgeDirection: "INBOUND",
+              allowedCollections: ["CL"],
+              setOperation: "Union",
+              includeInterNodeEdges: false,
+            },
+          },
+        ],
+      }),
+    );
+
+    const action = await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(action.payload.result.nodes).not.toContain(null);
+    expect(action.payload.result.links).not.toContain(null);
+    expect(action.payload.result.nodes).toEqual([{ _id: "CL/real" }]);
+  });
+});
+
+describe("executePhase sanitizes nulls on the Intersection with Origins path", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // This branch reads the raw server response directly rather than the merged
+  // graphs, so it needs the same null handling: scanning for the origin node
+  // reads a property off every entry and dies on a null.
+  it("does not throw when a response carries a null node", async () => {
+    services.fetchGraphData.mockResolvedValue({
+      "CL/origin": {
+        nodes: [null, { _id: "CL/origin" }, { _id: "CL/shared" }],
+        links: [null, { _id: "CL-CL/e1", _from: "CL/origin", _to: "CL/shared" }],
+      },
+      "CL/other": {
+        nodes: [{ _id: "CL/shared" }],
+        links: [],
+      },
+    });
+    services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CL/origin", "CL/other"],
+            previousPhaseId: null,
+            settings: {
+              graphType: "ontologies",
+              depth: 1,
+              edgeDirection: "ANY",
+              allowedCollections: ["CL"],
+              setOperation: "Intersection with Origins",
+              includeInterNodeEdges: false,
+            },
+          },
+        ],
+      }),
+    );
+
+    const action = await store.dispatch(executePhase({ phaseId: "p1" }));
+
+    expect(action.error).toBeUndefined();
+    expect(action.payload.result.nodes).not.toContain(null);
+    expect(action.payload.result.links).not.toContain(null);
+    // The origin is absent from the intersection and must be added back.
+    expect(action.payload.result.nodes.map((n) => n._id)).toContain("CL/origin");
+  });
+});
