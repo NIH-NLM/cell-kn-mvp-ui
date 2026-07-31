@@ -173,7 +173,7 @@
       "CHEMBL",
       {
         "abbreviated_name": "CHEMBL",
-        "display_name": "Bioactive molecule",
+        "display_name": "Bioactive compound",
         "color": "#ffe119",
         "individual_labels": [
           {
@@ -238,6 +238,12 @@
           {
             "field_to_display": "mechanism_of_action",
             "display_field_as": "Mechanism_of_action",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
+            "field_to_display": "trade_names",
+            "display_field_as": "Trade_names",
             "field_url": "",
             "field_to_use": ""
           },
