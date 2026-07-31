@@ -1,3 +1,6 @@
+import { isGeneField, parseGeneTokens } from "config/geneFields";
+import { Fragment } from "react";
+import { Link } from "react-router-dom";
 import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUrl } from "utils";
 
 /**
@@ -9,19 +12,47 @@ import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUr
  */
 const DocumentCard = ({ document }) => {
   const sections = getSectionedFields(document);
+  const collection = document._id.split("/")[0];
+
+  /**
+   * Renders a gene field as one internal link per symbol, so each gene reaches
+   * its own page (which in turn links out to NCBI Gene). Tokens with no gene
+   * page — Ensembl identifiers — stay as text rather than becoming dead links.
+   * @param {Array<{symbol: string, key: string, linkable: boolean}>} tokens
+   */
+  const renderGeneTokens = (tokens) =>
+    tokens.map(({ symbol, key, linkable }, index) => (
+      <Fragment key={key}>
+        {index > 0 && ", "}
+        {linkable ? (
+          <Link to={`/collections/GS/${symbol}`} className="gene-link">
+            {symbol}
+          </Link>
+        ) : (
+          symbol
+        )}
+      </Fragment>
+    ));
 
   /**
    * Renders a field's value, as an external link when it carries a URL.
-   * @param {object} field - { value, url }
+   * @param {object} field - { key, value, url }
    */
-  const renderValue = (field) =>
-    field.url ? (
+  const renderValue = (field) => {
+    if (isGeneField(collection, field.key)) {
+      const tokens = parseGeneTokens(field.value);
+      if (tokens.length > 0) {
+        return renderGeneTokens(tokens);
+      }
+    }
+    return field.url ? (
       <a href={field.url} target="_blank" rel="noopener noreferrer" className="external-link">
         {formatFieldValue(field.value)}
       </a>
     ) : (
       formatFieldValue(field.value)
     );
+  };
 
   // Sectioned path (configured collections, e.g. CSD).
   if (sections && sections.length > 0) {
