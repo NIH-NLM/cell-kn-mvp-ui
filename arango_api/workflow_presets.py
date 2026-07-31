@@ -152,10 +152,9 @@ WORKFLOW_PRESETS = [
         "id": "hlca-lung-cell-types",
         "name": "HLCA lung cell types (UC1)",
         "description": (
-            "Displays cell sets from the HLCA respiratory system dataset "
-            "(Sikkema et al.) and their mapped Cell Ontology terms. "
-            "The dataset node is at the center, connected to ~61 cell "
-            "sets (orange) mapped to cell types (blue)."
+            "The HLCA respiratory dataset (Sikkema et al.) with its ~61 cell "
+            "sets and the cell types they map to. The dataset sits at the "
+            "center, cell sets in orange, cell types in blue."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -186,14 +185,10 @@ WORKFLOW_PRESETS = [
         "id": "datasets-epithelial-respiratory-uc2",
         "name": "Datasets for epithelial cells in the respiratory system (UC2)",
         "description": (
-            "Finds the datasets relevant to epithelial cell types in the "
-            "respiratory system. Phase 1 intersects the epithelial cell "
-            "hierarchy (INBOUND SUB_CLASS_OF from epithelial cell) with "
-            "cell types that are part of respiratory-system anatomy "
-            "(INBOUND PART_OF from respiratory system) to identify the "
-            "epithelial respiratory cell types. Phase 2 attaches the "
-            "datasets that exemplify those cell types (HAS_EXEMPLAR_DATA) "
-            "and the datasets about their anatomy (IS_ABOUT)."
+            "Datasets covering epithelial cell types in the respiratory "
+            "system. Narrows the cell ontology to epithelial cells found in "
+            "respiratory anatomy, then attaches the datasets that sample "
+            "those cell types and their anatomy."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -286,16 +281,11 @@ WORKFLOW_PRESETS = [
         "id": "epithelial-marker-genes-uc3",
         "name": "Marker genes for epithelial cells in the respiratory system (UC3)",
         "description": (
-            "Finds marker genes for epithelial cell types in the "
-            "respiratory system. Phase 1 intersects the epithelial cell "
-            "hierarchy (INBOUND SUB_CLASS_OF from epithelial cell) with "
-            "cell types part of respiratory-system anatomy (INBOUND "
-            "PART_OF from respiratory system). Phase 2 follows those cell "
-            "types to their cell sets (COMPOSED_PRIMARILY_OF), then to the "
-            "cell sets' biomarker combinations "
-            "(HAS_CHARACTERIZING_MARKER_SET) and marker genes (EXPRESSES). "
-            "Cell-type-to-cell-set mappings are still being populated, so "
-            "coverage grows as the ETL fills them in."
+            "Marker genes for epithelial cell types in the respiratory "
+            "system. Narrows to epithelial cells in respiratory anatomy, "
+            "then follows them to their cell sets, biomarker combinations, "
+            "and marker genes. Coverage grows as the ETL fills in "
+            "cell-type-to-cell-set mappings."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -378,12 +368,10 @@ WORKFLOW_PRESETS = [
         "id": "lung-spatial-panel-uc4",
         "name": "Lung spatial transcriptomics panel (UC4)",
         "description": (
-            "Builds a lung-specific marker gene panel for targeted "
-            "spatial transcriptomics. Phase 1 starts from lung "
-            "(UBERON) and traverses through cell sets to their "
-            "datasets (CSD), anchoring results to lung experiments. "
-            "Phase 2 fans out from those datasets to cell sets, "
-            "biomarker combinations, marker genes, and cell types."
+            "A lung-specific marker gene panel for targeted spatial "
+            "transcriptomics. Starts from lung anatomy to anchor on lung "
+            "experiments, then fans out to their cell sets, biomarker "
+            "combinations, marker genes, and cell types."
         ),
         "category": "Use Cases",
         "layoutMode": "strict-cluster",
@@ -458,11 +446,10 @@ WORKFLOW_PRESETS = [
         "id": "dataset-comparison-uc5",
         "name": "Compare datasets: HLCA vs CellRef (UC5)",
         "description": (
-            "Compares cell types between the HLCA (Sikkema et al.) and "
-            "CellRef (Guo et al.) lung datasets. Each dataset hub is "
-            "shown with its cell sets and the cell types it exemplifies; "
-            "cell types exemplified by both datasets appear between the "
-            "hubs, while dataset-specific cell types stay on their side."
+            "Cell types shared and unique between the HLCA (Sikkema et al.) "
+            "and CellRef (Guo et al.) lung datasets. Shared cell types sit "
+            "between the two dataset hubs; dataset-specific ones stay on "
+            "their own side."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
@@ -501,10 +488,9 @@ WORKFLOW_PRESETS = [
         "id": "cystic-fibrosis-uc6",
         "name": "Cystic fibrosis pathogenesis (UC6)",
         "description": (
-            "Big Dipper exploration of cystic fibrosis. Starting "
-            "from the disease, finds causal genes and treatments, "
-            "then traces genes to expressing cell types and their "
-            "anatomical locations."
+            "Cystic fibrosis as a Big Dipper: its causal genes and "
+            "treatments, then the cell types that express those genes and "
+            "where they sit anatomically."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -578,13 +564,11 @@ WORKFLOW_PRESETS = [
         "id": "leber-congenital-amaurosis-uc7",
         "name": "Leber congenital amaurosis (UC7)",
         "description": (
-            "Big Dipper exploration of Leber congenital amaurosis. "
-            "Starting from the disease, finds the causal genes "
-            "(ABCA4, AIPL1, LRAT, KCNJ13) and any treating compounds, "
-            "then traces to expressing cell types and anatomy. "
-            "Anchored on the parent MONDO term because the "
-            "RPE65-specific subtype and the RPE65 gene set are not "
-            "present in the current ETL release."
+            "Leber congenital amaurosis as a Big Dipper: causal genes "
+            "(ABCA4, AIPL1, LRAT, KCNJ13), treating compounds, expressing "
+            "cell types, and anatomy. Anchored on the parent disease term "
+            "because the RPE65-specific subtype is not in the current data "
+            "release."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -660,10 +644,9 @@ WORKFLOW_PRESETS = [
         "id": "parkinsons-disease-uc8",
         "name": "Parkinson's disease exploration (UC8)",
         "description": (
-            "Multi-phase exploration of Parkinson's disease. Phase 1 "
-            "identifies causal genes and therapeutic compounds. "
-            "Phase 2 traces genes to selectively expressing cell "
-            "types and their anatomical locations."
+            "Parkinson's disease: its causal genes and therapeutic "
+            "compounds, then the cell types that selectively express those "
+            "genes and where they sit anatomically."
         ),
         "category": "Use Cases",
         # NOT the big-dipper layout: this preset fans out to ~2,500 nodes
@@ -744,10 +727,10 @@ WORKFLOW_PRESETS = [
         "id": "pah-kcnk3-uc9",
         "name": "Pulmonary arterial hypertension / KCNK3 (UC9)",
         "description": (
-            "Big Dipper exploration of KCNK3-related pulmonary "
-            "arterial hypertension. Finds the causal gene (KCNK3), "
-            "its protein targets and interacting compounds, and the "
-            "cell types that selectively express it (lung pericyte)."
+            "KCNK3-related pulmonary arterial hypertension as a Big "
+            "Dipper: the causal gene, its protein targets and interacting "
+            "compounds, and the cell types that selectively express it "
+            "(lung pericyte)."
         ),
         "category": "Use Cases",
         "layoutMode": "big-dipper",
@@ -829,8 +812,8 @@ WORKFLOW_PRESETS = [
         "id": "cell-type-hierarchy",
         "name": "Cell type hierarchy",
         "description": (
-            "Navigates SUB_CLASS_OF relationships to display parent and child "
-            "cell types. Add a starting cell type to begin."
+            "The parent and child cell types around a starting point in the "
+            "cell ontology. Add a cell type to begin."
         ),
         "category": "Ontology Exploration",
         "layoutMode": "hierarchical",
@@ -862,12 +845,10 @@ WORKFLOW_PRESETS = [
         "id": "cell-types-in-respiratory-system",
         "name": "Cell types in the respiratory system",
         "description": (
-            "Lists the cell types located in the respiratory system. "
-            "Phase 1 collects all anatomical structures under the "
-            "respiratory system (INBOUND PART_OF + SUB_CLASS_OF over "
-            "UBERON only). Phase 2 takes a single hop from those "
-            "structures to adjacent cell types — deliberately not "
-            "traversing the cell-type (CL-CL) ontology. Returns the cell "
+            "The cell types located in the respiratory system. Collects "
+            "every anatomical structure under the respiratory system, then "
+            "takes a single hop to the cell types next to them — the cell "
+            "ontology itself is deliberately not traversed. Returns cell "
             "types only."
         ),
         "category": "Cell Type Discovery",
@@ -919,11 +900,9 @@ WORKFLOW_PRESETS = [
         "id": "epithelial-cells-respiratory-system",
         "name": "Epithelial cells in the respiratory system",
         "description": (
-            "Lists epithelial cell types located in the respiratory "
-            "system: the intersection of the epithelial cell hierarchy "
-            "(INBOUND SUB_CLASS_OF from epithelial cell) with cell types "
-            "part of respiratory-system anatomy (INBOUND PART_OF from "
-            "respiratory system). Returns the cell types only."
+            "The epithelial cell types located in the respiratory system — "
+            "everything under epithelial cell that is also part of "
+            "respiratory anatomy. Returns cell types only."
         ),
         "category": "Cell Type Discovery",
         "layoutMode": "force",
@@ -975,8 +954,8 @@ WORKFLOW_PRESETS = [
         "id": "lung-marker-gene-panel",
         "name": "Lung cell type marker gene panel",
         "description": (
-            "Returns gene symbols linked to lung cell types through "
-            "evidence-based biomarker relationships."
+            "Gene symbols linked to lung cell types through evidence-based "
+            "biomarker relationships."
         ),
         "category": "Marker Gene Analysis",
         "layoutMode": "force",
@@ -1015,12 +994,10 @@ WORKFLOW_PRESETS = [
         "name": "Marker gene panel for epithelial cells in the respiratory system",
         "description": (
             "A marker gene panel for epithelial cell types in the "
-            "respiratory system. Phase 1 intersects the epithelial cell "
-            "hierarchy (INBOUND SUB_CLASS_OF) with cell types part of "
-            "respiratory-system anatomy (INBOUND PART_OF). Phase 2 follows "
-            "those cell types to their cell sets and marker genes. Phase 3 "
-            "returns just the marker genes as the panel. Coverage grows as "
-            "cell-type-to-cell-set mappings are populated by the ETL."
+            "respiratory system. Narrows to epithelial cells in respiratory "
+            "anatomy, follows them to cell sets and marker genes, and "
+            "returns just the genes. Coverage grows as the ETL fills in "
+            "cell-type-to-cell-set mappings."
         ),
         "category": "Marker Gene Analysis",
         "layoutMode": "force",
@@ -1109,8 +1086,8 @@ WORKFLOW_PRESETS = [
         "id": "lung-markers-to-diseases",
         "name": "Lung biomarkers to diseases",
         "description": (
-            "Identifies biomarker combinations in the lung, then traces them "
-            "to associated disease entities."
+            "Biomarker combinations found in the lung and the diseases they "
+            "are associated with."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
@@ -1159,9 +1136,9 @@ WORKFLOW_PRESETS = [
         "id": "disease-cellular-pathogenesis",
         "name": "Disease to cell type involvement",
         "description": (
-            "Starting from a disease, identifies associated genes and the "
-            "cell types involved. Uses pulmonary hypertension as a default; "
-            "replace with any disease of interest."
+            "The genes associated with a disease and the cell types they "
+            "implicate. Defaults to pulmonary hypertension — swap in any "
+            "disease."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
@@ -1220,10 +1197,9 @@ WORKFLOW_PRESETS = [
         "id": "druggable-disease-genes",
         "name": "Druggable disease genes",
         "description": (
-            "Identifies genes that both underlie a disease (IS_GENETIC_BASIS_FOR_CONDITION) "
-            "and are targeted by compounds that treat it. Combines two "
-            "independent traversals across all MONDO diseases and intersects "
-            "the results."
+            "Genes that both underlie a disease and are targeted by a "
+            "compound that treats it. Runs two traversals across all "
+            "diseases and keeps the overlap."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
@@ -1312,18 +1288,13 @@ WORKFLOW_PRESETS = [
         "id": "broken-dipper-candidates",
         "name": "Broken Big Dipper: candidate genes",
         "description": (
-            "Step 1 of the Broken Big Dipper. Surfaces drug-repurposing "
-            "candidate genes: disease -> gene -> protein -> drug paths where "
-            "a drug targets a protein produced by a gene that is the genetic "
-            "basis of the disease, but the drug does NOT already treat that "
-            "disease (the dipper's closing 4th side is missing). Returns the "
-            "genes that sit on at least one broken dipper, using a path-aware "
-            "anti-edge (NAC) filter that excludes paths whose drug connects "
-            "back to the disease via IS_SUBSTANCE_THAT_TREATS. Then pick a "
-            "gene and run 'Big Dipper: explore a candidate' to see its "
-            "full dipper. (Note: phase 1 uses a default sample of the disease "
-            "collection; raise the collection-origin count on that phase — up "
-            "to All — to scan more diseases.)"
+            "Step 1 of the Broken Big Dipper. Finds drug-repurposing "
+            "candidates: genes whose protein is hit by a drug that does not "
+            "already treat the gene's disease, leaving the dipper's closing "
+            "side missing. Pick a gene from the results and run 'Big Dipper: "
+            "explore a candidate' to see its full dipper. Phase 1 samples "
+            "the disease collection by default — raise its origin count to "
+            "scan more."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
@@ -1364,19 +1335,11 @@ WORKFLOW_PRESETS = [
         "id": "clean-dipper-candidates",
         "name": "Complete Big Dipper: candidate genes",
         "description": (
-            "The positive counterpart of 'Broken Big Dipper: candidate "
-            "genes'. Surfaces genes that sit on a COMPLETE dipper: "
-            "disease -> gene -> protein -> drug paths where a drug targets a "
-            "protein produced by a gene that is the genetic basis of the "
-            "disease AND the drug already treats that disease (the dipper's "
-            "closing 4th side is present). Returns the genes on at least one "
-            "complete dipper, using a path-aware require-closing filter that "
-            "keeps only paths whose drug connects back to the disease via "
-            "IS_SUBSTANCE_THAT_TREATS. Useful as a validation/positive-control "
-            "set against the broken (repurposing) candidates. (Note: phase 1 "
-            "uses a default sample of the disease collection; raise the "
-            "collection-origin count on that phase — up to All — to scan more "
-            "diseases.)"
+            "The positive control for 'Broken Big Dipper: candidate genes'. "
+            "Finds genes whose protein is hit by a drug that already treats "
+            "the gene's disease, so the dipper's closing side is present. "
+            "Phase 1 samples the disease collection by default — raise its "
+            "origin count to scan more."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
@@ -1417,20 +1380,12 @@ WORKFLOW_PRESETS = [
         "id": "dipper-explorer",
         "name": "Big Dipper: explore a candidate",
         "description": (
-            "A Big Dipper builder for one candidate gene — works for both the "
-            "broken and complete candidate lists. Pick a gene by name (default "
-            "FLT1) and this renders its full Big Dipper: the gene's diseases "
-            "(IS_GENETIC_BASIS_FOR_CONDITION), the gene's protein and the "
-            "candidate drugs that target it (PRODUCES, "
-            "MOLECULARLY_INTERACTS_WITH), the cell types that express the gene "
-            "(gene <- cell set -> cell type, GS-CS-CL), and the candidate "
-            "drugs' closing treatment edges back to the gene's own diseases "
-            "(IS_SUBSTANCE_THAT_TREATS). A closing edge present = a complete "
-            "dipper for that disease; absent = the broken (repurposing) "
-            "dipper. The cell leg keeps only the cell sets that bridge the "
-            "gene to a cell type — those that map to no cell type are dropped "
-            "as noise. The closing scan only links existing nodes, so it adds "
-            "no extra diseases."
+            "The full Big Dipper for one gene (default FLT1), for candidates "
+            "from either the broken or the complete list. Shows the gene's "
+            "diseases, its protein and the drugs targeting that protein, the "
+            "cell types expressing it, and any treatment edges closing back "
+            "to those diseases. A closing edge means a complete dipper; its "
+            "absence is a repurposing candidate."
         ),
         "category": "Disease Analysis",
         "layoutMode": "big-dipper",
@@ -1579,8 +1534,8 @@ WORKFLOW_PRESETS = [
         "id": "ph-subtypes",
         "name": "Disease subtypes",
         "description": (
-            "Collects all pulmonary hypertension subtypes by traversing the "
-            "SUB_CLASS_OF hierarchy inward from the root disease term."
+            "Every pulmonary hypertension subtype, collected down the "
+            "subclass hierarchy from the root disease term."
         ),
         "category": "Example: Pulmonary Hypertension",
         "layoutMode": "force",
@@ -1590,8 +1545,8 @@ WORKFLOW_PRESETS = [
         "id": "ph-drugs",
         "name": "Therapeutic compounds",
         "description": (
-            "Extends the disease subtypes workflow by identifying compounds "
-            "used to treat each subtype."
+            "Pulmonary hypertension subtypes plus the compounds used to "
+            "treat each one."
         ),
         "category": "Example: Pulmonary Hypertension",
         "layoutMode": "force",
@@ -1601,9 +1556,8 @@ WORKFLOW_PRESETS = [
         "id": "ph-drug-targets",
         "name": "Drug molecular targets",
         "description": (
-            "Extends the therapeutic compounds workflow by tracing each drug "
-            "to its gene and protein targets via molecular interaction and "
-            "production relationships."
+            "Pulmonary hypertension treatments traced to the genes and "
+            "proteins they target."
         ),
         "category": "Example: Pulmonary Hypertension",
         "layoutMode": "force",
@@ -1613,8 +1567,8 @@ WORKFLOW_PRESETS = [
         "id": "ph-drug-target-cell-types",
         "name": "Cell types expressing drug targets",
         "description": (
-            "Extends the drug molecular targets workflow by identifying the "
-            "cell types that express those gene and protein targets."
+            "Pulmonary hypertension drug targets traced to the cell types "
+            "that express them."
         ),
         "category": "Example: Pulmonary Hypertension",
         "layoutMode": "force",
