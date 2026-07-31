@@ -2,6 +2,39 @@
  * Graph and tree data structure utilities.
  */
 
+import { DEFAULT_LABEL_STATES } from "constants/graph";
+
+/**
+ * Resolve the label states a preset asks for, layered over the defaults.
+ *
+ * Presets declare only what they want to change — a dense preset such as the
+ * Big Dipper explorer turns off "link-label", because rendering an edge label
+ * on each of its ~150 edges buries the graph it is trying to show.
+ *
+ * A declaration that overrides nothing resolves to null rather than to the
+ * bare defaults, so loading such a preset leaves the user's current labels
+ * alone instead of dispatching a no-op that resets them.
+ *
+ * @param {object} preset - Workflow preset, possibly with a labelStates key.
+ * @returns {object|null} Merged label states, or null if the preset overrides nothing.
+ */
+export function resolvePresetLabelStates(preset) {
+  const declared = preset?.labelStates;
+  if (!declared || typeof declared !== "object") return null;
+
+  const resolved = { ...DEFAULT_LABEL_STATES };
+  let overrides = 0;
+  for (const labelClass of Object.keys(DEFAULT_LABEL_STATES)) {
+    // Booleans only — Boolean("false") is true, so coercing a string-valued
+    // override would apply the opposite of what the preset author wrote.
+    if (Object.hasOwn(declared, labelClass) && typeof declared[labelClass] === "boolean") {
+      overrides += 1;
+      resolved[labelClass] = declared[labelClass];
+    }
+  }
+  return overrides > 0 ? resolved : null;
+}
+
 /**
  * Check if data has any nodes for a specific nodeId.
  * @param {object} data - Graph data object.

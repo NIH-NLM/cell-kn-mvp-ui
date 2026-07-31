@@ -58,6 +58,7 @@ export const LAYOUT_MODE_OPTIONS = [
   { value: "circular", label: "Circular" },
   { value: "grid", label: "Grid" },
   { value: "hierarchical", label: "Hierarchical" },
+  { value: "big-dipper", label: "Big Dipper" },
 ];
 export const ORIGIN_FILTER_OPTIONS = [
   { value: "all", label: "All nodes" },

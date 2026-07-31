@@ -31,6 +31,7 @@ import {
   updatePhaseSettings,
   updateSetting,
 } from "store";
+import { resolvePresetLabelStates } from "utils";
 import PhaseEditor from "./PhaseEditor";
 import PresetSelector from "./PresetSelector";
 
@@ -101,6 +102,10 @@ const WorkflowBuilder = ({ onGraphReady }) => {
       dispatch(loadWorkflow(preset));
       if (preset.layoutMode) {
         dispatch(updateSetting({ setting: "layoutMode", value: preset.layoutMode }));
+      }
+      const labelStates = resolvePresetLabelStates(preset);
+      if (labelStates) {
+        dispatch(updateSetting({ setting: "labelStates", value: labelStates }));
       }
     },
     [dispatch],
