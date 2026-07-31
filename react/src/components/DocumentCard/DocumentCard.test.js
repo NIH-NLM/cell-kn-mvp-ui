@@ -1,5 +1,10 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import DocumentCard from "./DocumentCard";
+
+// Gene symbols render as router links, so every card needs a router context.
+const renderCard = (document) =>
+  render(<DocumentCard document={document} />, { wrapper: MemoryRouter });
 
 // Mock the collection maps to provide predictable test data
 jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
@@ -22,13 +27,35 @@ jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
         ],
       },
     ],
+    [
+      "BMC",
+      {
+        display_name: "Biomarker combination",
+        individual_labels: [{ field_to_use: "markers" }],
+        individual_fields: [
+          { field_to_display: "markers", display_field_as: "Marker(s)" },
+          { field_to_display: "f_beta_score", display_field_as: "F_beta_score" },
+        ],
+      },
+    ],
+    [
+      "CS",
+      {
+        display_name: "Cell set",
+        individual_labels: [{ field_to_use: "author_cell_term" }],
+        individual_fields: [
+          { field_to_display: "expressed_genes", display_field_as: "Expressed genes" },
+          { field_to_display: "species", display_field_as: "Species" },
+        ],
+      },
+    ],
   ],
 }));
 
 describe("DocumentCard", () => {
   it("renders an Overview section header", () => {
     const document = { _id: "CL/0", _key: "0", label: "Document Label", prop1: "value1" };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
     expect(screen.getByRole("heading", { name: /overview/i })).toBeInTheDocument();
   });
 
@@ -40,7 +67,7 @@ describe("DocumentCard", () => {
       prop1: "value1",
       prop2: "value2",
     };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
 
     // Check if legend renders correctly
     expect(screen.getAllByText("Document Label")[0]).toBeInTheDocument();
@@ -55,7 +82,7 @@ describe("DocumentCard", () => {
       label: ["Label1", "Label2"],
       prop1: "value1",
     };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
 
     // Check if the label is joined correctly in the table (via formatValue)
     expect(screen.getByText("Label1, Label2")).toBeInTheDocument();
@@ -68,7 +95,7 @@ describe("DocumentCard", () => {
       label: "Document Label",
       _hiddenProp: "shouldNotShow",
     };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
 
     // Ensure that properties starting with an underscore are not rendered
     expect(screen.queryByText("_hiddenProp")).toBeNull();
@@ -81,7 +108,7 @@ describe("DocumentCard", () => {
       label: "Document Label",
       prop1: ["value1", "value2"],
     };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
 
     // Check if array values are joined correctly in the table
     expect(screen.getByText("value1, value2")).toBeInTheDocument();
@@ -96,7 +123,7 @@ describe("DocumentCard", () => {
       species: "Homo sapiens",
       cell_count: 584944,
     };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
     // Section headings from the config
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Metadata")).toBeInTheDocument();
@@ -108,9 +135,65 @@ describe("DocumentCard", () => {
     expect(screen.getByText("An integrated cell atlas of the human lung.")).toBeInTheDocument();
   });
 
+  it("links every marker gene to its own gene page", () => {
+    renderCard({ _id: "BMC/hoq", markers: "XCL1,XCL2,GNLY" });
+
+    for (const symbol of ["XCL1", "XCL2", "GNLY"]) {
+      expect(screen.getByRole("link", { name: symbol })).toHaveAttribute(
+        "href",
+        `/collections/GS/${symbol}`,
+      );
+    }
+  });
+
+  it("renders a single marker as one link", () => {
+    renderCard({ _id: "BMC/one", markers: "SLPI" });
+
+    expect(screen.getByRole("link", { name: "SLPI" })).toHaveAttribute(
+      "href",
+      "/collections/GS/SLPI",
+    );
+  });
+
+  it("leaves Ensembl identifiers as text while still linking their siblings", () => {
+    renderCard({ _id: "BMC/ens", markers: "ENSG00000277734,CD3D" });
+
+    expect(screen.queryByRole("link", { name: "ENSG00000277734" })).toBeNull();
+    expect(screen.getByText(/ENSG00000277734/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CD3D" })).toBeInTheDocument();
+  });
+
+  it("trims whitespace and ignores a trailing comma in a marker list", () => {
+    renderCard({ _id: "BMC/ws", markers: " CD3D , IL7R ," });
+
+    expect(screen.getAllByRole("link")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "CD3D" })).toHaveAttribute(
+      "href",
+      "/collections/GS/CD3D",
+    );
+  });
+
+  it("renders a repeated marker without a duplicate-key warning", () => {
+    const keyWarning = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    renderCard({ _id: "BMC/dup", markers: "CD3D,IL7R,CD3D" });
+
+    expect(screen.getAllByRole("link", { name: "CD3D" })).toHaveLength(2);
+    expect(keyWarning).not.toHaveBeenCalled();
+    keyWarning.mockRestore();
+  });
+
+  it("links gene fields on cell set documents but leaves other fields alone", () => {
+    renderCard({ _id: "CS/abc", expressed_genes: "GNLY,PRF1", species: "Homo sapiens" });
+
+    expect(screen.getByRole("link", { name: "GNLY" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Homo sapiens" })).toBeNull();
+    expect(screen.getByText("Homo sapiens")).toBeInTheDocument();
+  });
+
   it("falls back to the flat Overview card for a non-configured collection", () => {
     const document = { _id: "PUB/xyz", label: "Some paper" };
-    render(<DocumentCard document={document} />);
+    renderCard(document);
     expect(screen.getByText("Overview")).toBeInTheDocument();
     // No CSD section headings for a PUB document
     expect(screen.queryByText("Metadata")).not.toBeInTheDocument();
