@@ -144,6 +144,28 @@ class GraphServiceTestCase(ArangoDBTestCase):
                 edge_filters=None,
             )
 
+    def test_traverse_graph_missing_start_node_returns_no_null_nodes(self):
+        """A start node that no longer exists must not surface as a null node.
+
+        DOCUMENT() returns null for an unknown id. Unioning that null into the
+        node list hands the client a `[null]` array, which blows up any
+        consumer that reads a property off each node. Datasets get re-keyed
+        between ETL releases (CSD keys gained an `__<anatomy>` suffix), so a
+        preset anchored on a retired id hits this path routinely.
+        """
+        result = graph_service.traverse_graph(
+            node_ids=["CL/does-not-exist"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        nodes = result["CL/does-not-exist"]["nodes"]
+        self.assertNotIn(None, nodes)
+        self.assertEqual(nodes, [])
+
     def test_find_shortest_paths(self):
         result = graph_service.find_shortest_paths(
             node_ids=["CL/0000061", "CL/0000062"],

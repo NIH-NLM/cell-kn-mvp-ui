@@ -91,7 +91,12 @@ _PH_CELL_TYPES_PHASE_SETTINGS = {
     "edgeDirection": "ANY",
     "allowedCollections": ["GS", "CS", "CL"],
     "edgeFilters": {
-        "Label": ["PRODUCES", "EXPRESSES", "COMPOSED_PRIMARILY_OF"],
+        "Label": [
+            "PRODUCES",
+            "EXPRESSES",
+            "SELECTIVELY_EXPRESSES",
+            "COMPOSED_PRIMARILY_OF",
+        ],
         "Source": [],
     },
     "setOperation": "Union",
@@ -163,14 +168,21 @@ WORKFLOW_PRESETS = [
                 "id": "preset-hlca-lung-phase-1",
                 "name": "Traverse HLCA dataset to cell types",
                 "originSource": "manual",
+                # CSD keys are `<dataset uuid>__<anatomical structure>`: ETL
+                # v1.6.0-rc.2 split each dataset per anatomy, so the bare uuid
+                # this preset used to point at no longer resolves.
                 "originNodeIds": [
-                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94",
+                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system",
                 ],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
                     "depth": 1,
-                    "edgeDirection": "INBOUND",
+                    # ANY, not INBOUND: the dataset reaches its cell sets
+                    # outbound (CSD -IS_ABOUT-> CS) while its exemplar cell
+                    # types point back inbound (CL -HAS_EXEMPLAR_DATA-> CSD).
+                    # INBOUND alone drops all 61 cell sets.
+                    "edgeDirection": "ANY",
                     "allowedCollections": ["CS", "CL"],
                     "edgeFilters": {"Label": [], "Source": []},
                     "setOperation": "Union",
@@ -348,6 +360,7 @@ WORKFLOW_PRESETS = [
                             "COMPOSED_PRIMARILY_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                         ],
                         "Source": [],
@@ -365,22 +378,22 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "lung-spatial-panel-uc4",
-        "name": "Lung spatial transcriptomics panel (UC4)",
+        "id": "respiratory-spatial-panel-uc4",
+        "name": "Respiratory system spatial transcriptomics panel (UC4)",
         "description": (
-            "A lung-specific marker gene panel for targeted spatial "
-            "transcriptomics. Starts from lung anatomy to anchor on lung "
-            "experiments, then fans out to their cell sets, biomarker "
-            "combinations, marker genes, and cell types."
+            "A respiratory-system marker gene panel for targeted spatial "
+            "transcriptomics. Starts from respiratory anatomy to anchor on "
+            "respiratory experiments, then fans out to their cell sets, "
+            "biomarker combinations, marker genes, and cell types."
         ),
         "category": "Use Cases",
         "layoutMode": "strict-cluster",
         "phases": [
             {
                 "id": "preset-uc4-phase-1",
-                "name": "Lung cell set datasets",
+                "name": "Respiratory system cell set datasets",
                 "originSource": "manual",
-                "originNodeIds": ["UBERON/0002048"],
+                "originNodeIds": ["UBERON/0001004"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
@@ -412,11 +425,12 @@ WORKFLOW_PRESETS = [
                     "allowedCollections": ["CS", "BMC", "GS", "CL"],
                     "edgeFilters": {
                         "Label": [
-                            "MEMBER_OF",
+                            "IS_ABOUT",
                             "PART_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "COMPOSED_PRIMARILY_OF",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                         ],
                         "Source": [],
                     },
@@ -459,21 +473,22 @@ WORKFLOW_PRESETS = [
                 "name": "Show both datasets with their cell sets and cell types",
                 "originSource": "manual",
                 "originNodeIds": [
-                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94",
-                    "CSD/8b459307-bce0-45f9-9e45-a0a3673058a2",
+                    "CSD/4cb45d80-499a-48ae-a056-c71ac3552c94__respiratory_system",
+                    "CSD/8b459307-bce0-45f9-9e45-a0a3673058a2__respiratory_system",
                 ],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
-                    # depth-1 INBOUND from each dataset picks up its cell sets
-                    # (CS -MEMBER_OF-> CSD) and its exemplar cell types
-                    # (CL -HAS_EXEMPLAR_DATA-> CSD). Cell types exemplified by
-                    # both datasets become a shared CL node bridging the two
-                    # hubs. (Once the schema's CS -EXACT_MATCH-> CS edge is
-                    # populated by the ETL it will also bridge equivalent cell
-                    # sets directly; not present as of v1.4.6-alpha.34.)
+                    # depth-1 ANY from each dataset picks up its cell sets
+                    # (CSD -IS_ABOUT-> CS, outbound) and its exemplar cell
+                    # types (CL -HAS_EXEMPLAR_DATA-> CSD, inbound). Cell types
+                    # exemplified by both datasets become a shared CL node
+                    # bridging the two hubs. (Once the schema's
+                    # CS -EXACT_MATCH-> CS edge is populated by the ETL it will
+                    # also bridge equivalent cell sets directly; not present as
+                    # of v1.6.0-rc.2.)
                     "depth": 1,
-                    "edgeDirection": "INBOUND",
+                    "edgeDirection": "ANY",
                     "allowedCollections": ["CS", "CL"],
                     "edgeFilters": {"Label": [], "Source": []},
                     "setOperation": "Union",
@@ -547,6 +562,7 @@ WORKFLOW_PRESETS = [
                             "PRESENT_IN_TAXON",
                             "PRODUCES",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
@@ -627,6 +643,7 @@ WORKFLOW_PRESETS = [
                             "PRODUCES",
                             "MOLECULARLY_INTERACTS_WITH",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
@@ -710,6 +727,7 @@ WORKFLOW_PRESETS = [
                             "IS_GENETIC_BASIS_FOR_CONDITION",
                             "IS_SUBSTANCE_THAT_TREATS",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
@@ -792,6 +810,7 @@ WORKFLOW_PRESETS = [
                             "HAS_QUALITY",
                             "IS_GENETIC_BASIS_FOR_CONDITION",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
                         ],
                         "Source": [],
@@ -951,20 +970,20 @@ WORKFLOW_PRESETS = [
     # Marker Gene Analysis
     # -------------------------------------------------------------------------
     {
-        "id": "lung-marker-gene-panel",
-        "name": "Lung cell type marker gene panel",
+        "id": "respiratory-marker-gene-panel",
+        "name": "Respiratory system cell type marker gene panel",
         "description": (
-            "Gene symbols linked to lung cell types through evidence-based "
-            "biomarker relationships."
+            "Gene symbols linked to respiratory system cell types through "
+            "evidence-based biomarker relationships."
         ),
         "category": "Marker Gene Analysis",
         "layoutMode": "force",
         "phases": [
             {
-                "id": "preset-lung-panel-phase-1",
-                "name": "Retrieve lung cell type marker genes",
+                "id": "preset-resp-panel-phase-1",
+                "name": "Retrieve respiratory system cell type marker genes",
                 "originSource": "manual",
-                "originNodeIds": ["UBERON/0002048"],
+                "originNodeIds": ["UBERON/0001004"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
@@ -977,6 +996,7 @@ WORKFLOW_PRESETS = [
                             "COMPOSED_PRIMARILY_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                         ],
                         "Source": [],
                     },
@@ -1055,6 +1075,7 @@ WORKFLOW_PRESETS = [
                             "COMPOSED_PRIMARILY_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "PART_OF",
                         ],
                         "Source": [],
@@ -1083,20 +1104,20 @@ WORKFLOW_PRESETS = [
     # Disease Analysis
     # -------------------------------------------------------------------------
     {
-        "id": "lung-markers-to-diseases",
-        "name": "Lung biomarkers to diseases",
+        "id": "respiratory-markers-to-diseases",
+        "name": "Respiratory system biomarkers to diseases",
         "description": (
-            "Biomarker combinations found in the lung and the diseases they "
-            "are associated with."
+            "Biomarker combinations found in the respiratory system and the "
+            "diseases they are associated with."
         ),
         "category": "Disease Analysis",
         "layoutMode": "force",
         "phases": [
             {
-                "id": "preset-lung-disease-phase-1",
-                "name": "Identify lung biomarkers",
+                "id": "preset-resp-disease-phase-1",
+                "name": "Identify respiratory system biomarkers",
                 "originSource": "manual",
-                "originNodeIds": ["UBERON/0002048"],
+                "originNodeIds": ["UBERON/0001004"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
@@ -1112,11 +1133,11 @@ WORKFLOW_PRESETS = [
                 "perNodeSettings": {},
             },
             {
-                "id": "preset-lung-disease-phase-2",
+                "id": "preset-resp-disease-phase-2",
                 "name": "Trace to associated diseases",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
-                "previousPhaseId": "preset-lung-disease-phase-1",
+                "previousPhaseId": "preset-resp-disease-phase-1",
                 "originFilter": "all",
                 "settings": {
                     "depth": 2,
@@ -1178,6 +1199,7 @@ WORKFLOW_PRESETS = [
                     "edgeFilters": {
                         "Label": [
                             "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
                             "COMPOSED_PRIMARILY_OF",
                             "HAS_CHARACTERIZING_MARKER_SET",
                             "PRODUCES",
@@ -1418,7 +1440,11 @@ WORKFLOW_PRESETS = [
                     "edgeDirection": "ANY",
                     "allowedCollections": ["CS", "CL"],
                     "edgeFilters": {
-                        "Label": ["EXPRESSES", "COMPOSED_PRIMARILY_OF"],
+                        "Label": [
+                            "EXPRESSES",
+                            "SELECTIVELY_EXPRESSES",
+                            "COMPOSED_PRIMARILY_OF",
+                        ],
                         "Source": [],
                     },
                     "setOperation": "Union",
