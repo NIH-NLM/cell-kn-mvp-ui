@@ -165,6 +165,7 @@ def traverse_graph(
     graph,
     edge_filters,
     exclude_edge_filters=None,
+    terminal_collections=None,
     include_inter_node_edges=True,
     exclude_closing_edges=None,
     require_closing_edges=None,
@@ -179,6 +180,16 @@ def traverse_graph(
         allowed_collections (list): A list of vertex collection names to include.
         graph (str): The graph type ("ontologies" or "phenotypes").
         edge_filters (dict): A dictionary for filtering edges.
+        terminal_collections (list): Optional list of vertex collection names
+            that are visited and returned but never expanded through. Uses
+            PRUNE, which emits the matched vertex and stops descent past it.
+            PRUNE is also evaluated at depth 0, where v is the traversal start
+            vertex and e is null — even when the traversal range starts at 1 —
+            and pruning there stops the traversal before it emits anything. The
+            emitted condition is therefore guarded with `e != null`, which is
+            what exempts the origin: an origin whose own collection is terminal
+            still expands normally. Cannot be combined with
+            exclude_closing_edges or require_closing_edges.
         include_inter_node_edges (bool): If True, includes edges between nodes
             in the result set. Ignored when exclude_closing_edges is active
             (the path-aware branch returns complete path links directly).
@@ -221,14 +232,33 @@ def traverse_graph(
     )
     if positive_conditions:
         filter_string = f"FILTER {' AND '.join(positive_conditions)}"
-    # PRUNE is emitted whenever there are negative (prune) conditions to act on.
-    # Both categorical and numeric exclude filters now populate
-    # negative_conditions (to stop descent through excluded edges), as do the
-    # "not matched" branches of include filters. The guard only avoids emitting
-    # an empty (syntactically invalid) PRUNE clause when there are genuinely no
-    # negative conditions.
-    if negative_conditions:
-        prune_string = f"PRUNE {' OR '.join(negative_conditions)}"
+
+    # Terminal collections prune by *vertex* collection, unlike the edge-attribute
+    # conditions above. PRUNE still returns the matched vertex, so the terminal
+    # node and its connecting edge appear in the result; only descent past it
+    # stops. OR-composed with the edge conditions so enabling one feature does
+    # not silently disable the other.
+    #
+    # The `e != null` guard is required, not cosmetic. ArangoDB evaluates PRUNE
+    # at depth 0 as well, where v is the start vertex and e is null, even though
+    # the traversal range is 1..@depth. Without the guard, starting from a vertex
+    # whose own collection is terminal prunes at depth 0 and the traversal
+    # returns no neighbors at all — measured: origin UBERON/0000004 with terminal
+    # ["UBERON"] at depth 1 returned 0 vertices unguarded vs 69 guarded.
+    prune_conditions = list(negative_conditions)
+    if terminal_collections:
+        bind_vars["terminal_collections"] = terminal_collections
+        prune_conditions.append(
+            "(e != null AND PARSE_COLLECTION(v._id) IN @terminal_collections)"
+        )
+
+    # PRUNE is emitted whenever there are conditions to act on. Both categorical
+    # and numeric exclude filters populate negative_conditions (to stop descent
+    # through excluded edges), as do the "not matched" branches of include
+    # filters. The guard only avoids emitting an empty (syntactically invalid)
+    # PRUNE clause when there are genuinely no conditions.
+    if prune_conditions:
+        prune_string = f"PRUNE {' OR '.join(prune_conditions)}"
 
     # The two path-closing filters cannot compose in one pass, so reject the
     # combination loudly rather than silently dropping one. require_mode keeps
@@ -239,6 +269,15 @@ def traverse_graph(
         raise ValueError(
             "Cannot set both exclude_closing_edges and require_closing_edges "
             "on one phase."
+        )
+    # Guard on the extracted labels, not the raw dicts: callers routinely send
+    # {"Label": []} for a phase with no closing-edge filter at all, which is
+    # truthy as a dict and would raise here for no reason.
+    if terminal_collections and (exclude_labels or require_labels):
+        raise ValueError(
+            "terminal_collections cannot be combined with closing-edge filters; "
+            "the closing-edge query needs complete fixed-depth paths and so "
+            "deliberately avoids PRUNE."
         )
     require_mode = bool(require_labels)
     closing_labels = require_labels if require_mode else exclude_labels
@@ -418,6 +457,7 @@ def traverse_graph_advanced(
         allowed_collections = settings.get("allowedCollections", [])
         edge_filters = settings.get("edgeFilters", {})
         exclude_edge_filters = settings.get("excludeEdgeFilters", {})
+        terminal_collections = settings.get("terminalCollections", [])
 
         result_for_node = traverse_graph(
             node_ids=[node_id],
@@ -427,6 +467,7 @@ def traverse_graph_advanced(
             graph=graph,
             edge_filters=edge_filters,
             exclude_edge_filters=exclude_edge_filters,
+            terminal_collections=terminal_collections,
             include_inter_node_edges=include_inter_node_edges,
             exclude_closing_edges=settings.get("excludeClosingEdges"),
             require_closing_edges=settings.get("requireClosingEdges"),

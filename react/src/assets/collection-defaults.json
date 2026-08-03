@@ -87,10 +87,11 @@
   },
   "GS": {
     "graphType": "phenotypes",
-    "depth": 2,
+    "depth": 3,
     "edgeDirection": "ANY",
     "collapseOnStart": "off",
-    "allowedCollections": ["CL", "GS"],
+    "allowedCollections": ["BGS", "CS", "UBERON", "CSD"],
+    "terminalCollections": ["UBERON", "CSD"],
     "preferredPredicates": []
   },
   "PR": {

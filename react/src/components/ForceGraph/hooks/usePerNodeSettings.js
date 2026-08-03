@@ -7,6 +7,7 @@ const PER_NODE_SETTINGS = [
   "depth",
   "edgeDirection",
   "allowedCollections",
+  "terminalCollections",
   "nodeFontSize",
   "edgeFontSize",
   "labelStates",

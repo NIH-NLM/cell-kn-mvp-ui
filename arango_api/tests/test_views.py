@@ -22,6 +22,7 @@ from unittest import mock
 from django.test import SimpleTestCase, TestCase, override_settings, tag
 from django.urls import reverse
 
+from arango_api.serializers import GraphTraversalSerializer
 from arango_api.services import version_service
 from arango_api.tests.seed_test_db import seed_test_databases
 
@@ -517,3 +518,39 @@ class CircuitBreakerOpenResponseTestCase(SimpleTestCase):
     #     # The view's `except Exception` maps it to a 500 with an error body.
     #     self.assertEqual(response.status_code, 500)
     #     self.assertIn("error", response.json())
+
+
+class TerminalCollectionsSerializerTestCase(TestCase):
+    """Serializer acceptance for terminal_collections (no DB required)."""
+
+    def _payload(self, **overrides):
+        payload = {
+            "node_ids": ["GS/GUCY1A2"],
+            "depth": 3,
+            "edge_direction": "ANY",
+            "allowed_collections": ["BGS", "CS", "UBERON", "CSD"],
+            "graph": "phenotypes",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_accepts_list_of_collection_names(self):
+        serializer = GraphTraversalSerializer(
+            data=self._payload(terminal_collections=["UBERON", "CSD"])
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data["terminal_collections"], ["UBERON", "CSD"]
+        )
+
+    def test_defaults_to_empty_list_when_absent(self):
+        serializer = GraphTraversalSerializer(data=self._payload())
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["terminal_collections"], [])
+
+    def test_rejects_non_string_entries(self):
+        serializer = GraphTraversalSerializer(
+            data=self._payload(terminal_collections=[{"nope": 1}])
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("terminal_collections", serializer.errors)

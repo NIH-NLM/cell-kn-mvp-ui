@@ -1,17 +1,22 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import graphReducer, { setEdgeFilterMode } from "../../../store/graphSlice";
 import FiltersPanel from "./FiltersPanel";
 
-const renderPanel = (mode = "include") => {
+const renderPanel = (modeOrOptions = "include") => {
+  const options = typeof modeOrOptions === "string" ? { mode: modeOrOptions } : modeOrOptions;
+  const { mode = "include", settings: settingsOverride = {}, ...propOverrides } = options;
+
   const store = configureStore({ reducer: { graph: graphReducer } });
   const dispatchSpy = jest.spyOn(store, "dispatch");
   const settings = {
     allCollections: [],
     allowedCollections: [],
+    terminalCollections: [],
     edgeFilters: { Label: [] },
     edgeFilterModes: { Label: mode },
+    ...settingsOverride,
   };
   render(
     <Provider store={store}>
@@ -22,7 +27,10 @@ const renderPanel = (mode = "include") => {
         edgeFilterStatus="succeeded"
         onCollectionChange={() => {}}
         onCollectionsClearAll={() => {}}
+        onTerminalCollectionChange={() => {}}
+        onTerminalCollectionsClearAll={() => {}}
         graphLinks={[{ Label: "DERIVES_FROM" }]}
+        {...propOverrides}
       />
     </Provider>,
   );
@@ -81,5 +89,49 @@ describe("FiltersPanel edge filter mode toggle", () => {
     renderPanel("include");
     expect(screen.getByRole("button", { name: /^include$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /exclude/i })).toBeInTheDocument();
+  });
+});
+
+describe("FiltersPanel terminal collections", () => {
+  it("offers only currently allowed collections as terminal options", () => {
+    renderPanel({
+      settings: {
+        allCollections: ["CS", "UBERON", "MONDO"],
+        allowedCollections: ["CS", "UBERON"],
+        terminalCollections: ["UBERON"],
+      },
+    });
+
+    const group = screen.getByRole("group", { name: /stop traversal at/i });
+    // The dropdown's option list only renders while open (onFocus sets isOpen),
+    // and selected values also render as pills outside that list regardless of
+    // open state. Focus the input first and scope assertions to .dropdown-list
+    // so we prove the *option list* is sourced from allowedCollections, rather
+    // than incidentally matching the "UBERON" pill (always present) or trivially
+    // finding "MONDO" absent because the list was never opened.
+    fireEvent.focus(within(group).getByPlaceholderText(/Filter by Terminal collections/i));
+    const optionList = group.querySelector(".dropdown-list");
+    expect(within(optionList).getByText("UBERON")).toBeInTheDocument();
+    // MONDO is allowed nowhere, so it must not be offerable as terminal.
+    expect(within(optionList).queryByText("MONDO")).not.toBeInTheDocument();
+  });
+
+  it("toggles a collection's terminal state", () => {
+    const onTerminalCollectionChange = jest.fn();
+    renderPanel({
+      settings: {
+        allCollections: ["CS", "UBERON"],
+        allowedCollections: ["CS", "UBERON"],
+        terminalCollections: [],
+      },
+      onTerminalCollectionChange,
+    });
+
+    const group = screen.getByRole("group", { name: /stop traversal at/i });
+    fireEvent.focus(within(group).getByPlaceholderText(/Filter by Terminal collections/i));
+    const optionList = group.querySelector(".dropdown-list");
+    fireEvent.click(within(optionList).getByText("UBERON"));
+
+    expect(onTerminalCollectionChange).toHaveBeenCalledWith("UBERON");
   });
 });

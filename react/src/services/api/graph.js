@@ -21,6 +21,7 @@ import { postJson } from "./fetchWrapper";
  * @param {number} [params.depth] - Traversal depth.
  * @param {string} [params.edgeDirection] - Edge direction (ANY, INBOUND, OUTBOUND).
  * @param {Array<string>} [params.allowedCollections] - Collections to include.
+ * @param {Array<string>} [params.terminalCollections] - Collections returned but not expanded through.
  * @param {number} [params.nodeLimit] - Maximum nodes to return.
  * @param {string} params.graphType - Graph/database type.
  * @param {Array} [params.edgeFilters] - Edge filters.
@@ -35,6 +36,7 @@ export const fetchGraphData = async (params) => {
     depth,
     edgeDirection,
     allowedCollections,
+    terminalCollections,
     nodeLimit,
     graphType,
     edgeFilters,
@@ -71,6 +73,7 @@ export const fetchGraphData = async (params) => {
       depth,
       edge_direction: edgeDirection,
       allowed_collections: allowedCollections,
+      terminal_collections: terminalCollections || [],
       node_limit: nodeLimit,
       graph: graphType,
       edge_filters: edgeFilters,
@@ -131,6 +134,9 @@ export const fetchEdgesBetween = async (nodeIds, graphType, edgeFilters, exclude
  * @param {string} graphType - Graph/database type.
  * @param {Array<string>} allowedCollections - Collections to include in traversal.
  * @param {boolean} [includeInterNodeEdges=true] - Include edges between result nodes.
+ * @param {Object} [edgeFilters] - Edge filters.
+ * @param {Object} [excludeEdgeFilters] - Edge exclude filters.
+ * @param {Array<string>} [terminalCollections] - Collections returned but not expanded through.
  * @returns {Promise<Object>} Expansion data with nodes and links.
  */
 export const fetchNodeExpansion = async (
@@ -140,12 +146,14 @@ export const fetchNodeExpansion = async (
   includeInterNodeEdges = true,
   edgeFilters = {},
   excludeEdgeFilters = {},
+  terminalCollections = [],
 ) => {
   return postJson(GRAPH_ENDPOINT, {
     node_ids: [nodeId],
     depth: EXPANSION_DEPTH,
     edge_direction: "ANY",
     allowed_collections: allowedCollections,
+    terminal_collections: terminalCollections || [],
     graph: graphType,
     edge_filters: edgeFilters,
     exclude_edge_filters: excludeEdgeFilters,

@@ -86,6 +86,15 @@ class GraphTraversalSerializer(GraphRequestSerializer):
         required=True,
         help_text="List of vertex collection names to include",
     )
+    terminal_collections = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        default=list,
+        help_text=(
+            "Vertex collections that are returned but never expanded through. "
+            "A name not present in allowed_collections is inert, not an error."
+        ),
+    )
     edge_filters = serializers.DictField(
         required=False,
         allow_null=True,
