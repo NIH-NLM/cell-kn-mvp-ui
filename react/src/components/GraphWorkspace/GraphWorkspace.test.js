@@ -1,8 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import GraphWorkspace from "components/GraphWorkspace";
 import { Provider } from "react-redux";
-import graphReducer from "store/graphSlice";
+import graphReducer, { clearGraphData, initializeGraph } from "store/graphSlice";
 import savedGraphsReducer from "store/savedGraphsSlice";
 
 // Stub heavy children so the test targets composition + selection wiring.
@@ -196,6 +196,42 @@ describe("GraphWorkspace", () => {
     const inspector = screen.getByTestId("inspector");
     expect(inspector).toHaveAttribute("data-origin", "CS/pending");
     expect(inspector).toHaveAttribute("data-selected", "");
+  });
+
+  it("blanks the inspector once origins have resolved and then been removed", () => {
+    const store = configureStore({
+      reducer: { graph: graphReducer, savedGraphs: savedGraphsReducer },
+    });
+    render(
+      <Provider store={store}>
+        <GraphWorkspace
+          originDocument={{ _id: "CSD/origin" }}
+          nodeIds={["CSD/origin"]}
+          settings={{}}
+        />
+      </Provider>,
+    );
+    // Origins resolve. The nodeIds prop still wins the fallback chain here, so
+    // the seed is what shows — that is exactly the value that must disappear.
+    act(() => {
+      store.dispatch(
+        initializeGraph({ nodeIds: ["CS/a"], isAdvancedMode: false, perNodeSettings: {} }),
+      );
+    });
+    expect(screen.getByTestId("inspector")).toHaveTextContent("CSD/origin");
+    // Now the user removes them all. The page's seed document must not
+    // survive — there is no current origin to inspect.
+    act(() => {
+      store.dispatch(clearGraphData());
+    });
+    expect(screen.getByTestId("inspector")).toHaveTextContent("empty");
+  });
+
+  it("keeps the seeded origin document on first paint, before origins resolve", () => {
+    // originNodeIds is empty here too, but nothing has resolved yet, so the
+    // seed must still render rather than flashing an empty inspector.
+    renderWorkspace({}, { past: [], present: { originNodeIds: [] }, future: [] });
+    expect(screen.getByTestId("inspector")).toHaveTextContent("CSD/origin");
   });
 
   it("toggles the origins panel open and closed from the canvas action", () => {

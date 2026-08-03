@@ -40,11 +40,11 @@ const savedGraphsSlice = createSlice({
       // entries never persist it.
       // biome-ignore lint/correctness/noUnusedVariables: destructured only to omit it from entry
       const { checked, ...entry } = action.payload;
-      // One entry per origin; re-adding an already-tracked origin doesn't
-      // duplicate it, but still focuses it as the active version.
-      if (!state.originHistory.some((e) => e.originId === entry.originId)) {
-        state.originHistory.push({ thumbnail: null, ...entry });
-      }
+      // History is a timeline of origin events, not a set of unique origins:
+      // an origin toggled off and back on is captured again, so the earlier
+      // card keeps describing the composition it was captured from. Callers
+      // supply a unique id.
+      state.originHistory.push({ thumbnail: null, ...entry });
       state.activeHistoryId = entry.id;
     },
     deleteHistoryEntry: (state, action) => {
@@ -54,12 +54,18 @@ const savedGraphsSlice = createSlice({
     // Refreshes an existing history entry's captured graph (and optionally its
     // thumbnail) so it holds the most recent version rather than a stale
     // first-resolve snapshot. No-op if the entry no longer exists.
+    //
+    // Thumbnails are only ever replaced by a truthy one: captureGraphThumbnail
+    // is best-effort and resolves to null on any failure, and a failed capture
+    // must not destroy the good picture a card already holds — a card can be
+    // frozen straight after such a write and would keep the blank forever. The
+    // first real thumbnail still lands, since entries start out with none.
     updateHistoryEntry: (state, action) => {
       const { id, subgraph, thumbnail } = action.payload;
       const entry = state.originHistory.find((h) => h.id === id);
       if (!entry) return;
       if (subgraph) entry.subgraph = subgraph;
-      if (thumbnail !== undefined) entry.thumbnail = thumbnail;
+      if (thumbnail) entry.thumbnail = thumbnail;
     },
     setActiveHistory: (state, action) => {
       state.activeHistoryId = action.payload;
@@ -114,13 +120,23 @@ export const restoreHistoryEntry = (id) => (dispatch, getState) => {
 /**
  * Keeps the currently active history entry's captured graph and thumbnail in
  * sync with the live graph, so restoring it later shows the most recent version
- * instead of the first-resolve snapshot. No-op when no entry is active.
+ * instead of the first-resolve snapshot.
+ *
+ * Callers capture the active entry id at the moment the graph settled and pass
+ * it as `targetId`; the sync is dropped unless that entry is *still* the active
+ * one. The thumbnail capture that precedes this dispatch is async, so the
+ * active entry can be frozen and another one activated while it is in flight —
+ * comparing ids (rather than merely checking that something is active) is what
+ * keeps a settle's graph out of a card it never described.
+ *
+ * No-op when no entry is active, or when `targetId` is omitted.
  * @param {{ nodes: Array, links: Array }} subgraph
- * @param {string|null} [thumbnail]
+ * @param {string|null} thumbnail
+ * @param {string} targetId - the entry that was active when the settle fired
  */
-export const syncActiveHistoryEntry = (subgraph, thumbnail) => (dispatch, getState) => {
+export const syncActiveHistoryEntry = (subgraph, thumbnail, targetId) => (dispatch, getState) => {
   const activeId = getState().savedGraphs.activeHistoryId;
-  if (!activeId) return;
+  if (!activeId || activeId !== targetId) return;
   dispatch(updateHistoryEntry({ id: activeId, subgraph, thumbnail }));
 };
 
