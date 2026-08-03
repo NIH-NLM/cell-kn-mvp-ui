@@ -3,7 +3,7 @@ import NodeInspector from "components/NodeInspector";
 import OriginsSidebar from "components/OriginsSidebar";
 import SavedGraphShelf from "components/SavedGraphShelf";
 import { useNodeDocument } from "hooks";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectOriginHistory } from "store";
 import { getTitle } from "utils";
@@ -37,7 +37,20 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
   // both restores (restoreHistoryEntry) and new adds (addHistoryEntry). Fall back
   // to the page's origin ids before any history exists.
   const activeEntry = originHistory.find((e) => e.id === activeHistoryId);
-  const currentOriginId = activeEntry?.originId ?? nodeIds?.[0] ?? originNodeIds?.[0] ?? null;
+
+  // originNodeIds is empty both on first paint (before the page's query has
+  // initialized, where the seeded originDocument avoids a loading flash) and
+  // after the user removes every origin. Latch once origins have actually
+  // resolved so the second case reads as "nothing to inspect" and blanks the
+  // panel instead of resurrecting the seed. A latch rather than
+  // originHistory.length, so deleting every history card does not undo it.
+  const hadOriginsRef = useRef(false);
+  if (originNodeIds?.length) hadOriginsRef.current = true;
+  const originsCleared = hadOriginsRef.current && !originNodeIds?.length && !activeEntry;
+
+  const currentOriginId = originsCleared
+    ? null
+    : (activeEntry?.originId ?? nodeIds?.[0] ?? originNodeIds?.[0] ?? null);
 
   // Resolve the current origin's full document (cached). Seed with the page's
   // originDocument so the first paint doesn't flash a loading state.
@@ -45,9 +58,12 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
   // With an active history entry, follow that entry's origin. Before any history
   // exists, trust the page's own originDocument — its _id may differ from
   // currentOriginId (e.g. an edge document, whose origin ids are its endpoints).
-  const currentOriginDoc = activeEntry
-    ? (fetchedOriginDoc ?? (originDocument?._id === currentOriginId ? originDocument : null))
-    : (originDocument ?? fetchedOriginDoc);
+  let currentOriginDoc = null;
+  if (!originsCleared) {
+    currentOriginDoc = activeEntry
+      ? (fetchedOriginDoc ?? (originDocument?._id === currentOriginId ? originDocument : null))
+      : (originDocument ?? fetchedOriginDoc);
+  }
 
   // Default (no selection): show the resolved current-origin doc via originDocument.
   // If it isn't resolved yet (a host without a seed), let the inspector fetch the
