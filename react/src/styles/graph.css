@@ -983,6 +983,13 @@ g.node.pinned .node-pin-marker path {
   }
 }
 
+fieldset.collection-picker {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
 .edge-filter-mode-toggle {
   display: inline-flex;
   gap: 0;

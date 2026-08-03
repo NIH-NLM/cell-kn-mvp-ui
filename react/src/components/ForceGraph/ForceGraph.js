@@ -268,6 +268,23 @@ const ForceGraph = ({
       }
     }
 
+    // Not intersected with availableCollections: an unmatched name is inert
+    // (the collection is never visited, so there is nothing to prune), and
+    // intersecting would silently drop the marker if a dataset lacked it.
+    //
+    // Absent means "no terminal collections", not "leave whatever is there".
+    // Redux settings survive unmount, and only the GS entry in
+    // collection-defaults.json carries this key, so treating absence as a
+    // no-op leaks the gene page's terminal list onto every page navigated to
+    // afterwards. Reset explicitly, the way depth and edgeDirection are always
+    // specified.
+    const incomingTerminal = Array.isArray(settingsFromProps.terminalCollections)
+      ? settingsFromProps.terminalCollections
+      : [];
+    if (JSON.stringify(incomingTerminal) !== JSON.stringify(settings.terminalCollections)) {
+      dispatch(updateSetting({ setting: "terminalCollections", value: incomingTerminal }));
+    }
+
     const { depth, edgeDirection, collapseOnStart, preferredPredicates } = settingsFromProps;
     if (typeof depth === "number" && depth !== settings.depth) {
       dispatch(updateSetting({ setting: "depth", value: depth }));
@@ -298,6 +315,7 @@ const ForceGraph = ({
     settings.graphType,
     settings.availableCollections,
     settings.allowedCollections,
+    settings.terminalCollections,
     settings.depth,
     settings.edgeDirection,
     settings.collapseOnStart,
@@ -1131,8 +1149,30 @@ const ForceGraph = ({
       ? settings.allowedCollections.filter((n) => n !== name)
       : [...settings.allowedCollections, name];
     handleSettingChange("allowedCollections", newAllowed);
+    // A collection that is no longer traversed cannot be terminal.
+    const currentTerminal = settings.terminalCollections || [];
+    const newTerminal = currentTerminal.filter((n) => newAllowed.includes(n));
+    if (newTerminal.length !== currentTerminal.length) {
+      handleSettingChange("terminalCollections", newTerminal);
+    }
   };
-  const handleCollectionsClearAll = () => handleSettingChange("allowedCollections", []);
+  const handleCollectionsClearAll = () => {
+    handleSettingChange("allowedCollections", []);
+    // Nothing is traversed any more, so nothing can be terminal. Mirrors the
+    // per-collection deselect path; otherwise stale pills render against an
+    // empty option list.
+    if ((settings.terminalCollections || []).length > 0) {
+      handleSettingChange("terminalCollections", []);
+    }
+  };
+  const handleTerminalCollectionChange = (name) => {
+    const current = settings.terminalCollections || [];
+    const newTerminal = current.includes(name)
+      ? current.filter((n) => n !== name)
+      : [...current, name];
+    handleSettingChange("terminalCollections", newTerminal);
+  };
+  const handleTerminalCollectionsClearAll = () => handleSettingChange("terminalCollections", []);
   const handleLabelToggle = (labelClass) => {
     const newLabelStates = {
       ...settings.labelStates,
@@ -1832,6 +1872,8 @@ const ForceGraph = ({
                     edgeFilterStatus={edgeFilterStatus}
                     onCollectionChange={handleCollectionChange}
                     onCollectionsClearAll={handleCollectionsClearAll}
+                    onTerminalCollectionChange={handleTerminalCollectionChange}
+                    onTerminalCollectionsClearAll={handleTerminalCollectionsClearAll}
                     graphLinks={graphData.links}
                   />
                 )}

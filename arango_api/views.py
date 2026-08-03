@@ -140,6 +140,7 @@ class GraphTraversalView(APIView):
                 graph=data.get("graph", "ontologies"),
                 edge_filters=data.get("edge_filters"),
                 exclude_edge_filters=data.get("exclude_edge_filters"),
+                terminal_collections=data.get("terminal_collections") or [],
                 include_inter_node_edges=data.get("include_inter_node_edges", True),
             )
 

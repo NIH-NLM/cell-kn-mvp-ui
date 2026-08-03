@@ -80,6 +80,7 @@ async function ensureOriginSubgraphs(originIds, subgraphs, settings, existingNod
       settings.includeInterNodeEdges ?? true,
       include,
       exclude,
+      settings.terminalCollections || [],
     );
     const fetched = expansion?.[id] ?? { nodes: [], links: [] };
     const nodes = [...(fetched.nodes || [])];
@@ -132,6 +133,7 @@ export const fetchAndProcessGraph = createAsyncThunk(
         depth: settings.depth,
         edgeDirection: settings.edgeDirection,
         allowedCollections: settings.allowedCollections,
+        terminalCollections: settings.terminalCollections || [],
         nodeLimit: settings.nodeLimit,
         graphType: settings.graphType,
         edgeFilters: include,
@@ -182,6 +184,7 @@ export const expandNode = createAsyncThunk(
     const allowedCollections = collectionOverride
       ? [collectionOverride]
       : settings.allowedCollections;
+    const terminalCollections = settings.terminalCollections || [];
     const { include, exclude } = splitEdgeFiltersByMode(
       settings.edgeFilters,
       settings.edgeFilterModes,
@@ -193,6 +196,7 @@ export const expandNode = createAsyncThunk(
       settings.includeInterNodeEdges ?? true,
       include,
       exclude,
+      terminalCollections,
     );
     return {
       newNodes: expansionData?.[nodeId]?.nodes || [],
@@ -222,6 +226,7 @@ export const addOriginNode = createAsyncThunk(
       settings.includeInterNodeEdges ?? true,
       include,
       exclude,
+      settings.terminalCollections || [],
     );
     const fetched = expansion?.[nodeId] ?? { nodes: [], links: [] };
 
@@ -315,6 +320,7 @@ const initialState = {
     edgeDirection: DEFAULT_EDGE_DIRECTION,
     setOperation: DEFAULT_SET_OPERATION,
     allowedCollections: [], // Collections currently allowed in query
+    terminalCollections: [], // Collections returned but never expanded through
     availableCollections: [], // Collections currently in DB
     allCollections: [], // Collections in all DB
     nodeFontSize: DEFAULT_NODE_FONT_SIZE,

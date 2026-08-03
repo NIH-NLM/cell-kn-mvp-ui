@@ -22,6 +22,8 @@ const FiltersPanel = ({
   edgeFilterStatus,
   onCollectionChange,
   onCollectionsClearAll,
+  onTerminalCollectionChange,
+  onTerminalCollectionsClearAll,
   graphLinks = [],
 }) => {
   const dispatch = useDispatch();
@@ -69,6 +71,30 @@ const FiltersPanel = ({
           }
         />
       </div>
+
+      <fieldset className="collection-picker" aria-label="Stop traversal at">
+        <h3>Stop traversal at:</h3>
+        <p className="setting-hint">
+          These collections are shown but not expanded through. Use this to keep a high-degree node
+          like an organ from pulling in everything attached to it.
+        </p>
+        <FilterableDropdown
+          key="terminal-collection-filter"
+          label="Terminal collections"
+          options={settings.allowedCollections}
+          selectedOptions={settings.terminalCollections || []}
+          onOptionToggle={onTerminalCollectionChange}
+          onClearAll={onTerminalCollectionsClearAll}
+          getOptionLabel={(collectionId) =>
+            collectionMaps.has(collectionId)
+              ? collectionMaps.get(collectionId).display_name
+              : collectionId
+          }
+          getColorForOption={(collectionId) =>
+            collectionMaps.has(collectionId) ? collectionMaps.get(collectionId).color : null
+          }
+        />
+      </fieldset>
 
       {edgeFilterStatus === "loading" && (
         <output className="option-group" aria-live="polite">

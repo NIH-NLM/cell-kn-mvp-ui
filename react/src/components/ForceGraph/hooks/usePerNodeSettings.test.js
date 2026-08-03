@@ -19,6 +19,7 @@ const baseSettings = () => ({
   collapseOnStart: false,
   edgeFilters: { Label: [] },
   edgeFilterModes: { Label: "include" },
+  terminalCollections: [],
 });
 
 describe("usePerNodeSettings edge filter modes", () => {
@@ -135,5 +136,74 @@ describe("usePerNodeSettings edge filter modes", () => {
     expect(result.current.perNodeSettings.B.edgeFilterModes).toEqual({
       Label: "include",
     });
+  });
+});
+
+describe("usePerNodeSettings terminal collections", () => {
+  const renderAdvanced = (store, originNodeIds) => {
+    const wrapper = makeWrapper(store);
+    let settings = baseSettings();
+    const view = renderHook(
+      (props) => usePerNodeSettings(props.settings, originNodeIds, null, null),
+      { wrapper, initialProps: { settings } },
+    );
+    act(() => {
+      view.result.current.handleAdvancedModeToggle();
+    });
+    return {
+      ...view,
+      apply: (next) => {
+        settings = { ...settings, ...next };
+        view.rerender({ settings });
+      },
+    };
+  };
+
+  it("pushes the newly-active node's terminalCollections into Redux on a node switch", () => {
+    const store = configureStore({ reducer: { graph: graphReducer } });
+    const { result, apply } = renderAdvanced(store, ["A", "B"]);
+
+    // Mark UBERON terminal while A is the active origin.
+    act(() => {
+      result.current.handleSettingChange("terminalCollections", ["UBERON"]);
+    });
+    expect(result.current.perNodeSettings.A.terminalCollections).toEqual(["UBERON"]);
+    expect(store.getState().graph.present.settings.terminalCollections).toEqual(["UBERON"]);
+    apply({ terminalCollections: ["UBERON"] });
+
+    // Switching to B must push B's own (empty) list, not leave A's on screen --
+    // otherwise the next edit writes A's stale value onto B.
+    act(() => {
+      result.current.setActiveOriginNodeId("B");
+    });
+    expect(result.current.perNodeSettings.B.terminalCollections).toEqual([]);
+    expect(store.getState().graph.present.settings.terminalCollections).toEqual([]);
+  });
+
+  it("restores the first node's terminalCollections when advanced mode is turned off", () => {
+    const store = configureStore({ reducer: { graph: graphReducer } });
+    const { result, apply } = renderAdvanced(store, ["A", "B"]);
+
+    act(() => {
+      result.current.handleSettingChange("terminalCollections", ["UBERON"]);
+    });
+    apply({ terminalCollections: ["UBERON"] });
+
+    // Give B a different terminal list, so Redux ends up holding B's value.
+    act(() => {
+      result.current.setActiveOriginNodeId("B");
+    });
+    apply({ terminalCollections: [] });
+    act(() => {
+      result.current.handleSettingChange("terminalCollections", ["CSD"]);
+    });
+    apply({ terminalCollections: ["CSD"] });
+    expect(store.getState().graph.present.settings.terminalCollections).toEqual(["CSD"]);
+
+    // Leaving advanced mode restores the FIRST origin node's settings.
+    act(() => {
+      result.current.handleAdvancedModeToggle();
+    });
+    expect(store.getState().graph.present.settings.terminalCollections).toEqual(["UBERON"]);
   });
 });
