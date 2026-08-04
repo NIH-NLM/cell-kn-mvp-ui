@@ -6,13 +6,24 @@ import logging
 
 from arango_api.db import db_ontologies
 from arango_api.services.base import get_db_and_graph
+from arango_api.services.version_service import META_COLLECTION
 
 logger = logging.getLogger(__name__)
+
+# Collections that live in the database but are not part of either named graph.
+# The frontend seeds its allowed-collections filter from get_collections() and
+# passes that list to AQL's `OPTIONS { vertexCollections: ... }`, where a
+# non-graph collection aborts the whole traversal with ERR 1926 rather than
+# being ignored.
+NON_GRAPH_COLLECTIONS = frozenset({META_COLLECTION})
 
 
 def get_collections(collection_type, graph="ontologies"):
     """
     Get all collection names of a given type from the database.
+
+    Excludes system collections and the metadata collections listed in
+    NON_GRAPH_COLLECTIONS, which are not traversable graph members.
 
     Args:
         collection_type (str): The type of collections to retrieve ("document" or "edge").
@@ -28,6 +39,7 @@ def get_collections(collection_type, graph="ontologies"):
         for collection in all_collections
         if collection["type"] == collection_type
         and not collection["name"].startswith("_")
+        and collection["name"] not in NON_GRAPH_COLLECTIONS
     ]
     return [collection["name"] for collection in collections]
 
