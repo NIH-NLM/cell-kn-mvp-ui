@@ -17,6 +17,12 @@
   --color-gray-lightest: #f1f1f1;
   --color-white: #ffffff;
 
+  /* Figma surface tones (design file EWC9UpiLchMbY0HurQAHPZ). Distinct from
+     --color-white: the design's "white bg" is #fefefe, not pure white. */
+  --color-white-bg: #fefefe; /* Figma "white bg" */
+  --color-bg-light-blue: #f7fbfd; /* Figma "bg-light-blue" — section cards */
+  --color-cool-blue-lightest: #dce4ef; /* Figma "cool-blue-lightest" — card borders/hairlines */
+
   /* Secondary Colors (use sparingly) */
   --color-secondary: #e31c3d;
   --color-secondary-dark: #cd2026;
@@ -134,6 +140,12 @@
   /* Medium gray for subtle elements */
   --color-white: var(--color-gray-dark);
   /* "White" surfaces are dark gray */
+  --color-white-bg: var(--color-gray-dark);
+  /* Figma's off-white surface follows --color-white into dark gray */
+  --color-bg-light-blue: var(--color-base);
+  /* Section cards recess below the card they sit on, as they do in light mode */
+  --color-cool-blue-lightest: var(--color-gray);
+  /* Card hairlines track --color-border */
   --color-border: var(--color-gray);
   /* Visible borders on dark */
   --color-warning: #f9c642;

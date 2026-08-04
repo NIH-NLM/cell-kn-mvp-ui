@@ -788,11 +788,15 @@ g.node.pinned .node-pin-marker path {
 
 /* Inspector Overview Card */
 
+/* Section heading, same spec as .inspector-section-title (683:5603 "Overview"):
+   12px Roboto Medium in gray-dark, not the 16px/600 this used to carry. */
 .inspector-overview-title {
   margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: var(--color-gray-dark); /* #323a45 */
 }
 
 .inspector-overview .document-attributes-table {
@@ -806,7 +810,7 @@ g.node.pinned .node-pin-marker path {
   background-color: transparent;
 }
 .inspector-overview .document-attributes-table td {
-  border-bottom: 0.4px solid #f2f3f7;
+  border-bottom: 0.4px solid var(--color-cool-blue-lightest); /* #dce4ef */
   padding-top: 3px;
   padding-bottom: 3px;
 }
@@ -815,7 +819,7 @@ g.node.pinned .node-pin-marker path {
 }
 .inspector-overview .document-attributes-table .attribute-key {
   color: var(--color-gray); /* #5B616B */
-  font-weight: 500;
+  font-weight: 400; /* Roboto Regular (683:5610) */
   font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.4px;
@@ -833,24 +837,25 @@ g.node.pinned .node-pin-marker path {
 /* Sectioned Inspector Card */
 
 .inspector-card {
-  background: var(--color-white); /* #FEFEFE */
-  border: 1px solid #e9edf0; /* untokenized */
+  background: var(--color-white-bg); /* #fefefe */
+  border: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 8px 12px;
 }
+/* 14px in Figma 683:5602 — a step up from the 12px body rows below it. */
 .inspector-card-title {
   color: var(--color-base); /* #212121 */
   font-weight: 500; /* Roboto Medium */
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.125;
   margin: 0;
 }
 .inspector-section {
-  background: #f7fbfd; /* untokenized section surface */
-  border: 0.4px solid #f2f3f7; /* untokenized */
+  background: var(--color-bg-light-blue); /* #f7fbfd */
+  border: 0.4px solid var(--color-cool-blue-lightest); /* #dce4ef */
   border-radius: 4px;
   padding: 4px 8px;
   display: flex;
@@ -888,14 +893,14 @@ g.node.pinned .node-pin-marker path {
   line-height: 16px;
   letter-spacing: 0.4px;
 }
-/* Flat rows to match Figma 682:3499: no zebra striping (overrides the global
-   tr:nth-of-type(even) rule), thin #F2F3F7 hairline dividers, tight vertical
+/* Flat rows to match Figma 683:5603: no zebra striping (overrides the global
+   tr:nth-of-type(even) rule), thin #dce4ef hairline dividers, tight vertical
    padding. Horizontal label/value spacing is left to the base table rules. */
 .inspector-section .document-attributes-table tr {
   background-color: transparent;
 }
 .inspector-section .document-attributes-table td {
-  border-bottom: 0.4px solid #f2f3f7;
+  border-bottom: 0.4px solid var(--color-cool-blue-lightest); /* #dce4ef */
   padding-top: 3px;
   padding-bottom: 3px;
 }
