@@ -101,8 +101,18 @@
   height: 40px;
 }
 
+/* Figma pads the field 8px on the left (683:5593), not the 10px default; the
+   icon's own margin supplies the gap on the right. */
 .app-title-bar .search-input-wrapper {
   height: 100%;
+  padding: 0 0 0 8px;
+}
+
+/* Figma starts the label text at x=8 in the field (683:5594), so the wrapper's
+   8px is the whole inset — drop the base input's own horizontal padding. */
+.app-title-bar .search-input {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .app-title-bar .search-input::placeholder {
@@ -110,11 +120,15 @@
   font-style: normal;
 }
 
-/* Figma places the search icon on the LEFT of the header field (682:3481). */
+/* Figma right-aligns the search icon in the header field (683:5591): a 24px
+   Material glyph centred in a 40px button flush to the field's right edge,
+   leaving an 8px gap. DOM order already puts the icon last, so no reordering. */
 .app-title-bar .search-icon {
-  order: -1;
-  margin-left: 0;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
   margin-right: 8px;
+  color: var(--color-gray-dark); /* #323a45 */
 }
 
 /* Footer */
