@@ -30,8 +30,10 @@ const resolveFtuUrl = (inspectedDocument, ftuParts) => {
  * @param {string|null} props.selectedNodeId  "COLL/key" of the clicked node, or null.
  * @param {object} [props.originDocument]      The page's origin document, if any. Hosts
  *   without a single origin (Graph Builder, Workflow) omit it and rely on selection.
+ * @param {boolean} [props.showLearnExplore]   Whether to render the Learn & Explore
+ *   footer. The Workflow page hides it (per design); every other host shows it.
  */
-const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
+const NodeInspector = ({ selectedNodeId, originDocument = null, showLearnExplore = true }) => {
   const { document, loading, error } = useNodeDocument(selectedNodeId);
   const { ftuParts } = useFtuParts();
 
@@ -57,7 +59,7 @@ const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
             />
           </div>
         )}
-        <LearnExplore />
+        {showLearnExplore && <LearnExplore />}
       </div>
     );
   }
@@ -92,7 +94,7 @@ const NodeInspector = ({ selectedNodeId, originDocument = null }) => {
           />
         </div>
       )}
-      <LearnExplore />
+      {showLearnExplore && <LearnExplore />}
     </div>
   );
 };
