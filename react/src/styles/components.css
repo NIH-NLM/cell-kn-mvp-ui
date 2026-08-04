@@ -59,10 +59,11 @@
   font-style: italic;
 }
 
+/* The glyph is filled with `currentColor`, so tone is set via `color`. */
 .search-icon {
   width: 20px;
   height: 20px;
-  fill: var(--color-gray);
+  color: var(--color-gray);
   margin-left: 8px;
   flex-shrink: 0;
 }
