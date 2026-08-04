@@ -37,6 +37,26 @@ describe("NodeInspector", () => {
     expect(screen.queryByTestId("ftu-illustration")).not.toBeInTheDocument();
   });
 
+  it("hides Learn & Explore when showLearnExplore is false", () => {
+    useNodeDocument.mockReturnValue({ document: null, loading: false, error: null });
+    render(
+      <NodeInspector
+        selectedNodeId={null}
+        originDocument={{ _id: "CSD/origin" }}
+        showLearnExplore={false}
+      />,
+    );
+    expect(screen.getByTestId("doc-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("learn-explore")).not.toBeInTheDocument();
+  });
+
+  it("hides Learn & Explore on the selected-node view too when showLearnExplore is false", () => {
+    useNodeDocument.mockReturnValue({ document: { _id: "CS/abc" }, loading: false, error: null });
+    render(<NodeInspector selectedNodeId="CS/abc" showLearnExplore={false} />);
+    expect(screen.getByTestId("doc-card")).toHaveTextContent("CS/abc");
+    expect(screen.queryByTestId("learn-explore")).not.toBeInTheDocument();
+  });
+
   it("renders the FTU illustration in the sidebar when the origin document has one", () => {
     useNodeDocument.mockReturnValue({ document: null, loading: false, error: null });
     useFtuParts.mockReturnValue({ ftuParts: [{ id: "CSD_origin" }] });

@@ -25,8 +25,16 @@ import { getTitle } from "utils";
  * @param {object} [props.settings]        One-time ForceGraph display defaults.
  * @param {string} [props.title]           Explicit graph title; falls back to the
  *   current origin document's title, or "Graph" when neither is available.
+ * @param {boolean} [props.showLearnExplore]  Whether the inspector shows its
+ *   Learn & Explore footer. The Workflow host opts out; the rest keep it.
  */
-const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => {
+const GraphWorkspace = ({
+  originDocument = null,
+  nodeIds,
+  settings,
+  title,
+  showLearnExplore = true,
+}) => {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isOriginsOpen, setIsOriginsOpen] = useState(false);
   const originNodeIds = useSelector((state) => state.graph.present.originNodeIds);
@@ -78,7 +86,11 @@ const GraphWorkspace = ({ originDocument = null, nodeIds, settings, title }) => 
     <div className="graph-workspace">
       <div className="graph-workspace-body">
         <aside className="graph-workspace-inspector">
-          <NodeInspector selectedNodeId={inspectedNodeId} originDocument={currentOriginDoc} />
+          <NodeInspector
+            selectedNodeId={inspectedNodeId}
+            originDocument={currentOriginDoc}
+            showLearnExplore={showLearnExplore}
+          />
         </aside>
         <section className="graph-workspace-canvas">
           <div className="graph-workspace-canvas-body">

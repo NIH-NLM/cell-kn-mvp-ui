@@ -198,7 +198,7 @@ const WorkflowBuilderPage = () => {
                   style={{ display: activeView === "graph" ? "block" : "none" }}
                 >
                   <ErrorBoundary>
-                    <GraphWorkspace title="Workflow Graph" />
+                    <GraphWorkspace title="Workflow Graph" showLearnExplore={false} />
                   </ErrorBoundary>
                 </div>
               )}
