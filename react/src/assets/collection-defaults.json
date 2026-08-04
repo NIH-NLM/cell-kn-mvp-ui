@@ -67,7 +67,7 @@
     "depth": 1,
     "edgeDirection": "ANY",
     "collapseOnStart": "off",
-    "allowedCollections": ["CS", "CSD", "CL", "PUB"],
+    "allowedCollections": ["CS", "CSD", "CL", "PUB", "UBERON"],
     "preferredPredicates": []
   },
   "MONDO": {
