@@ -1077,3 +1077,38 @@ class TerminalCollectionsQueryTestCase(TestCase):
                 terminal_collections=["UBERON"],
                 exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
             )
+
+
+class GetCollectionsExclusionTestCase(TestCase):
+    """`get_collections` must not offer non-graph collections to the UI.
+
+    The frontend seeds `allowedCollections` with whatever this returns, and
+    that list is passed straight to AQL's `OPTIONS { vertexCollections: ... }`.
+    A collection that is not a vertex collection of the named graph makes
+    ArangoDB reject the whole traversal with ERR 1926, which surfaced as
+    "Failed to fetch data." on every document page whose collection has no
+    entry in collection-defaults.json (BGS, GO, PATO, CHEMBL, HP, ...).
+    """
+
+    def _collections(self, collection_type="document"):
+        db = mock.Mock()
+        db.collections.return_value = [
+            {"name": "CL", "type": "document"},
+            {"name": "ckn_meta", "type": "document"},
+            {"name": "_system_thing", "type": "document"},
+            {"name": "CL-CL", "type": "edge"},
+        ]
+        with mock.patch.object(
+            collection_service, "get_db_and_graph", return_value=(db, "ontologies")
+        ):
+            return collection_service.get_collections(collection_type)
+
+    def test_meta_collection_is_excluded(self):
+        self.assertNotIn("ckn_meta", self._collections())
+
+    def test_graph_collections_are_still_returned(self):
+        self.assertIn("CL", self._collections())
+        self.assertIn("CL-CL", self._collections("edge"))
+
+    def test_system_collections_are_still_excluded(self):
+        self.assertNotIn("_system_thing", self._collections())
