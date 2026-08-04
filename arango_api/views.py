@@ -364,18 +364,41 @@ class WorkflowExecuteView(APIView):
 
 
 class WorkflowPresetsView(APIView):
-    """Return pre-built workflow presets (query-only schema)."""
+    """Return pre-built workflow presets (query-only schema).
+
+    Each preset carries an `unknown_labels` list naming the edge predicates it
+    filters on that are absent from the loaded dataset — the signal that an ETL
+    rename has left the preset stale. Empty when the preset is valid, and also
+    when the dataset could not be read (fail open).
+    """
 
     def get(self, request):
+        from arango_api.services import schema_guard
         from arango_api.workflow_presets import (
             PRESET_CATEGORIES,
             PRESET_SECTIONS,
             WORKFLOW_PRESETS,
         )
 
+        labels_by_graph = {
+            graph: schema_guard.get_dataset_labels(graph)
+            for graph in ("ontologies", "phenotypes")
+        }
+        # Copy rather than mutate: WORKFLOW_PRESETS is module-level state shared
+        # across requests.
+        presets = [
+            {
+                **preset,
+                "unknown_labels": schema_guard.find_unknown_labels(
+                    preset, labels_by_graph
+                ),
+            }
+            for preset in WORKFLOW_PRESETS
+        ]
+
         return Response(
             {
-                "presets": WORKFLOW_PRESETS,
+                "presets": presets,
                 "categories": PRESET_CATEGORIES,
                 "sections": PRESET_SECTIONS,
             }

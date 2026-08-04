@@ -9,7 +9,7 @@
 #   ./scripts/dev/load-dump-local.sh [VERSION|S3_URI] [PORT] [NAME]
 #
 #   VERSION  ETL dataset version (default: value of ETL_VERSION at repo root),
-#            mapped to the default cell-kn golden-dump path in S3. Alternatively
+#            mapped to the default nlm-ckn golden-dump path in S3. Alternatively
 #            pass a full s3:// URI here (or via DUMP_S3_URI) when the bucket/key
 #            layout differs from the default (e.g. the nlm-2026 staging bucket).
 #   PORT     host port for the container (default: 8529 = the port the Django
@@ -44,7 +44,11 @@ elif [ "$PORT" = "8529" ]; then CONTAINER="arango-current"
 else CONTAINER="arango-ckn-$PORT"; fi
 # Default source bucket/layout. Overridden when a full s3:// URI is supplied
 # (as $1 or via DUMP_S3_URI), since other accounts use different key layouts.
-BUCKET="cell-kn-arangodb-data-952291113202"
+# Dumps moved here when the project was renamed cell-kn -> nlm-ckn (2026-07-09).
+# The old cell-kn bucket still exists and still answers, but its newest dump is
+# v1.5.0-rc.1 — pointing at it silently loads stale data under a current-looking
+# version string.
+BUCKET="nlm-ckn-arangodb-data-952291113202"
 # Pinnable for reproducibility: golden dumps are produced against a specific
 # ArangoDB; override with ARANGO_IMAGE if a future major version breaks restore.
 IMAGE="${ARANGO_IMAGE:-arangodb:latest}"
@@ -52,7 +56,7 @@ PW=$(grep -m1 -E '^ARANGO_DB_PASSWORD=' .env | cut -d= -f2-)
 [ -n "$PW" ] || { echo "ERROR: ARANGO_DB_PASSWORD not found in .env"; exit 1; }
 
 # Resolve the S3 source. Accept either a bare VERSION (mapped to the default
-# cell-kn golden-dump path) or a full s3:// URI used verbatim, since bucket/key
+# nlm-ckn golden-dump path) or a full s3:// URI used verbatim, since bucket/key
 # layouts differ across accounts.
 if [ -n "${DUMP_S3_URI:-}" ]; then
   S3_URI="$DUMP_S3_URI"

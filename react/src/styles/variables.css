@@ -35,6 +35,10 @@
   --color-gold-lighter: #fad980;
   --color-gold-lightest: #fff1d2;
 
+  /* Warning (schema-drift badges/banners) */
+  --color-warning: #b26a00;
+  --color-warning-bg: #fff4e5;
+
   /* Special State Colors */
   --color-focus: #3e94cf;
   --color-visited: #4c2c92;
@@ -132,6 +136,10 @@
   /* "White" surfaces are dark gray */
   --color-border: var(--color-gray);
   /* Visible borders on dark */
+  --color-warning: #f9c642;
+  /* Brighter gold text stays readable on dark backgrounds */
+  --color-warning-bg: #4a3a10;
+  /* Dark amber background to match */
 
   /* Adjust shadows for dark mode - lighter shadows */
   --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
