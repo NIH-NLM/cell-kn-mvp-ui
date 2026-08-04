@@ -55,6 +55,7 @@ const WorkflowBuilder = ({ onGraphReady }) => {
     error,
     nodeDetails,
     showPresetSelector,
+    unknownLabels,
   } = useSelector((state) => state.workflowBuilder);
 
   // Get collections and edge filter options from graph state
@@ -67,6 +68,14 @@ const WorkflowBuilder = ({ onGraphReady }) => {
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Schema-drift banner dismissal state
+  const [driftDismissed, setDriftDismissed] = useState(false);
+
+  // A newly loaded workflow gets a fresh banner even if the last one was dismissed.
+  useEffect(() => {
+    setDriftDismissed(false);
+  }, [workflowId]);
 
   // Auto-dismiss toast after 2 seconds
   useEffect(() => {
@@ -305,6 +314,24 @@ const WorkflowBuilder = ({ onGraphReady }) => {
           </button>
         </div>
       </div>
+
+      {unknownLabels?.length > 0 && !driftDismissed && (
+        <output className="workflow-drift-banner">
+          <span>
+            This preset filters on <strong>{unknownLabels.join(", ")}</strong>, which{" "}
+            {unknownLabels.length === 1 ? "is" : "are"} not in the loaded dataset — usually a recent
+            schema change. Results may be incomplete.
+          </span>
+          <button
+            type="button"
+            className="workflow-drift-dismiss"
+            onClick={() => setDriftDismissed(true)}
+            aria-label="Dismiss schema change warning"
+          >
+            Dismiss
+          </button>
+        </output>
+      )}
 
       {/* Description */}
       <textarea

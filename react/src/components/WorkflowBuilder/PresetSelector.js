@@ -110,20 +110,38 @@ const PresetSelector = ({ onSelectPreset, onStartFromScratch }) => {
       <div key={category.id} className="preset-category">
         <h5 className="category-label">{category.label}</h5>
         <div className="preset-cards">
-          {categoryPresets.map((preset) => (
-            <button
-              type="button"
-              key={preset.id}
-              className="preset-card"
-              onClick={() => onSelectPreset(preset)}
-            >
-              <span className="preset-name">{preset.name}</span>
-              <span className="preset-card-description">{preset.description}</span>
-              <span className="preset-phases-count">
-                {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
-              </span>
-            </button>
-          ))}
+          {categoryPresets.map((preset) => {
+            const driftLabels = preset.unknown_labels || [];
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                className="preset-card"
+                onClick={() => onSelectPreset(preset)}
+              >
+                <span className="preset-name">
+                  {preset.name}
+                  {driftLabels.length > 0 && (
+                    <span
+                      className="preset-drift-badge"
+                      data-testid="preset-drift-badge"
+                      role="img"
+                      title={`Filters on ${driftLabels.join(", ")}, which ${
+                        driftLabels.length === 1 ? "is" : "are"
+                      } not in the loaded dataset — usually a recent schema change. Results may be incomplete.`}
+                      aria-label={`Warning: filters on ${driftLabels.join(", ")}, not in the loaded dataset`}
+                    >
+                      !
+                    </span>
+                  )}
+                </span>
+                <span className="preset-card-description">{preset.description}</span>
+                <span className="preset-phases-count">
+                  {preset.phases.length} phase{preset.phases.length > 1 ? "s" : ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     );

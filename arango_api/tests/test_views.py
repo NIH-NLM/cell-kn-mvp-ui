@@ -461,14 +461,18 @@ class VersionViewTestCase(SimpleTestCase):
     def test_pinned_version_reflects_stripped_file_contents(self):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "ETL_VERSION").write_text("v9.9.9-test\n")
-            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded(
+                "v1.5.0-rc.1"
+            ):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["pinned_etl_version"], "v9.9.9-test")
 
     def test_missing_pin_file_returns_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded(
+                "v1.5.0-rc.1"
+            ):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["pinned_etl_version"], "unknown")
@@ -476,7 +480,9 @@ class VersionViewTestCase(SimpleTestCase):
     def test_blank_pin_file_returns_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "ETL_VERSION").write_text("   \n")
-            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded("v1.5.0-rc.1"):
+            with override_settings(BASE_DIR=Path(tmp)), self._patch_loaded(
+                "v1.5.0-rc.1"
+            ):
                 response = self.client.get(reverse("get_version"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["pinned_etl_version"], "unknown")
@@ -554,3 +560,53 @@ class TerminalCollectionsSerializerTestCase(TestCase):
         )
         self.assertFalse(serializer.is_valid())
         self.assertIn("terminal_collections", serializer.errors)
+
+
+class WorkflowPresetsAnnotationTestCase(SimpleTestCase):
+    """The presets endpoint flags filters the loaded dataset cannot satisfy."""
+
+    def _get(self):
+        return self.client.get(reverse("workflow_presets"))
+
+    def test_annotates_every_preset(self):
+        with mock.patch(
+            "arango_api.services.schema_guard.get_dataset_labels",
+            return_value=frozenset({"PART_OF"}),
+        ):
+            response = self._get()
+        self.assertEqual(response.status_code, 200)
+        presets = response.json()["presets"]
+        self.assertTrue(presets)
+        for preset in presets:
+            self.assertIn("unknown_labels", preset)
+
+    def test_flags_a_label_the_dataset_lacks(self):
+        with mock.patch(
+            "arango_api.services.schema_guard.get_dataset_labels",
+            return_value=frozenset({"PART_OF"}),
+        ):
+            presets = self._get().json()["presets"]
+        flagged = [p for p in presets if p["unknown_labels"]]
+        self.assertTrue(
+            flagged, "expected presets to be flagged against a bare dataset"
+        )
+
+    def test_fails_open_when_labels_cannot_be_read(self):
+        with mock.patch(
+            "arango_api.services.schema_guard.get_dataset_labels", return_value=None
+        ):
+            presets = self._get().json()["presets"]
+        self.assertTrue(presets)
+        for preset in presets:
+            self.assertEqual(preset["unknown_labels"], [])
+
+    def test_does_not_mutate_the_module_level_presets(self):
+        from arango_api.workflow_presets import WORKFLOW_PRESETS
+
+        with mock.patch(
+            "arango_api.services.schema_guard.get_dataset_labels",
+            return_value=frozenset({"PART_OF"}),
+        ):
+            self._get()
+        for preset in WORKFLOW_PRESETS:
+            self.assertNotIn("unknown_labels", preset)
