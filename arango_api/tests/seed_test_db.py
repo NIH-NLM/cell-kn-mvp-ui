@@ -160,27 +160,27 @@ DOCUMENT_COLLECTIONS = {
 }
 
 # Edge collections and their test edges
-# Format: {collection_name: [(from_collection, from_key, to_collection, to_key, label), ...]}
+# Format: {collection_name: [(from_collection, from_key, to_collection, to_key, Label), ...]}
 EDGE_COLLECTIONS = {
     "CL-CL": [
-        ("CL", "0000061", "CL", "0000151", "subClassOf"),
-        ("CL", "0000061", "CL", "0000062", "subClassOf"),
-        ("CL", "0000061", "CL", "0007002", "subClassOf"),
-        ("CL", "0000062", "CL", "0000000", "subClassOf"),
-        ("CL", "0000151", "CL", "0000000", "subClassOf"),
-        ("CL", "0007002", "CL", "0000000", "subClassOf"),
+        ("CL", "0000061", "CL", "0000151", "SUB_CLASS_OF"),
+        ("CL", "0000061", "CL", "0000062", "SUB_CLASS_OF"),
+        ("CL", "0000061", "CL", "0007002", "SUB_CLASS_OF"),
+        ("CL", "0000062", "CL", "0000000", "SUB_CLASS_OF"),
+        ("CL", "0000151", "CL", "0000000", "SUB_CLASS_OF"),
+        ("CL", "0007002", "CL", "0000000", "SUB_CLASS_OF"),
     ],
     "CL-GO": [
-        ("CL", "0000061", "GO", "0008150", "participates_in"),
+        ("CL", "0000061", "GO", "0008150", "PARTICIPATES_IN"),
     ],
     "CL-UBERON": [
-        ("CL", "0000061", "UBERON", "0000061", "part_of"),
+        ("CL", "0000061", "UBERON", "0000061", "PART_OF"),
     ],
 }
 
 # Note: The sunburst root is constructed programmatically by sunburst_service.py
 # using CL/0000000 as the initial root. No database document is needed.
-# The service builds the tree by traversing INBOUND subClassOf edges.
+# The service builds the tree by traversing INBOUND SUB_CLASS_OF edges.
 
 
 # =============================================================================
@@ -232,7 +232,7 @@ def seed_edges(db):
                 "_key": edge_key,
                 "_from": f"{from_coll}/{from_key}",
                 "_to": f"{to_coll}/{to_key}",
-                "label": label,
+                "Label": label,
             }
             collection.insert(edge_doc, overwrite=True)
         print(f"    Inserted {len(edges)} edges into {collection_name}")

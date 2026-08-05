@@ -353,7 +353,7 @@ def get_ontologies_sunburst(parent_id=None):
     """
     db = db_ontologies
     graph_name = GRAPH_NAME_ONTOLOGIES
-    label_filter = "subClassOf"
+    label_filter = "SUB_CLASS_OF"
     initial_root_ids = [
         "CL/0000000",
         "GO/0008150",  # biological_process
@@ -373,15 +373,15 @@ def get_ontologies_sunburst(parent_id=None):
             LET start_node_id = @parent_id
 
             FOR child_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
-                FILTER edge1.label == @label_filter
+                FILTER edge1.Label == @label_filter
 
                 LET grandchildren = (
                     FOR grandchild_node, edge2 IN 1..1 INBOUND child_node._id GRAPH @graph_name
-                        FILTER edge2.label == @label_filter
+                        FILTER edge2.Label == @label_filter
 
                         LET grandchild_has_children = COUNT(
                             FOR great_grandchild, edge3 IN 1..1 INBOUND grandchild_node._id GRAPH @graph_name
-                                FILTER edge3.label == @label_filter
+                                FILTER edge3.Label == @label_filter
                                 LIMIT 1 RETURN 1
                         ) > 0
 
@@ -432,17 +432,17 @@ def get_ontologies_sunburst(parent_id=None):
 
                 LET start_node_has_children = COUNT(
                     FOR c1, e1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
-                        FILTER e1.label == @label_filter
+                        FILTER e1.Label == @label_filter
                         LIMIT 1 RETURN 1
                 ) > 0
 
                 LET children_level1 = (
                     FOR child1_node, edge1 IN 1..1 INBOUND start_node_id GRAPH @graph_name
-                        FILTER edge1.label == @label_filter
+                        FILTER edge1.Label == @label_filter
 
                         LET child1_has_children = COUNT(
                             FOR c2, e2 IN 1..1 INBOUND child1_node._id GRAPH @graph_name
-                                FILTER e2.label == @label_filter
+                                FILTER e2.Label == @label_filter
                                 LIMIT 1 RETURN 1
                         ) > 0
 
