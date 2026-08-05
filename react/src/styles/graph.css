@@ -923,8 +923,10 @@ g.node.pinned .node-pin-marker path {
 
 /* Learn & Explore footer */
 
+/* Figma 683:5656 fills the block and drops the border it had in the earlier
+   frame; the only rule left is the hairline under the header. */
 .learn-explore {
-  border: 0.4px solid #f2f3f7; /* untokenized */
+  background: var(--color-white-bg); /* #fefefe */
   border-radius: 4px;
   padding: 12px 8px;
   display: flex;
@@ -936,12 +938,23 @@ g.node.pinned .node-pin-marker path {
   align-items: center;
   gap: 8px;
   padding-bottom: 8px;
-  border-bottom: 0.4px solid #f2f3f7; /* hairline under the header */
+  border-bottom: 0.4px solid var(--color-gray-lighter); /* #d6d7d9 */
   color: var(--color-gray-dark); /* #323A45 */
   font-weight: 500; /* Roboto Medium */
   font-size: 12px;
-  line-height: 16px;
+  line-height: 1.125;
   letter-spacing: 0.4px;
+}
+.learn-explore-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.learn-explore-icon-tile {
+  fill: var(--color-gray-lightest); /* #f1f1f1 */
+}
+.learn-explore-icon-glyph {
+  fill: var(--color-gray-dark); /* #323a45 */
 }
 .learn-explore-link {
   display: flex;
@@ -953,6 +966,13 @@ g.node.pinned .node-pin-marker path {
   line-height: 16px;
   letter-spacing: 0.4px;
   text-decoration: none; /* Figma shows no underline */
+}
+/* Figma tints the arrow gray (#5b616b) against the blue label. */
+.learn-explore-arrow {
+  width: 15.575px;
+  height: 11.15px;
+  flex-shrink: 0;
+  color: var(--color-gray);
 }
 .learn-explore-link:hover {
   text-decoration: underline; /* hover affordance only (not in the static frame) */
