@@ -108,11 +108,11 @@ class DocumentServiceTestCase(ArangoDBTestCase):
         self.assertEqual(len(result), 0)
 
     def test_get_edge_filter_options(self):
-        result = document_service.get_edge_filter_options(fields_to_query=["label"])
-        self.assertEqual(result["label"]["type"], "categorical")
+        result = document_service.get_edge_filter_options(fields_to_query=["Label"])
+        self.assertEqual(result["Label"]["type"], "categorical")
         self.assertEqual(
-            sorted(result["label"]["values"]),
-            sorted(["subClassOf", "participates_in", "part_of"]),
+            sorted(result["Label"]["values"]),
+            sorted(["SUB_CLASS_OF", "PARTICIPATES_IN", "PART_OF"]),
         )
 
 
@@ -197,22 +197,22 @@ class GraphServiceTestCase(ArangoDBTestCase):
 
     def test_traverse_graph_with_categorical_filter(self):
         # Regression guard: filter clause path is exercised. From CL/0000061
-        # OUTBOUND, filter to label="subClassOf" — only CL-CL subClassOf edges
-        # should appear in the links. CL-GO (participates_in) and CL-UBERON
-        # (part_of) edges must be excluded.
+        # OUTBOUND, filter to label="SUB_CLASS_OF" — only CL-CL SUB_CLASS_OF edges
+        # should appear in the links. CL-GO (PARTICIPATES_IN) and CL-UBERON
+        # (PART_OF) edges must be excluded.
         result = graph_service.traverse_graph(
             node_ids=["CL/0000061"],
             depth=1,
             edge_direction="OUTBOUND",
             allowed_collections=["CL", "GO", "UBERON"],
             graph="ontologies",
-            edge_filters={"label": ["subClassOf"]},
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
             include_inter_node_edges=False,
         )
         links = result["CL/0000061"]["links"]
         self.assertGreater(len(links), 0)
         for link in links:
-            self.assertEqual(link["label"], "subClassOf")
+            self.assertEqual(link["Label"], "SUB_CLASS_OF")
 
     def test_traverse_graph_with_numeric_filter(self):
         # Regression guard: numeric range filter path. No seed edges have a
@@ -229,7 +229,7 @@ class GraphServiceTestCase(ArangoDBTestCase):
         self.assertEqual(result["CL/0000061"]["links"], [])
 
     def test_traverse_graph_exclude_categorical(self):
-        # OUTBOUND from CL/0000061 with subClassOf excluded: the CL-CL subClassOf
+        # OUTBOUND from CL/0000061 with SUB_CLASS_OF excluded: the CL-CL SUB_CLASS_OF
         # edge is dropped, the GO/UBERON edges remain.
         result = graph_service.traverse_graph(
             node_ids=["CL/0000061"],
@@ -238,23 +238,23 @@ class GraphServiceTestCase(ArangoDBTestCase):
             allowed_collections=["CL", "GO", "UBERON"],
             graph="ontologies",
             edge_filters=None,
-            exclude_edge_filters={"label": ["subClassOf"]},
+            exclude_edge_filters={"Label": ["SUB_CLASS_OF"]},
             include_inter_node_edges=False,
         )
-        labels = sorted(link["label"] for link in result["CL/0000061"]["links"])
-        self.assertNotIn("subClassOf", labels)
-        self.assertIn("participates_in", labels)
+        labels = sorted(link["Label"] for link in result["CL/0000061"]["links"])
+        self.assertNotIn("SUB_CLASS_OF", labels)
+        self.assertIn("PARTICIPATES_IN", labels)
 
     def test_exclude_categorical_adds_prune_condition(self):
         bind_vars = {}
         pos, neg = graph_service._build_edge_filter_clause(
-            None, bind_vars, exclude_filters={"label": ["subClassOf"]}
+            None, bind_vars, exclude_filters={"Label": ["SUB_CLASS_OF"]}
         )
         # FILTER keeps non-excluded edges. The excluded value is passed via a
         # bind var (not interpolated into the clause text), so assert on the
         # bind var content rather than searching the generated AQL.
         self.assertTrue(pos)
-        self.assertEqual(bind_vars.get("exclude_value_label"), ["subClassOf"])
+        self.assertEqual(bind_vars.get("exclude_value_Label"), ["SUB_CLASS_OF"])
         # ...and PRUNE now stops traversal through excluded edges.
         self.assertTrue(neg, "exclude must contribute a PRUNE (negative) condition")
 
@@ -322,8 +322,8 @@ class GraphServiceTestCase(ArangoDBTestCase):
 
     def test_find_inter_node_edges_no_filters(self):
         # Without filters, all edges between the given nodes are returned.
-        # CL/0000061 connects to CL/0000151 (subClassOf), GO/0008150
-        # (participates_in), UBERON/0000061 (part_of).
+        # CL/0000061 connects to CL/0000151 (SUB_CLASS_OF), GO/0008150
+        # (PARTICIPATES_IN), UBERON/0000061 (PART_OF).
         result = graph_service.find_inter_node_edges(
             node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
             graph="ontologies",
@@ -334,10 +334,10 @@ class GraphServiceTestCase(ArangoDBTestCase):
         result = graph_service.find_inter_node_edges(
             node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
             graph="ontologies",
-            edge_filters={"label": ["subClassOf"]},
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
         )
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["label"], "subClassOf")
+        self.assertEqual(result[0]["Label"], "SUB_CLASS_OF")
 
     def test_find_inter_node_edges_numeric_filter(self):
         # No edges have a `score` attribute, so range filter excludes all.
@@ -349,21 +349,21 @@ class GraphServiceTestCase(ArangoDBTestCase):
         self.assertEqual(result, [])
 
     def test_find_inter_node_edges_exclude_categorical(self):
-        # Exclude the subClassOf edge; the other two (participates_in, part_of)
+        # Exclude the SUB_CLASS_OF edge; the other two (PARTICIPATES_IN, PART_OF)
         # must remain.
         result = graph_service.find_inter_node_edges(
             node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
             graph="ontologies",
-            exclude_edge_filters={"label": ["subClassOf"]},
+            exclude_edge_filters={"Label": ["SUB_CLASS_OF"]},
         )
-        labels = sorted(e["label"] for e in result)
-        self.assertEqual(labels, ["part_of", "participates_in"])
+        labels = sorted(e["Label"] for e in result)
+        self.assertEqual(labels, ["PARTICIPATES_IN", "PART_OF"])
 
     def test_find_inter_node_edges_exclude_empty_is_noop(self):
         result = graph_service.find_inter_node_edges(
             node_ids=["CL/0000061", "CL/0000151", "GO/0008150", "UBERON/0000061"],
             graph="ontologies",
-            exclude_edge_filters={"label": []},
+            exclude_edge_filters={"Label": []},
         )
         self.assertEqual(len(result), 3)
 
@@ -388,7 +388,7 @@ class GraphServiceTestCase(ArangoDBTestCase):
 
     def test_traverse_graph_inter_node_edges_respect_filters(self):
         # When traverse_graph's self-call to find_inter_node_edges runs,
-        # the filter must propagate. With label=subClassOf, the post-traversal
+        # the filter must propagate. With Label=SUB_CLASS_OF, the post-traversal
         # inter-node scan should respect the filter.
         result = graph_service.traverse_graph(
             node_ids=["CL/0000061"],
@@ -396,12 +396,12 @@ class GraphServiceTestCase(ArangoDBTestCase):
             edge_direction="OUTBOUND",
             allowed_collections=["CL", "GO", "UBERON"],
             graph="ontologies",
-            edge_filters={"label": ["subClassOf"]},
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
             include_inter_node_edges=True,
         )
         links = result["CL/0000061"]["links"]
         for link in links:
-            self.assertEqual(link["label"], "subClassOf")
+            self.assertEqual(link["Label"], "SUB_CLASS_OF")
 
     def test_get_neighbor_collections_returns_distinct_collections(self):
         # CL/0000061 has OUTBOUND edges to CL, GO, and UBERON in the seed data.
@@ -638,18 +638,18 @@ class WorkflowServiceTestCase(ArangoDBTestCase):
         self.assertEqual(len(result["links"]), 3)
 
     def test_post_merge_inter_node_edges_respect_filters(self):
-        # With label=subClassOf filter, only the CL-CL subClassOf edge survives.
+        # With Label=SUB_CLASS_OF filter, only the CL-CL SUB_CLASS_OF edge survives.
         merged = {"nodes": self._nodes_with_links(), "links": []}
         result = _find_post_merge_inter_node_edges(
-            merged, "ontologies", edge_filters={"label": ["subClassOf"]}
+            merged, "ontologies", edge_filters={"Label": ["SUB_CLASS_OF"]}
         )
         self.assertEqual(len(result["links"]), 1)
-        self.assertEqual(result["links"][0]["label"], "subClassOf")
+        self.assertEqual(result["links"][0]["Label"], "SUB_CLASS_OF")
 
     def test_combine_phase_inter_node_edges_respect_filters(self):
         # Two phases that each return one node, and the combine phase scans
-        # for inter-node edges between them. With label=subClassOf, only
-        # CL-CL/subClassOf edges should appear, not the CL-GO participates_in.
+        # for inter-node edges between them. With Label=SUB_CLASS_OF, only
+        # CL-CL/SUB_CLASS_OF edges should appear, not the CL-GO PARTICIPATES_IN.
         phases = [
             {
                 "id": "phase1",
@@ -686,16 +686,16 @@ class WorkflowServiceTestCase(ArangoDBTestCase):
                 "settings": {
                     "graphType": "ontologies",
                     "includeInterNodeEdges": True,
-                    "edgeFilters": {"label": ["subClassOf"]},
+                    "edgeFilters": {"Label": ["SUB_CLASS_OF"]},
                 },
             },
         ]
         result = workflow_service.execute_workflow(phases, graph="ontologies")
         combine_links = result["phases"]["combine"]["links"]
-        # The CL/0000061 -> GO/0008150 participates_in edge would normally be
+        # The CL/0000061 -> GO/0008150 PARTICIPATES_IN edge would normally be
         # included by the combine post-merge scan, but the filter excludes it.
         for link in combine_links:
-            self.assertEqual(link["label"], "subClassOf")
+            self.assertEqual(link["Label"], "SUB_CLASS_OF")
 
 
 class DropNullNodesTestCase(TestCase):

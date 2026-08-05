@@ -264,14 +264,14 @@ class EdgesBetweenViewTestCase(ArangoDBViewTestCase):
             data={
                 "node_ids": self.NODES,
                 "graph": "ontologies",
-                "edge_filters": {"label": ["subClassOf"]},
+                "edge_filters": {"Label": ["SUB_CLASS_OF"]},
             },
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
         edges = response.json()
         self.assertEqual(len(edges), 1)
-        self.assertEqual(edges[0]["label"], "subClassOf")
+        self.assertEqual(edges[0]["Label"], "SUB_CLASS_OF")
 
     def test_numeric_filter(self):
         # No edges have a `score` attribute, so the range filter excludes all.
@@ -410,16 +410,16 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
     def test_edge_filter_options(self):
         response = self.client.post(
             reverse("get_edge_filter_options"),
-            data={"fields": ["label"]},
+            data={"fields": ["Label"]},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("label", data)
-        self.assertEqual(data["label"]["type"], "categorical")
+        self.assertIn("Label", data)
+        self.assertEqual(data["Label"]["type"], "categorical")
         self.assertEqual(
-            sorted(data["label"]["values"]),
-            sorted(["subClassOf", "participates_in", "part_of"]),
+            sorted(data["Label"]["values"]),
+            sorted(["SUB_CLASS_OF", "PARTICIPATES_IN", "PART_OF"]),
         )
 
 
