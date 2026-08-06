@@ -194,6 +194,7 @@ class ConnectingPathsView(APIView):
             graph=data.get("graph", "phenotypes"),
             allowed_collections=data.get("allowed_collections", []),
             edge_filters=data.get("edge_filters", {}),
+            exclude_edge_filters=data.get("exclude_edge_filters", {}),
             path_limit=int(data.get("path_limit", 100)),
             max_depth=int(data["max_depth"]) if data.get("max_depth") else None,
         )

@@ -567,6 +567,7 @@ def find_connecting_paths(
     edge_filters=None,
     path_limit=100,
     max_depth=None,
+    exclude_edge_filters=None,
 ):
     """
     Find paths between every pair of origin nodes via K_SHORTEST_PATHS.
@@ -579,9 +580,10 @@ def find_connecting_paths(
         node_ids (list): 2+ node _id strings.
         graph (str): Graph type ("ontologies" or "phenotypes").
         allowed_collections (list): Vertex collections allowed on paths.
-        edge_filters (dict): Reserved for future use.
+        edge_filters (dict): Edge attribute filters a path's edges must satisfy.
         path_limit (int): Max paths to enumerate per origin pair.
         max_depth (int|None): Max number of edges per path. None = no limit.
+        exclude_edge_filters (dict): Edge attribute values a path may not contain.
 
     Returns:
         dict: {nodes: [...], links: [...]}
@@ -593,6 +595,16 @@ def find_connecting_paths(
 
     bind_vars = {"node_ids": node_ids, "graph": graph_name}
 
+    # Filters apply per path, not per edge: a path is only meaningful if every
+    # edge on it is one the caller asked for. Mirrors the anti-edge path clause
+    # built above.
+    path_positive, _ = _build_edge_filter_clause(
+        edge_filters,
+        bind_vars,
+        exclude_filters=exclude_edge_filters,
+        field_ref="CURRENT",
+    )
+
     if max_depth is not None:
         # With depth limit: use traversal (natively supports depth + vertexCollections)
         options_parts = ['uniqueVertices: "path"']
@@ -603,6 +615,13 @@ def find_connecting_paths(
 
         bind_vars["depth"] = int(max_depth)
 
+        edge_filter_clause = ""
+        if path_positive:
+            conditions = " AND ".join(path_positive)
+            edge_filter_clause = (
+                f"FILTER LENGTH(p.edges[* FILTER NOT ({conditions})]) == 0"
+            )
+
         aql_query = f"""
             LET all_paths = (
                 FOR start_node IN @node_ids
@@ -612,6 +631,7 @@ def find_connecting_paths(
                             GRAPH @graph
                             OPTIONS {{{options_clause}}}
                             FILTER v._id == end_node
+                            {edge_filter_clause}
                             RETURN p
             )
 
@@ -634,6 +654,13 @@ def find_connecting_paths(
                 f"FILTER LENGTH(path.vertices[* " f"FILTER {coll_checks}]) == 0"
             )
 
+        edge_filter_clause = ""
+        if path_positive:
+            conditions = " AND ".join(path_positive)
+            edge_filter_clause = (
+                f"FILTER LENGTH(path.edges[* FILTER NOT ({conditions})]) == 0"
+            )
+
         bind_vars["path_limit"] = path_limit
 
         aql_query = f"""
@@ -645,6 +672,7 @@ def find_connecting_paths(
                             start_node TO end_node
                             GRAPH @graph
                         {coll_filter}
+                        {edge_filter_clause}
                         LIMIT @path_limit
                         RETURN path
             )
