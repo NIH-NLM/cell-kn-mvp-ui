@@ -620,6 +620,89 @@ class AntiEdgeTraversalTestCase(ArangoDBTestCase):
         self.assertNotIn("GS/nac_g2", genes)
 
 
+class ConnectingPathsTestCase(ArangoDBTestCase):
+    """Tests for find_connecting_paths edge filtering.
+
+    Seed shape used here (all OUTBOUND from CL/0000061):
+      CL/0000061 -SUB_CLASS_OF->   CL/0000151, CL/0000062, CL/0007002
+      CL/0000061 -PARTICIPATES_IN-> GO/0008150
+
+    So CL/0000151 <-> GO/0008150 is connected only by a mixed-label path,
+    while CL/0000151 <-> CL/0000062 is connected by a pure SUB_CLASS_OF path.
+    """
+
+    MIXED_PAIR = ["CL/0000151", "GO/0008150"]
+    SUB_CLASS_PAIR = ["CL/0000151", "CL/0000062"]
+
+    def _labels(self, result):
+        return sorted({link["Label"] for link in result["links"]})
+
+    def test_no_filter_returns_mixed_label_path(self):
+        # Baseline: without filters the mixed path is found.
+        result = graph_service.find_connecting_paths(
+            node_ids=self.MIXED_PAIR, graph="ontologies"
+        )
+        self.assertGreater(len(result["links"]), 0)
+        self.assertIn("PARTICIPATES_IN", self._labels(result))
+
+    def test_include_filter_drops_path_with_violating_edge(self):
+        # Regression guard for the silently-ignored filter: a path is kept only
+        # if EVERY edge satisfies the filter. The PARTICIPATES_IN edge violates
+        # it, so the whole path is dropped rather than partially returned.
+        result = graph_service.find_connecting_paths(
+            node_ids=self.MIXED_PAIR,
+            graph="ontologies",
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
+        )
+        self.assertEqual(result["links"], [])
+
+    def test_include_filter_keeps_conforming_path(self):
+        # The same filter must not drop a path whose edges all conform.
+        result = graph_service.find_connecting_paths(
+            node_ids=self.SUB_CLASS_PAIR,
+            graph="ontologies",
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
+        )
+        self.assertGreater(len(result["links"]), 0)
+        self.assertEqual(self._labels(result), ["SUB_CLASS_OF"])
+
+    def test_exclude_filter_drops_path_containing_excluded_edge(self):
+        result = graph_service.find_connecting_paths(
+            node_ids=self.SUB_CLASS_PAIR,
+            graph="ontologies",
+            exclude_edge_filters={"Label": ["SUB_CLASS_OF"]},
+        )
+        self.assertEqual(result["links"], [])
+
+    def test_filters_apply_on_the_max_depth_branch(self):
+        # max_depth switches to the traversal query; the filter must apply there
+        # too, not just on the K_SHORTEST_PATHS fallback.
+        unfiltered = graph_service.find_connecting_paths(
+            node_ids=self.MIXED_PAIR, graph="ontologies", max_depth=3
+        )
+        self.assertGreater(len(unfiltered["links"]), 0)
+
+        filtered = graph_service.find_connecting_paths(
+            node_ids=self.MIXED_PAIR,
+            graph="ontologies",
+            max_depth=3,
+            edge_filters={"Label": ["SUB_CLASS_OF"]},
+        )
+        self.assertEqual(filtered["links"], [])
+
+    def test_exclude_filter_applies_on_the_max_depth_branch(self):
+        # Exclusion builds a different predicate shape than inclusion, so the
+        # traversal branch needs its own guard: GO/0008150 is only reachable
+        # across the PARTICIPATES_IN edge, so excluding it drops every path.
+        result = graph_service.find_connecting_paths(
+            node_ids=self.MIXED_PAIR,
+            graph="ontologies",
+            max_depth=3,
+            exclude_edge_filters={"Label": ["PARTICIPATES_IN"]},
+        )
+        self.assertEqual(result["links"], [])
+
+
 class WorkflowServiceTestCase(ArangoDBTestCase):
     """Tests for workflow_service functions, focused on edge_filters propagation."""
 
