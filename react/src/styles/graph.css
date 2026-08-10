@@ -353,6 +353,10 @@ g.node.pinned .node-pin-marker path {
   cursor: pointer;
   font-size: var(--font-size-sm);
   font-weight: 500;
+  /* The title bar is a space-between flex row, so a long graph title would
+     otherwise squeeze these until their labels wrapped inside the 40px box. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .toggle-options-button:hover,

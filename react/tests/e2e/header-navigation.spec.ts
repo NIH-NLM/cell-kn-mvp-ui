@@ -78,3 +78,27 @@ test("Header navigation links work correctly", async ({ page }) => {
   // Verify no "split of undefined" errors occurred
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
 });
+
+// The active nav item must be visually distinct, not merely carry the class.
+// A bare `.active-nav` selector is (0,1,0) and loses to `.navbar h4` at (0,1,1),
+// so the blue silently never applied while every class assertion above stayed
+// green. Assert the resolved colour, which is the part users actually see.
+test("Active nav item resolves to the primary blue", async ({ page }) => {
+  const PRIMARY = "rgb(0, 113, 188)"; // --color-primary #0071bc
+  const INACTIVE = "rgb(50, 58, 69)"; // --color-gray-dark #323a45
+
+  await page.route("**/arango_api/**", async (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+  );
+
+  await page.goto("/#/collections");
+  const active = page.locator(".navbar a[href='#/collections'] h4");
+  await expect(active).toHaveClass(/active-nav/);
+  await expect(active).toHaveCSS("color", PRIMARY);
+
+  // A neighbour stays gray, proving the rule is scoped rather than global.
+  await expect(page.locator(".navbar a[href='#/about'] h4")).toHaveCSS("color", INACTIVE);
+
+  // Frame IV distinguishes the active item by colour alone — same Medium weight.
+  await expect(active).toHaveCSS("font-weight", "500");
+});

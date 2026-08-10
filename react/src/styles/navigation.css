@@ -45,10 +45,14 @@
   object-fit: cover;
 }
 
-/* Active nav item: Figma primary blue, SemiBold (682:3495). */
-.active-nav {
+/* Active nav item: Figma primary blue (683:5598). Must out-specify `.navbar h4`
+   — a bare `.active-nav` is (0,1,0) and loses to that rule's (0,1,1), so the
+   blue silently never applied.
+   Weight stays 500: frame IV distinguishes the active item by colour alone
+   (I635:3333;635:3315). Frame III used SemiBold; this follows IV. */
+.navbar h4.active-nav {
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Redesigned navy Title Bar (Figma "Title Bar - Desktop L", node 683:5587). */

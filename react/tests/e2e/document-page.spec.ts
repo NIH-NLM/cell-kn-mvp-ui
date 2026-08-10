@@ -241,3 +241,64 @@ test("DocumentPage: inspector swaps on node click and saved-graph shelf gains a 
 
   expect(filterErrorsContaining(await getCollectedErrors(page), "split").length).toBe(0);
 });
+
+// A long graph title used to squeeze the "Show Options" button until its label
+// wrapped across two lines inside the fixed 40px box. The title bar is a
+// space-between flex row, so without `nowrap` + `flex-shrink: 0` the button is
+// the thing that gives. Measured via the text node's client rects: one rect per
+// rendered line, so a wrap shows up as 2.
+test("DocumentPage: Show Options stays on one line beside a long graph title", async ({ page }) => {
+  await installErrorInstrumentation(page);
+
+  const originKey = "ROOT";
+  const { root } = smallGraphWithEdges();
+  const longTitle =
+    "Cell Set Dataset: Sikkema (2023) Nat Med - An Integrated Cell Atlas Of The Human Lung In Health And Disease (core)";
+
+  await page.route(`**/arango_api/collection/${TEST_COLL}/${originKey}/`, async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      // getTitle() reads `label` for a collection with no config entry — setting
+      // `Name` here would leave the title short and the test would prove nothing.
+      body: JSON.stringify({ ...root, label: longTitle }),
+    }),
+  );
+  await page.route("**/arango_api/collections/", async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([TEST_COLL]),
+    }),
+  );
+  await page.route("**/arango_api/edge_filter_options/", async (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) }),
+  );
+  await page.route("**/arango_api/graph/", async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(buildRawGraph(`${TEST_COLL}/${originKey}`)),
+    }),
+  );
+  await page.route("**/arango_api/document/details", async (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) }),
+  );
+
+  await page.setViewportSize({ width: 1440, height: 1060 });
+  await page.goto(`/#/collections/${TEST_COLL}/${originKey}`);
+
+  const button = page.locator(".graph-workspace-canvas .toggle-options-button");
+  await expect(button).toBeVisible();
+
+  const lines = await button.evaluate((el) => {
+    const textNode = [...el.childNodes].find(
+      (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim(),
+    );
+    if (!textNode) return -1;
+    const range = document.createRange();
+    range.selectNodeContents(textNode);
+    return range.getClientRects().length;
+  });
+  expect(lines).toBe(1);
+});
