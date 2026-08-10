@@ -3,19 +3,13 @@ Service for graph traversal operations.
 """
 
 import logging
-import re
 
+from arango_api.aql_safety import is_safe_aql_identifier
 from arango_api.db import db_ontologies, GRAPH_NAME_ONTOLOGIES
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
 logger = logging.getLogger(__name__)
-
-# Edge filter dict keys are interpolated directly into AQL attribute accessors
-# (e.`<field>`), so each must be a plain identifier. Rejecting anything else
-# (backticks, dots, whitespace) prevents AQL injection.
-# \Z (not $) so a trailing newline (e.g. "Label\n") is not accepted.
-_SAFE_EDGE_FIELD = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 
 
 def _build_edge_filter_clause(
@@ -46,10 +40,11 @@ def _build_edge_filter_clause(
         return positive_conditions, negative_conditions
 
     for key, values in (edge_filters or {}).items():
-        if not _SAFE_EDGE_FIELD.match(key):
+        if not is_safe_aql_identifier(key):
             logger.warning("Skipping edge filter with unsafe field name: %r", key)
             continue
-        safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
+        # The guard above already restricted key to an AQL identifier.
+        safe_key = key
 
         # Numeric range filter: values is a dict with min/max keys
         if isinstance(values, dict):
@@ -104,14 +99,15 @@ def _build_edge_filter_clause(
 
     if exclude_filters:
         for key, values in exclude_filters.items():
-            if not _SAFE_EDGE_FIELD.match(key):
+            if not is_safe_aql_identifier(key):
                 logger.warning(
                     "Skipping edge filter with unsafe field name: %r", key
                 )
                 continue
             if not values:
                 continue
-            safe_key = re.sub(r"[^a-zA-Z0-9_]", "", key)
+            # The guard above already restricted key to an AQL identifier.
+            safe_key = key
 
             # Numeric range exclude: values is a dict with min/max keys
             if isinstance(values, dict):

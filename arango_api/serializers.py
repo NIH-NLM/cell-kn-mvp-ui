@@ -12,17 +12,9 @@ Usage in views:
 See: https://www.django-rest-framework.org/api-guide/serializers/
 """
 
-import re
-
 from rest_framework import serializers
 
-# AQL identifier pattern: search_fields are interpolated directly into AQL
-# attribute accessors (doc.`<field>`), so each must be a plain identifier.
-# Rejecting anything else (backticks, dots, whitespace) prevents AQL injection.
-# Leading underscores are allowed because the frontend searches system/edge
-# attributes such as _from, _to and _key.
-# \Z (not $) so a trailing newline (e.g. "Label\n") is not accepted.
-_VALID_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
+from arango_api.aql_safety import is_safe_aql_identifier
 
 GRAPH_CHOICES = ["ontologies", "phenotypes"]
 
@@ -45,7 +37,7 @@ def _validate_edge_filter_field_names(value):
         raise serializers.ValidationError(
             "Edge filter must be an object mapping field names to values."
         )
-    invalid = [k for k in value if not _VALID_FIELD_NAME.match(k)]
+    invalid = [k for k in value if not is_safe_aql_identifier(k)]
     if invalid:
         raise serializers.ValidationError(
             f"Invalid edge filter field name(s): {invalid}"
@@ -237,7 +229,7 @@ class SearchRequestSerializer(serializers.Serializer):
         containing backticks or other non-identifier characters could be used
         for AQL injection. Allow only letters, digits and underscores.
         """
-        invalid = [field for field in value if not _VALID_FIELD_NAME.match(field)]
+        invalid = [field for field in value if not is_safe_aql_identifier(field)]
         if invalid:
             raise serializers.ValidationError(
                 f"Invalid field name(s): {invalid}. Field names must contain only "
