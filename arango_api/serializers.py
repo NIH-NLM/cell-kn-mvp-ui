@@ -244,8 +244,10 @@ class AQLQuerySerializer(serializers.Serializer):
 
     Validates that queries are read-only by blocking write operations.
 
-    TODO: For defense-in-depth, this endpoint should also use a read-only
-    database user at the infrastructure level. See: arango_api/db.py
+    Defense-in-depth is now enforced at two layers: this app-level block, plus
+    the infrastructure-level read-only, database-scoped ArangoDB user the backend
+    authenticates as (see arango_api/db.py). A write that slipped past this guard
+    would still be rejected by ArangoDB's permission check.
     """
 
     BLOCKED_OPERATIONS = [
