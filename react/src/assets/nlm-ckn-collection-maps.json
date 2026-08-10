@@ -532,7 +532,7 @@
         "individual_urls": [
           {
             "individual_url": "https://cellxgene.cziscience.com/e/<FIELD_TO_USE>.cxg/",
-            "field_to_use": "dataset_identifier",
+            "field_to_use": "version",
             "to_be_replaced": "",
             "replace_with": "",
             "make_lower_case": false
@@ -1230,7 +1230,7 @@
         ],
         "individual_urls": [
           {
-            "individual_url": "https://<FIELD_TO_USE>",
+            "individual_url": "https://doi.org/<FIELD_TO_USE>",
             "field_to_use": "publication_doi",
             "to_be_replaced": "",
             "replace_with": "",
@@ -1265,7 +1265,7 @@
           {
             "field_to_display": "publication_doi",
             "display_field_as": "DOI",
-            "field_url": "https://<FIELD_TO_USE>",
+            "field_url": "https://doi.org/<FIELD_TO_USE>",
             "field_to_use": "publication_doi"
           }
         ],
