@@ -89,21 +89,26 @@ Useful before the first environment deploy.
 
 ### `arango-tunnel.sh` - Connect to ArangoDB via SSM
 ```bash
-./scripts/arango-tunnel.sh [environment]        # default: dev (dev|stage|sandbox|prod)
+./scripts/arango-tunnel.sh [environment]         # default: dev (dev|stage|sandbox|prod)
 ./scripts/arango-tunnel.sh stage
-./scripts/arango-tunnel.sh dev --show-password  # reveal the root password
+./scripts/arango-tunnel.sh dev --show-password   # reveal the password
+./scripts/arango-tunnel.sh prod --root           # connect as the root superuser
 ```
 
 Opens an AWS SSM port-forwarding tunnel to the ArangoDB EC2 instance
 (`localhost:8530 → instance:8529`) — no SSH key or public IP needed. It looks up
 the instance from the `nlm-ckn-<env>-arangodb` CloudFormation stack, fetches the
-root password from Secrets Manager (masked unless `--show-password` /
+password from Secrets Manager (masked unless `--show-password` /
 `SHOW_PASSWORD=1` is set), then keeps the tunnel open (Ctrl+C to stop).
+
+By default it connects as the backend's **read-only** user — safe for browsing
+and inspection. Pass `--root` for the superuser when you need write/admin access
+(the script prints which user it used and the matching `curl -u` example).
 
 Once running:
 ```bash
 open http://localhost:8530   # Web UI
-arangosh --server.endpoint tcp://localhost:8530 --server.username root --server.password <password>
+arangosh --server.endpoint tcp://localhost:8530 --server.username "YOUR_USER" --server.password "YOUR_PASSWORD"
 ```
 
 Requires the AWS Session Manager plugin (needed to open the SSM tunnel) and AWS

@@ -6,11 +6,15 @@
 # port-forwarding tunnel: instance:8529 → localhost:8530
 #
 # USAGE:
-#   ./scripts/arango-tunnel.sh [environment] [--show-password]
+#   ./scripts/arango-tunnel.sh [environment] [--root] [--show-password]
 #
 # ARGUMENTS:
 #   environment      Environment name: dev, stage, sandbox, or prod (default: dev)
-#   --show-password  Print the real ArangoDB root password instead of a mask.
+#   --root           Connect as the ArangoDB root superuser instead of the
+#                    default read-only user. Reserved for admin tasks (restores,
+#                    creating collections/analyzers/graphs); the default is the
+#                    backend's read-only user, safe for browsing/inspection.
+#   --show-password  Print the real ArangoDB password instead of a mask.
 #                    Can also be enabled with SHOW_PASSWORD=1. Off by default
 #                    to avoid leaking the credential to the terminal/logs.
 #
@@ -26,6 +30,7 @@
 #   ./scripts/arango-tunnel.sh dev
 #   ./scripts/arango-tunnel.sh stage
 #   ./scripts/arango-tunnel.sh dev --show-password
+#   ./scripts/arango-tunnel.sh prod --root --show-password
 # ==============================================================================
 set -e
 
@@ -36,11 +41,13 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Parse arguments: environment (positional) and --show-password flag (any order)
+# Parse arguments: environment (positional) plus --root / --show-password (any order)
 ENVIRONMENT="dev"
 SHOW_PASSWORD="${SHOW_PASSWORD:-}"
+USE_ROOT=""
 for arg in "$@"; do
   case "$arg" in
+    --root) USE_ROOT=1 ;;
     --show-password) SHOW_PASSWORD=1 ;;
     *) ENVIRONMENT="$arg" ;;
   esac
@@ -79,9 +86,30 @@ fi
 echo "  EC2 Instance:  $INSTANCE_ID"
 
 echo ""
-echo "==> Fetching ArangoDB password from Secrets Manager..."
 
-SECRET_ID="/${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password"
+# Pick the user + secret. Default is the backend's read-only user (safe for
+# browsing/inspection); --root switches to the superuser for admin work. PR #11
+# split these onto separate ArangoDB users and separate secrets.
+if [ -n "$USE_ROOT" ]; then
+  ARANGO_USER="root"
+  SECRET_ID="/${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-root-password"
+  echo "==> Fetching ArangoDB root password from Secrets Manager..."
+else
+  # Read-only user name comes from the same SSM param ECS injects into the
+  # backend, so the tunnel always matches whoever the app connects as.
+  ARANGO_USER=$(aws ssm get-parameter \
+    --name "/${PROJECT_NAME}/${ENVIRONMENT}/arango/db-user" \
+    --query 'Parameter.Value' \
+    --output text \
+    --region "$AWS_REGION" 2>/dev/null) || {
+    echo -e "${RED}Error: Could not read SSM param '/${PROJECT_NAME}/${ENVIRONMENT}/arango/db-user'.${NC}"
+    echo "Pass --root to connect as the superuser instead."
+    exit 1
+  }
+  SECRET_ID="/${PROJECT_NAME}/${ENVIRONMENT}/secrets/arangodb-password"
+  echo "==> Fetching ArangoDB read-only (${ARANGO_USER}) password from Secrets Manager..."
+fi
+
 ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
   --secret-id "$SECRET_ID" \
   --query 'SecretString' \
@@ -101,10 +129,11 @@ if [ -n "$SHOW_PASSWORD" ]; then
 else
   DISPLAY_PASSWORD="**** (re-run with --show-password or SHOW_PASSWORD=1 to reveal)"
 fi
+echo -e "${CYAN}  ArangoDB user:     ${ARANGO_USER}${NC}"
 echo -e "${CYAN}  ArangoDB password: ${DISPLAY_PASSWORD}${NC}"
 echo ""
 echo "  Web UI:  http://localhost:${LOCAL_PORT}"
-echo "  API:     curl -u \"root:<password>\" http://localhost:${LOCAL_PORT}/_api/version"
+echo "  API:     curl -u \"${ARANGO_USER}:<password>\" http://localhost:${LOCAL_PORT}/_api/version"
 echo ""
 echo -e "${YELLOW}Starting SSM port-forwarding session... (Ctrl+C to stop)${NC}"
 echo ""

@@ -203,7 +203,7 @@ BUCKET=$(aws ssm get-parameter \
 VERSION="__DATASET_S3_KEY__"
 
 ARANGO_PASSWORD=$(aws secretsmanager get-secret-value \
-  --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
+  --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-root-password" \
   --query 'SecretString' --output text --region "$REGION")
 
 LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
