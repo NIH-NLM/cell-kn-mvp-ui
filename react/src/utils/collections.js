@@ -19,6 +19,32 @@ export const collectionConfigMap = new Map(collMaps.maps);
 export const NON_BROWSABLE_COLLECTIONS = new Set(["HsapDv"]);
 
 /**
+ * Apply a collection-config field transform to a raw value.
+ *
+ * A config entry may rewrite a substring — CURIEs such as "CL:0002399" become
+ * "CL_0002399" before being appended to an ontology base URL — and/or lowercase
+ * the result. Every consumer of individual_labels, individual_urls and
+ * individual_fields needs those same two steps.
+ *
+ * Callers keep their own null/empty handling and fallbacks: the label and URL
+ * helpers disagree about whether an empty string counts as a value, and that
+ * difference is deliberate rather than something to unify here.
+ *
+ * @param {object} config - A field config entry from the collection maps.
+ * @param {*} value - The raw field value.
+ * @returns {string} The transformed value, coerced to a string.
+ */
+export const applyFieldTransform = (config, value) => {
+  let result = String(value);
+
+  if (config.to_be_replaced) {
+    result = result.replaceAll(config.to_be_replaced, config.replace_with ?? "");
+  }
+
+  return config.make_lower_case ? result.toLowerCase() : result;
+};
+
+/**
  * Remove collections that should not be browsable from a list of collection keys.
  * @param {Array<string>} collections - Array of collection names.
  * @returns {Array<string>} Filtered array excluding non-browsable collections.
@@ -66,20 +92,7 @@ export const getLabel = (item) => {
         const value = item[config.field_to_use];
 
         if (value !== null && value !== undefined) {
-          let processedLabel = String(value);
-
-          if (config.to_be_replaced) {
-            processedLabel = processedLabel.replaceAll(
-              config.to_be_replaced,
-              config.replace_with || "",
-            );
-          }
-
-          if (config.make_lower_case) {
-            processedLabel = processedLabel.toLowerCase();
-          }
-
-          label = processedLabel;
+          label = applyFieldTransform(config, value);
           break;
         }
       }
@@ -111,21 +124,8 @@ export const getUrl = (item) => {
           const value = item[config.field_to_use];
 
           if (value !== null && value !== undefined) {
-            let replacement = String(value);
-
-            if (config.to_be_replaced) {
-              replacement = replacement.replaceAll(
-                config.to_be_replaced,
-                config.replace_with || "",
-              );
-            }
-
-            if (config.make_lower_case) {
-              replacement = replacement.toLowerCase();
-            }
-
-            const url = config.individual_url.replace("<FIELD_TO_USE>", replacement);
-            return url;
+            const replacement = applyFieldTransform(config, value);
+            return config.individual_url.replace("<FIELD_TO_USE>", replacement);
           }
         }
       }
@@ -164,21 +164,7 @@ export const getDisplayFields = (item) => {
         if (config.field_url && config.field_to_use) {
           const urlValue = item[config.field_to_use];
           if (urlValue !== null && urlValue !== undefined) {
-            let replacement = String(urlValue);
-
-            // CURIEs such as "CL:0002399" need rewriting to "CL_0002399"
-            // before they can be appended to an ontology base URL.
-            if (config.to_be_replaced) {
-              replacement = replacement.replaceAll(
-                config.to_be_replaced,
-                config.replace_with || "",
-              );
-            }
-
-            if (config.make_lower_case) {
-              replacement = replacement.toLowerCase();
-            }
-
+            const replacement = applyFieldTransform(config, urlValue);
             fieldUrl = config.field_url.replace("<FIELD_TO_USE>", replacement);
           }
         }
@@ -375,15 +361,9 @@ export const getNodeLabel = (nodeData, nodeIdOrCollection) => {
   }
 
   for (const labelConfig of config.individual_labels) {
-    let value = nodeData[labelConfig.field_to_use];
+    const value = nodeData[labelConfig.field_to_use];
     if (value !== undefined && value !== null && value !== "") {
-      if (labelConfig.to_be_replaced && labelConfig.replace_with !== undefined) {
-        value = String(value).split(labelConfig.to_be_replaced).join(labelConfig.replace_with);
-      }
-      if (labelConfig.make_lower_case) {
-        value = String(value).toLowerCase();
-      }
-      return String(value);
+      return applyFieldTransform(labelConfig, value);
     }
   }
 
@@ -401,15 +381,11 @@ export const getNodeExternalUrl = (node, collection) => {
   if (!config?.individual_urls?.[0]) return null;
 
   const urlConfig = config.individual_urls[0];
-  let fieldValue = node[urlConfig.field_to_use];
+  const fieldValue = node[urlConfig.field_to_use];
   if (!fieldValue) return null;
 
-  if (urlConfig.to_be_replaced && urlConfig.replace_with !== undefined) {
-    fieldValue = fieldValue.split(urlConfig.to_be_replaced).join(urlConfig.replace_with);
-  }
-  if (urlConfig.make_lower_case) {
-    fieldValue = fieldValue.toLowerCase();
-  }
-
-  return urlConfig.individual_url.replace("<FIELD_TO_USE>", fieldValue);
+  return urlConfig.individual_url.replace(
+    "<FIELD_TO_USE>",
+    applyFieldTransform(urlConfig, fieldValue),
+  );
 };
