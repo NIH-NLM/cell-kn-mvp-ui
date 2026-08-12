@@ -488,10 +488,22 @@
             "field_to_use": ""
           },
           {
+            "field_to_display": "dataset_name",
+            "display_field_as": "Dataset name",
+            "field_url": "",
+            "field_to_use": ""
+          },
+          {
             "field_to_display": "cellxgene_dataset",
             "display_field_as": "CELLxGENE dataset",
             "field_url": "https://<FIELD_TO_USE>",
             "field_to_use": "cellxgene_dataset"
+          },
+          {
+            "field_to_display": "cellxgene_collection",
+            "display_field_as": "CELLxGENE collection",
+            "field_url": "https://<FIELD_TO_USE>",
+            "field_to_use": "cellxgene_collection"
           },
           {
             "field_to_display": "publication",
