@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
+import collectionDefaults from "../../assets/collection-defaults.json";
 import graphReducer, {
   loadGraph,
   setAvailableCollections,
@@ -110,6 +111,7 @@ const {
   fetchNodeExpansion,
   fetchCollections,
   fetchEdgeFilterOptions,
+  fetchGraphData,
 } = require("services");
 
 // Create a test store with all required slices
@@ -1415,6 +1417,69 @@ describe("ForceGraph", () => {
       await waitFor(() => {
         expect(store.getState().graph.present.settings.terminalCollections).toEqual([]);
       });
+    });
+  });
+
+  describe("CS collection defaults reach a Cell set page's own predicates and PUB", () => {
+    it("sends IS_ABOUT and both wasAttributedTo spellings in edgeFilters.Label, and PUB in allowedCollections", async () => {
+      const csDefaults = collectionDefaults.CS;
+      fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
+      const store = createTestStore();
+      // The prop-defaults effect only intersects allowedCollections once
+      // availableCollections is populated, so seed it with every collection
+      // the CS defaults name -- otherwise PUB (and everything else) would be
+      // silently dropped and this test would pass for the wrong reason.
+      store.dispatch(setAvailableCollections(csDefaults.allowedCollections));
+
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph settings={csDefaults} />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetchGraphData).toHaveBeenCalled();
+      });
+
+      const params = fetchGraphData.mock.calls[0][0];
+      // Both spellings of the wasAttributedTo predicate are pinned on purpose, and
+      // neither is redundant -- do not "tidy" one away.
+      //
+      // The ETL's OntologyGraphBuilder converts non-screaming-snake predicates
+      // (subClassOf -> SUB_CLASS_OF), but wasAttributedTo is not yet in that
+      // conversion list, so it lands in the graph uppercased-but-unsplit as
+      // WASATTRIBUTEDTO. That is the form the data carries today. Once the ETL
+      // adds it, the label becomes WAS_ATTRIBUTED_TO and the old value stops
+      // matching -- silently, with no error, which is how publications vanished
+      // from this page in the first place.
+      //
+      // Pinning both makes the page correct on either side of that ETL change,
+      // in either merge order. A predicate value that matches nothing is inert
+      // (the three retired predicates removed in this commit proved that), so
+      // the unused spelling costs nothing. Drop WASATTRIBUTEDTO once the ETL
+      // conversion has shipped and the data no longer contains it.
+      expect(params.edgeFilters.Label).toEqual(
+        expect.arrayContaining(["IS_ABOUT", "WASATTRIBUTEDTO", "WAS_ATTRIBUTED_TO"]),
+      );
+      expect(params.allowedCollections).toEqual(expect.arrayContaining(["PUB"]));
+    });
+  });
+
+  describe("collection-defaults.json fixture", () => {
+    it("contains no entry using the retired SELECTIVELY_EXPRESS predicate", () => {
+      // Assert the fixture is non-empty first: a forEach over {} would make every
+      // assertion below pass vacuously, so the guard would stop guarding silently.
+      const entries = Object.entries(collectionDefaults);
+      expect(entries.length).toBeGreaterThan(0);
+      for (const [, entry] of entries) {
+        expect(entry.preferredPredicates || []).not.toContain("SELECTIVELY_EXPRESS");
+      }
     });
   });
 });
