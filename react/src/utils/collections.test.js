@@ -49,6 +49,16 @@ describe("getSectionedFields", () => {
     expect(result.map((s) => s.section)).not.toContain("Provenance");
   });
 
+  it("warns that the CELLxGENE dataset link is a file download", () => {
+    // The two Provenance links look interchangeable but are not: the collection
+    // one opens a page, the dataset one pulls a multi-hundred-MB .h5ad.
+    const provenance = getSectionedFields(csd()).find((s) => s.section === "Provenance");
+    expect(provenance.fields.map((f) => f.label)).toEqual([
+      "CELLxGENE collection",
+      "CELLxGENE data file (.h5ad download)",
+    ]);
+  });
+
   it("collects configured attributes outside the curated sections into an Additional section", () => {
     // tissue_annotation is in the CSD collection map but not in any curated
     // fieldSections section, so it must surface under "Additional" (show-all).
