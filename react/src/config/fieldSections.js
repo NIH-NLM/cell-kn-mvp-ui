@@ -101,8 +101,10 @@ export const fieldSections = {
     {
       section: "Provenance",
       fields: [
-        { key: "cellxgene_collection", label: "CELLxGENE_collection" },
-        { key: "cellxgene_dataset", label: "CELLxGENE_dataset" },
+        { key: "cellxgene_collection", label: "CELLxGENE collection" },
+        // Not a page: this URL serves the raw .h5ad, hundreds of MB for a
+        // typical dataset, so the label has to warn before the click does.
+        { key: "cellxgene_dataset", label: "CELLxGENE data file (.h5ad download)" },
       ],
     },
   ],
