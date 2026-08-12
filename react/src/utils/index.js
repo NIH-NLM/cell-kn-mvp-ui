@@ -2,6 +2,7 @@
 
 // Collection and label utilities
 export {
+  applyFieldTransform,
   collectionConfigMap,
   filterBrowsableCollections,
   getAllSearchableFields,

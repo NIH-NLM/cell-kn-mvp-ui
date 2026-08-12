@@ -1,9 +1,12 @@
 import {
+  applyFieldTransform,
   capitalCase,
   filterBrowsableCollections,
   formatFieldValue,
   getDisplayFields,
   getLabel,
+  getNodeExternalUrl,
+  getNodeLabel,
   getTitle,
   getUrl,
   hasAnyNodes,
@@ -419,5 +422,76 @@ describe("Utils Module", () => {
       expect(capitalCase(123)).toBe(123);
       expect(capitalCase({ a: 1 })).toEqual({ a: 1 });
     });
+  });
+});
+
+// --- applyFieldTransform ---
+// The transform config-driven label and URL helpers share. Pinned directly
+// because five call sites depend on it behaving identically for all of them.
+describe("applyFieldTransform", () => {
+  it("rewrites every occurrence, not just the first", () => {
+    expect(applyFieldTransform({ to_be_replaced: ":", replace_with: "_" }, "a:b:c")).toBe("a_b_c");
+  });
+
+  it("drops the substring when replace_with is absent", () => {
+    // The two dialects this replaced disagreed here: one stripped, the other
+    // left the value untouched. No shipped config hits this case, so either was
+    // defensible; stripping is what the majority of call sites already did.
+    expect(applyFieldTransform({ to_be_replaced: ":" }, "CL:0002399")).toBe("CL0002399");
+  });
+
+  it("lowercases only when asked", () => {
+    expect(applyFieldTransform({ make_lower_case: true }, "MiXeD")).toBe("mixed");
+    expect(applyFieldTransform({}, "MiXeD")).toBe("MiXeD");
+  });
+
+  it("coerces non-strings before rewriting", () => {
+    // getNodeExternalUrl previously called .split() on the raw value, so a
+    // numeric field with a rewrite rule threw instead of producing a URL.
+    expect(applyFieldTransform({ to_be_replaced: "2", replace_with: "-" }, 12345)).toBe("1-345");
+  });
+});
+
+// --- getNodeLabel ---
+// Characterization tests: this helper deliberately does not share getLabel's
+// fallback contract, so the differences are pinned rather than unified.
+describe("getNodeLabel", () => {
+  it("resolves a label from the collection config", () => {
+    expect(getNodeLabel({ name: "Cell A" }, "nodes_a/1")).toBe("Cell A");
+  });
+
+  it("accepts a bare collection key as well as a full node id", () => {
+    expect(getNodeLabel({ name: "Cell A" }, "nodes_a")).toBe("Cell A");
+  });
+
+  it("treats an empty string as absent, unlike getLabel", () => {
+    expect(getNodeLabel({ name: "", key: "key_a2" }, "nodes_a/1")).toBe("key_a2");
+    expect(getLabel({ _id: "nodes_a/1", name: "", key: "key_a2" })).toBe("NAME UNKNOWN");
+  });
+
+  it("falls back to the node id, not to NAME UNKNOWN", () => {
+    expect(getNodeLabel({}, "nodes_a/1")).toBe("nodes_a/1");
+    expect(getNodeLabel(null, "nodes_a/1")).toBe("nodes_a/1");
+    expect(getNodeLabel({}, "nodes_a")).toBe("-");
+  });
+
+  it("uses generic node fields when the collection has no label config", () => {
+    expect(getNodeLabel({ label: "from label" }, "unmapped/1")).toBe("from label");
+    expect(getNodeLabel({ _key: "from key" }, "unmapped/1")).toBe("from key");
+  });
+});
+
+// --- getNodeExternalUrl ---
+describe("getNodeExternalUrl", () => {
+  it("builds a URL with the config transform applied", () => {
+    expect(getNodeExternalUrl({ key: "ITEM_KEY_1" }, "nodes_a")).toBe("/data/nodes-a/item-key-1");
+  });
+
+  it("returns null when the collection has no URL config", () => {
+    expect(getNodeExternalUrl({ key: "x" }, "nodes_b")).toBeNull();
+  });
+
+  it("returns null when the source field has no value", () => {
+    expect(getNodeExternalUrl({}, "nodes_a")).toBeNull();
   });
 });
