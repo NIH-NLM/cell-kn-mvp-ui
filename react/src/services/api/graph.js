@@ -22,7 +22,6 @@ import { postJson } from "./fetchWrapper";
  * @param {string} [params.edgeDirection] - Edge direction (ANY, INBOUND, OUTBOUND).
  * @param {Array<string>} [params.allowedCollections] - Collections to include.
  * @param {Array<string>} [params.terminalCollections] - Collections returned but not expanded through.
- * @param {number} [params.nodeLimit] - Maximum nodes to return.
  * @param {string} params.graphType - Graph/database type.
  * @param {Array} [params.edgeFilters] - Edge filters.
  * @param {Object} [params.advancedSettings] - Per-node advanced settings.
@@ -37,7 +36,6 @@ export const fetchGraphData = async (params) => {
     edgeDirection,
     allowedCollections,
     terminalCollections,
-    nodeLimit,
     graphType,
     edgeFilters,
     excludeEdgeFilters,
@@ -74,7 +72,6 @@ export const fetchGraphData = async (params) => {
       edge_direction: edgeDirection,
       allowed_collections: allowedCollections,
       terminal_collections: terminalCollections || [],
-      node_limit: nodeLimit,
       graph: graphType,
       edge_filters: edgeFilters,
       exclude_edge_filters: excludeEdgeFilters || {},

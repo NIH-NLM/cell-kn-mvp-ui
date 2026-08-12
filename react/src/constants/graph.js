@@ -10,7 +10,6 @@ export const PHENOTYPES_ENABLED = false;
 
 // Graph generation defaults
 export const DEFAULT_DEPTH = 2;
-export const DEFAULT_NODE_LIMIT = 5000;
 // How many nodes of a collection to use as origins when the "all nodes from a
 // collection" source is chosen, unless the phase overrides it via originLimit.
 // Mirrors the backend MAX_COLLECTION_ORIGIN_NODES default. The collection-origin

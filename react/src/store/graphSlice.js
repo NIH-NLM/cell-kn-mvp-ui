@@ -10,7 +10,6 @@ import {
   DEFAULT_INCLUDE_INTER_NODE_EDGES,
   DEFAULT_LABEL_STATES,
   DEFAULT_NODE_FONT_SIZE,
-  DEFAULT_NODE_LIMIT,
   DEFAULT_SET_OPERATION,
   DEFAULT_USE_FOCUS_NODES,
   GRAPH_STATUS,
@@ -134,7 +133,6 @@ export const fetchAndProcessGraph = createAsyncThunk(
         edgeDirection: settings.edgeDirection,
         allowedCollections: settings.allowedCollections,
         terminalCollections: settings.terminalCollections || [],
-        nodeLimit: settings.nodeLimit,
         graphType: settings.graphType,
         edgeFilters: include,
         excludeEdgeFilters: exclude,
@@ -325,7 +323,6 @@ const initialState = {
     allCollections: [], // Collections in all DB
     nodeFontSize: DEFAULT_NODE_FONT_SIZE,
     edgeFontSize: DEFAULT_EDGE_FONT_SIZE,
-    nodeLimit: DEFAULT_NODE_LIMIT,
     labelStates: { ...DEFAULT_LABEL_STATES },
     findShortestPaths: DEFAULT_FIND_SHORTEST_PATHS,
     useFocusNodes: DEFAULT_USE_FOCUS_NODES,

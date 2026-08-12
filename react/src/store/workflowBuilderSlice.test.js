@@ -554,3 +554,75 @@ describe("loadWorkflow unknown labels", () => {
     expect(fresh.unknownLabels).toEqual([]);
   });
 });
+
+describe("executePhase resolves the nonOriginNodes originFilter", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const settings = {
+    graphType: "ontologies",
+    depth: 1,
+    edgeDirection: "ANY",
+    allowedCollections: ["CL"],
+    setOperation: "Union",
+    includeInterNodeEdges: false,
+  };
+
+  // Phase 1 starts from CL/1 and discovers CL/2 and CL/3. Phase 2 chains off it,
+  // so the filter decides which of those three become phase 2's origins.
+  const originsForPhaseTwo = async (originFilter) => {
+    services.fetchGraphData
+      .mockResolvedValueOnce({
+        "CL/1": { nodes: [{ _id: "CL/1" }, { _id: "CL/2" }, { _id: "CL/3" }], links: [] },
+      })
+      .mockResolvedValueOnce({
+        "CL/2": { nodes: [{ _id: "CL/2" }], links: [] },
+        "CL/3": { nodes: [{ _id: "CL/3" }], links: [] },
+      });
+    if (services.fetchEdgesBetween) services.fetchEdgesBetween.mockResolvedValue([]);
+
+    const store = makeStore();
+    store.dispatch(
+      loadWorkflow({
+        phases: [
+          {
+            id: "p1",
+            originSource: "manual",
+            originNodeIds: ["CL/1"],
+            previousPhaseId: null,
+            settings,
+          },
+          {
+            id: "p2",
+            originSource: "previousPhase",
+            previousPhaseId: "p1",
+            originFilter,
+            originNodeIds: [],
+            settings,
+          },
+        ],
+      }),
+    );
+
+    await store.dispatch(executePhase({ phaseId: "p1" }));
+    await store.dispatch(executePhase({ phaseId: "p2" }));
+    return [...services.fetchGraphData.mock.calls[1][0].nodeIds].sort();
+  };
+
+  it("drops the origin node under nonOriginNodes", async () => {
+    expect(await originsForPhaseTwo("nonOriginNodes")).toEqual(["CL/2", "CL/3"]);
+  });
+
+  it("drops the origin node under the leafNodes alias", async () => {
+    // Pinned separately: the two names must not drift apart, and leafNodes is
+    // the one the UI actually emits today.
+    expect(await originsForPhaseTwo("leafNodes")).toEqual(["CL/2", "CL/3"]);
+  });
+
+  it("keeps the origin node under the all filter", async () => {
+    // Contrast case: before the alias was handled, "nonOriginNodes" fell through
+    // to this branch and silently produced a larger query than asked for.
+    expect(await originsForPhaseTwo("all")).toEqual(["CL/1", "CL/2", "CL/3"]);
+  });
+});
