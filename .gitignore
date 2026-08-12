@@ -24,5 +24,4 @@ venv/
 /arangodb
 /.claude
 CLAUDE.md
-/core/sh/build-*
 .worktrees/

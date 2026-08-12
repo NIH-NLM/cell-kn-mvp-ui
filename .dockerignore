@@ -2,8 +2,7 @@
 react/
 
 # Deployment/shell scripts
-core/sh/
-arango_api/sh/
+archive/
 
 # Tests
 arango_api/tests/
