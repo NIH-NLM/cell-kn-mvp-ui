@@ -53,7 +53,8 @@ const createLinkedPhase = (existingPhases) => {
 /**
  * Filters nodes from a phase result based on the filter type.
  * @param {Array} nodes - Nodes from the phase result.
- * @param {string} filter - Filter type: "all", "leafNodes", or "originNodes".
+ * @param {string} filter - Filter type: "all", "nonOriginNodes" (alias
+ *   "leafNodes"), or "originNodes".
  * @param {Array} originNodeIds - IDs of the origin nodes for the phase.
  * @returns {Array<string>} Filtered node IDs.
  */
@@ -61,9 +62,13 @@ const filterNodesForNextPhase = (nodes, filter, originNodeIds = []) => {
   if (!nodes || nodes.length === 0) return [];
 
   switch (filter) {
+    // "nonOriginNodes" is the name the backend prefers and "leafNodes" its
+    // backward-compatible alias; both must resolve here or a phase carrying the
+    // preferred name would fall through to "all" and return every node.
+    case "nonOriginNodes":
     case "leafNodes": {
-      // Leaf nodes are those that have no outgoing edges in the result
-      // For simplicity, we'll consider nodes that aren't origin nodes as leaves
+      // Not true graph leaves: these are the nodes that were not in the origin
+      // set, i.e. discovered during traversal.
       const originSet = new Set(originNodeIds);
       return nodes.filter((n) => !originSet.has(n._id)).map((n) => n._id);
     }
@@ -364,7 +369,6 @@ export const executePhase = createAsyncThunk(
         allCollections,
         nodeFontSize: 12,
         edgeFontSize: 8,
-        nodeLimit: 5000,
         labelStates: {
           "collection-label": false,
           "link-source": false,

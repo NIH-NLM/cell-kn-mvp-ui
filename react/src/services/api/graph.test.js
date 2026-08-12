@@ -48,7 +48,6 @@ describe("graph API forwards edge filters", () => {
       depth: 1,
       edgeDirection: "ANY",
       allowedCollections: ["CL"],
-      nodeLimit: 100,
       graphType: "ontologies",
       edgeFilters: { Label: ["IS_A"] },
       excludeEdgeFilters: { Label: ["DERIVES_FROM"] },
