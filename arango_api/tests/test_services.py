@@ -16,7 +16,7 @@ Test Configuration:
 
 from unittest import mock
 
-from django.test import TestCase, tag
+from django.test import SimpleTestCase, TestCase, tag
 
 from arango_api.services import (
     collection_service,
@@ -435,6 +435,218 @@ class GraphServiceTestCase(ArangoDBTestCase):
             )
 
 
+class SanitizeAllowedCollectionsTestCase(ArangoDBTestCase):
+    """allowed_collections must be intersected with the target graph's real
+    vertex collections before either injection site in traverse_graph runs.
+
+    ArangoDB's ERR 1926 (ERROR_GRAPH_VERTEX_COL_DOES_NOT_EXIST) aborts the
+    whole traversal, with no partial data, the moment `vertexCollections`
+    names a collection that is not a member of the graph. The ontologies test
+    graph's members are exactly CL, GO, UBERON (seed_test_db.py); CHEBI is a
+    real collection in the same database but is not part of the graph, so it
+    reproduces ERR 1926 exactly like a stale/renamed collection would.
+    """
+
+    def test_mixed_members_and_non_member_returns_member_subgraph(self):
+        # CHEBI is dropped; CL/GO/UBERON survive, so the result matches a call
+        # made with only the real members -- not a 500, not an unrestricted
+        # traversal either.
+        with_noise = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON", "CHEBI"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        clean = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        with_noise_ids = sorted(n["_id"] for n in with_noise["CL/0000061"]["nodes"])
+        clean_ids = sorted(n["_id"] for n in clean["CL/0000061"]["nodes"])
+        self.assertEqual(with_noise_ids, clean_ids)
+        self.assertGreater(len(with_noise_ids), 0)
+
+    def test_all_non_member_returns_empty_not_everything(self):
+        # A request naming only invalid collections must not silently become
+        # unrestricted (invariant 2a): [] on the wire already means "no
+        # restriction" to ArangoDB, so passing the sanitized-empty list
+        # straight through would turn "show me only CHEBI" into "show me
+        # everything" -- a worse failure than the 500 it replaces.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CHEBI"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        self.assertEqual(result["CL/0000061"]["nodes"], [])
+        self.assertEqual(result["CL/0000061"]["links"], [])
+
+        unrestricted = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=[],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        self.assertGreater(len(unrestricted["CL/0000061"]["nodes"]), 0)
+
+    def test_genuinely_empty_input_still_means_unrestricted(self):
+        # Empty means "no restriction" already, at the AQL level -- must stay
+        # that way; A1 must not touch this case.
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=[],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        all_members = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        result_ids = sorted(n["_id"] for n in result["CL/0000061"]["nodes"])
+        all_ids = sorted(n["_id"] for n in all_members["CL/0000061"]["nodes"])
+        self.assertEqual(result_ids, all_ids)
+
+    def test_members_pass_through_untouched(self):
+        result = graph_service.traverse_graph(
+            node_ids=["CL/0000061"],
+            depth=1,
+            edge_direction="OUTBOUND",
+            allowed_collections=["CL", "GO", "UBERON"],
+            graph="ontologies",
+            edge_filters=None,
+            include_inter_node_edges=False,
+        )
+        self.assertGreater(len(result["CL/0000061"]["nodes"]), 0)
+
+    def test_closing_labels_branch_sanitizes_too(self):
+        # The path-aware NAC branch (:321) is a separate, early-returning
+        # code path from the default branch (:358); it must be sanitized too,
+        # not just the more commonly executed default branch.
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d1", "MONDO/nac_d2", "MONDO/nac_d3"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["GS", "PR", "CHEMBL", "CHEBI"],
+            graph="phenotypes",
+            edge_filters={
+                "Label": [
+                    "IS_GENETIC_BASIS_FOR_CONDITION",
+                    "PRODUCES",
+                    "MOLECULARLY_INTERACTS_WITH",
+                ]
+            },
+            include_inter_node_edges=False,
+            exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+        )
+        genes = set()
+        for data in results.values():
+            for node in data["nodes"]:
+                if node["_id"].startswith("GS/"):
+                    genes.add(node["_id"])
+        self.assertIn("GS/nac_g1", genes)
+
+    def test_closing_labels_branch_all_non_member_returns_empty(self):
+        results = graph_service.traverse_graph(
+            node_ids=["MONDO/nac_d1"],
+            depth=3,
+            edge_direction="ANY",
+            allowed_collections=["CHEBI"],
+            graph="phenotypes",
+            edge_filters={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+            include_inter_node_edges=False,
+            exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+        )
+        self.assertEqual(results["MONDO/nac_d1"]["nodes"], [])
+        self.assertEqual(results["MONDO/nac_d1"]["links"], [])
+
+    def test_argument_guards_raise_even_when_collections_are_impossible(self):
+        """A caller bug must still raise, not be masked by the empty result.
+
+        The impossible-collections path returns an empty traversal, so if it ran
+        before the argument guards it would swallow the "cannot set both
+        closing-edge filters" ValueError and hand the caller a silent empty
+        result instead. The guards therefore run first.
+        """
+        with self.assertRaises(ValueError):
+            graph_service.traverse_graph(
+                node_ids=["MONDO/nac_d1"],
+                depth=3,
+                edge_direction="ANY",
+                allowed_collections=["CHEBI"],
+                graph="phenotypes",
+                edge_filters=None,
+                include_inter_node_edges=False,
+                exclude_closing_edges={"Label": ["IS_SUBSTANCE_THAT_TREATS"]},
+                require_closing_edges={"Label": ["IS_GENETIC_BASIS_FOR_CONDITION"]},
+            )
+
+
+class SanitizeAllowedCollectionsCacheTestCase(SimpleTestCase):
+    """The Gharial membership lookup is cached per graph, like schema_guard's."""
+
+    def setUp(self):
+        graph_service.reset_vertex_collections_cache()
+        # Also clear on the way out: the mocked membership set is module-level
+        # state that would otherwise outlive this class and leak into whatever
+        # test runs next.
+        self.addCleanup(graph_service.reset_vertex_collections_cache)
+
+    def _patch(self, members=("CL", "GO", "UBERON")):
+        fake_graph = mock.MagicMock()
+        fake_graph.vertex_collections = mock.Mock(return_value=list(members))
+        fake_db = mock.MagicMock()
+        fake_db.graph = mock.Mock(return_value=fake_graph)
+        return (
+            mock.patch.object(
+                graph_service, "get_db_and_graph", return_value=(fake_db, "KN-Test")
+            ),
+            fake_db,
+        )
+
+    def test_gharial_hit_on_first_call_only(self):
+        patch_db, fake_db = self._patch()
+        with patch_db:
+            graph_service._get_graph_vertex_collections("ontologies")
+            graph_service._get_graph_vertex_collections("ontologies")
+            self.assertEqual(fake_db.graph.call_count, 1)
+
+    def test_reset_cache_clears_it(self):
+        patch_db, fake_db = self._patch()
+        with patch_db:
+            graph_service._get_graph_vertex_collections("ontologies")
+            graph_service.reset_vertex_collections_cache()
+            graph_service._get_graph_vertex_collections("ontologies")
+            self.assertEqual(fake_db.graph.call_count, 2)
+
+    def test_fails_open_on_exception(self):
+        patch_db, fake_db = self._patch()
+        fake_db.graph.side_effect = RuntimeError("gharial unreachable")
+        with patch_db:
+            self.assertIsNone(graph_service._get_graph_vertex_collections("ontologies"))
+
+
 class AntiEdgeTraversalTestCase(ArangoDBTestCase):
     """Path-aware anti-edge (NAC) filter on disease->gene->protein->drug paths."""
 
@@ -645,6 +857,37 @@ class ConnectingPathsTestCase(ArangoDBTestCase):
         self.assertGreater(len(result["links"]), 0)
         self.assertIn("PARTICIPATES_IN", self._labels(result))
 
+    def test_non_member_collection_does_not_abort_the_query(self):
+        """CHEBI is a real collection but not a member of the ontologies graph.
+
+        The max_depth branch feeds allowed_collections to `vertexCollections`,
+        where a non-member aborts the whole query with ERR 1926. Sanitizing
+        drops it so the member subgraph still comes back.
+        """
+        result = graph_service.find_connecting_paths(
+            node_ids=self.SUB_CLASS_PAIR,
+            graph="ontologies",
+            allowed_collections=["CL", "CHEBI"],
+            max_depth=3,
+        )
+        self.assertGreater(len(result["links"]), 0)
+
+    def test_all_non_member_collections_return_empty_not_everything(self):
+        """An impossible list must not widen into an unrestricted query.
+
+        `vertexCollections: []` means "no restriction" to ArangoDB, so
+        collapsing a fully-dropped list to `[]` would return every path
+        instead of none.
+        """
+        result = graph_service.find_connecting_paths(
+            node_ids=self.SUB_CLASS_PAIR,
+            graph="ontologies",
+            allowed_collections=["CHEBI"],
+            max_depth=3,
+        )
+        self.assertEqual(result["nodes"], [])
+        self.assertEqual(result["links"], [])
+
     def test_include_filter_drops_path_with_violating_edge(self):
         # Regression guard for the silently-ignored filter: a path is kept only
         # if EVERY edge satisfies the filter. The PARTICIPATES_IN edge violates
@@ -813,6 +1056,74 @@ class SearchServiceTestCase(ArangoDBTestCase):
     def test_run_aql_query(self):
         result = search_service.run_aql_query("RETURN 1 + 1")
         self.assertEqual(result, 2)
+
+
+class ConnectingPathsUnboundedCollectionsTestCase(SimpleTestCase):
+    """The unbounded K_SHORTEST_PATHS branch of find_connecting_paths.
+
+    That branch cannot bind `vertexCollections` -- IS_SAME_COLLECTION takes a
+    string literal -- so it quotes each name instead. These tests pin the
+    quoting and the sanitize behaviour there, since the integration tests above
+    only exercise the max_depth branch.
+    """
+
+    def setUp(self):
+        graph_service.reset_vertex_collections_cache()
+        self.addCleanup(graph_service.reset_vertex_collections_cache)
+
+    def _run(self, allowed_collections, members=("CL", "GO", "UBERON")):
+        """Call find_connecting_paths with max_depth=None and the DB mocked.
+
+        Returns the AQL query string, or None if no query was issued.
+        """
+        cursor = mock.Mock()
+        cursor.next.return_value = {"nodes": [], "links": []}
+        db_connection = mock.Mock()
+        db_connection.aql.execute.return_value = cursor
+        fake_graph = mock.MagicMock()
+        fake_graph.vertex_collections = mock.Mock(return_value=list(members))
+        db_connection.graph = mock.Mock(return_value=fake_graph)
+
+        with mock.patch.object(
+            graph_service,
+            "get_db_and_graph",
+            return_value=(db_connection, "ontologies"),
+        ):
+            graph_service.find_connecting_paths(
+                node_ids=["CL/a", "CL/b"],
+                graph="ontologies",
+                allowed_collections=allowed_collections,
+                max_depth=None,
+            )
+
+        if not db_connection.aql.execute.call_args:
+            return None
+        return db_connection.aql.execute.call_args[0][0]
+
+    def test_member_names_are_quoted_literals(self):
+        query = self._run(["CL"])
+        self.assertIn('IS_SAME_COLLECTION("CL", CURRENT)', query)
+
+    def test_non_member_is_dropped_but_members_still_filter(self):
+        query = self._run(["CL", "CHEBI"])
+        self.assertIn('IS_SAME_COLLECTION("CL", CURRENT)', query)
+        self.assertNotIn("CHEBI", query)
+
+    def test_all_non_member_issues_no_query_at_all(self):
+        # Sanitizing to empty must not fall through to an unfiltered query --
+        # that would widen "only CHEBI" into every path in the graph.
+        self.assertIsNone(self._run(["CHEBI"]))
+
+    def test_unusual_but_valid_name_is_quoted_not_dropped(self):
+        """A member whose name is not a bare identifier must survive.
+
+        Dropping it would remove the collection filter entirely when it is the
+        only allowed collection, widening the query -- the failure this step
+        exists to prevent. Quoting keeps it, escaped.
+        """
+        odd = 'we"ird'
+        query = self._run([odd], members=(odd, "CL"))
+        self.assertIn(r'IS_SAME_COLLECTION("we\"ird", CURRENT)', query)
 
 
 class SearchByTermQueryTestCase(TestCase):
@@ -1018,9 +1329,7 @@ class UberonClCountQueryTestCase(TestCase):
         self.assertEqual(result, {})
         # An empty result (e.g. DB mid-restore) must not poison the cache, so a
         # later call retries rather than serving an empty map forever.
-        self.assertNotIn(
-            "KN-Phenotypes-v2.0", sunburst_service._UBERON_CL_COUNT_CACHE
-        )
+        self.assertNotIn("KN-Phenotypes-v2.0", sunburst_service._UBERON_CL_COUNT_CACHE)
         sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
         self.assertEqual(db.aql.execute.call_count, 2)
 
@@ -1048,7 +1357,9 @@ class TerminalCollectionsQueryTestCase(TestCase):
         params.update(kwargs)
 
         with mock.patch.object(
-            graph_service, "get_db_and_graph", return_value=(db_connection, "KN-Phenotypes")
+            graph_service,
+            "get_db_and_graph",
+            return_value=(db_connection, "KN-Phenotypes"),
         ):
             graph_service.traverse_graph(**params)
 
@@ -1086,9 +1397,7 @@ class TerminalCollectionsQueryTestCase(TestCase):
         self.assertIn("PRUNE", query)
         self.assertIn("PARSE_COLLECTION(v._id) IN @terminal_collections", query)
         self.assertEqual(bind_vars.get("exclude_value_Label"), ["DERIVES_FROM"])
-        prune_line = next(
-            line for line in query.splitlines() if "PRUNE" in line
-        )
+        prune_line = next(line for line in query.splitlines() if "PRUNE" in line)
         self.assertIn(" OR ", prune_line)
 
     def test_terminal_collection_not_in_allowed_is_accepted_unchanged(self):
@@ -1103,7 +1412,9 @@ class TerminalCollectionsQueryTestCase(TestCase):
         self.assertEqual(bind_vars.get("terminal_collections"), ["MONDO"])
         # allowed_collections is untouched -- the unmatched name is not injected
         # into the visited set, and nothing is dropped from it either.
-        self.assertEqual(bind_vars["allowed_collections"], ["BGS", "CS", "UBERON", "CSD"])
+        self.assertEqual(
+            bind_vars["allowed_collections"], ["BGS", "CS", "UBERON", "CSD"]
+        )
         baseline_query, baseline_binds = self._run()
         prune_line = next(line for line in query.splitlines() if "PRUNE" in line)
         self.assertEqual(
