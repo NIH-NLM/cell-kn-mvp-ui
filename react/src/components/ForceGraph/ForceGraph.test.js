@@ -92,7 +92,6 @@ jest.mock("services", () => ({
   fetchEdgesBetween: jest.fn(),
   fetchDocument: jest.fn(),
   fetchNodeDetailsByIds: jest.fn(),
-  fetchNodesDetails: jest.fn(),
   executeAqlQuery: jest.fn(),
   fetchPredefinedQueries: jest.fn(),
   fetchCollectionDocuments: jest.fn(),

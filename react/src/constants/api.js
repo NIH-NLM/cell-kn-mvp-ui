@@ -15,7 +15,6 @@ export const COLLECTION_DOCUMENT_ENDPOINT = (collection, id) =>
 
 // Document endpoints
 export const DOCUMENT_DETAILS_ENDPOINT = `${API_BASE}/document/details`;
-export const NODES_DETAILS_ENDPOINT = `${API_BASE}/nodes/details`;
 
 // Graph endpoints
 export const GRAPH_ENDPOINT = `${API_BASE}/graph/`;
