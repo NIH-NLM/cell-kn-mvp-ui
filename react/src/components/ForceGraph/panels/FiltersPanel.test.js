@@ -37,6 +37,16 @@ const renderPanel = (modeOrOptions = "include") => {
   return { dispatchSpy };
 };
 
+describe("FiltersPanel section order", () => {
+  it("renders sections in the order the query applies: Collections, Edge Filters, Stop traversal at", () => {
+    renderPanel();
+
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((el) => el.textContent);
+
+    expect(headings).toEqual(["Collection Filters:", "Edge Filters:", "Stop traversal at:"]);
+  });
+});
+
 describe("FiltersPanel edge filter mode toggle", () => {
   it("toggling Exclude dispatches setEdgeFilterMode exclude", () => {
     const { dispatchSpy } = renderPanel("include");

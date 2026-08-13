@@ -1019,6 +1019,15 @@ fieldset.collection-picker {
   min-inline-size: 0;
 }
 
+/* Doubled up with .setting-hint for specificity: workflow-builder.css defines
+   .setting-hint with a margin-top and is imported after this file, so a lone
+   .filters-panel-hint rule would lose the tie on source order and the
+   margin-top reset below would silently do nothing. */
+.setting-hint.filters-panel-hint {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+}
+
 .edge-filter-mode-toggle {
   display: inline-flex;
   gap: 0;

@@ -52,6 +52,11 @@ const FiltersPanel = ({
   return (
     // biome-ignore lint/correctness/useUniqueElementIds: legacy id
     <div id="tab-panel-collections" className="tab-panel active">
+      <p className="setting-hint filters-panel-hint">
+        These sections combine: a collection allowed below is still unreachable if the edge type
+        that leads to it is filtered out.
+      </p>
+
       <div className="collection-picker">
         <h3>Collection Filters:</h3>
         <FilterableDropdown
@@ -71,30 +76,6 @@ const FiltersPanel = ({
           }
         />
       </div>
-
-      <fieldset className="collection-picker" aria-label="Stop traversal at">
-        <h3>Stop traversal at:</h3>
-        <p className="setting-hint">
-          These collections are shown but not expanded through. Use this to keep a high-degree node
-          like an organ from pulling in everything attached to it.
-        </p>
-        <FilterableDropdown
-          key="terminal-collection-filter"
-          label="Terminal collections"
-          options={settings.allowedCollections}
-          selectedOptions={settings.terminalCollections || []}
-          onOptionToggle={onTerminalCollectionChange}
-          onClearAll={onTerminalCollectionsClearAll}
-          getOptionLabel={(collectionId) =>
-            collectionMaps.has(collectionId)
-              ? collectionMaps.get(collectionId).display_name
-              : collectionId
-          }
-          getColorForOption={(collectionId) =>
-            collectionMaps.has(collectionId) ? collectionMaps.get(collectionId).color : null
-          }
-        />
-      </fieldset>
 
       {edgeFilterStatus === "loading" && (
         <output className="option-group" aria-live="polite">
@@ -156,6 +137,30 @@ const FiltersPanel = ({
           )}
         </div>
       )}
+
+      <fieldset className="collection-picker" aria-label="Stop traversal at">
+        <h3>Stop traversal at:</h3>
+        <p className="setting-hint">
+          These collections are shown but not expanded through. Use this to keep a high-degree node
+          like an organ from pulling in everything attached to it.
+        </p>
+        <FilterableDropdown
+          key="terminal-collection-filter"
+          label="Terminal collections"
+          options={settings.allowedCollections}
+          selectedOptions={settings.terminalCollections || []}
+          onOptionToggle={onTerminalCollectionChange}
+          onClearAll={onTerminalCollectionsClearAll}
+          getOptionLabel={(collectionId) =>
+            collectionMaps.has(collectionId)
+              ? collectionMaps.get(collectionId).display_name
+              : collectionId
+          }
+          getColorForOption={(collectionId) =>
+            collectionMaps.has(collectionId) ? collectionMaps.get(collectionId).color : null
+          }
+        />
+      </fieldset>
     </div>
   );
 };
