@@ -2,11 +2,7 @@
  * API functions for document/node operations.
  */
 
-import {
-  COLLECTION_DOCUMENT_ENDPOINT,
-  DOCUMENT_DETAILS_ENDPOINT,
-  NODES_DETAILS_ENDPOINT,
-} from "constants/index";
+import { COLLECTION_DOCUMENT_ENDPOINT, DOCUMENT_DETAILS_ENDPOINT } from "constants/index";
 import { getJson, postJson } from "./fetchWrapper";
 
 /**
@@ -30,16 +26,4 @@ export const fetchNodeDetailsByIds = async (ids, db) => {
   if (!ids || ids.length === 0) return [];
 
   return postJson(DOCUMENT_DETAILS_ENDPOINT, { document_ids: ids, db }, { fallback: [] });
-};
-
-/**
- * Fetch details for multiple nodes by their IDs (alternate endpoint).
- * Used by NodesListTable component.
- * @param {Array<string>} nodeIds - Array of node IDs.
- * @returns {Promise<Array>} Array of node detail objects.
- */
-export const fetchNodesDetails = async (nodeIds) => {
-  if (!nodeIds || nodeIds.length === 0) return [];
-
-  return postJson(NODES_DETAILS_ENDPOINT, { node_ids: nodeIds }, { fallback: [] });
 };
