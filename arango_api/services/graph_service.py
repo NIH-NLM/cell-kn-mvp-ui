@@ -2,7 +2,9 @@
 Service for graph traversal operations.
 """
 
+import json
 import logging
+import time
 
 from arango_api.aql_safety import is_safe_aql_identifier
 from arango_api.db import db_ontologies, GRAPH_NAME_ONTOLOGIES
@@ -10,6 +12,101 @@ from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
 logger = logging.getLogger(__name__)
+
+# Vertex-collection membership changes only when a dataset is restored, so a
+# coarse TTL is plenty. Mirrors schema_guard.py's cache shape.
+CACHE_TTL_SECONDS = 300
+
+# Expiry-only, keyed by graph. Nothing to invalidate — a dataset restore
+# replaces the process's view within one TTL.
+_vertex_collections_cache = {}
+
+
+def reset_vertex_collections_cache():
+    """Clear the cached graph-membership sets. Intended for tests."""
+    _vertex_collections_cache.clear()
+
+
+def _get_graph_vertex_collections(graph):
+    """Return the vertex collections that are members of the named graph.
+
+    Args:
+        graph (str): The graph type ("ontologies" or "phenotypes").
+
+    Returns:
+        frozenset | None: The collection names that are members of the
+        graph, or None if membership could not be determined (Gharial
+        unreachable). None is the caller's signal to fail open -- pass the
+        caller's allowed_collections through unchanged rather than breaking
+        every traversal because this lookup failed.
+    """
+    now = time.monotonic()
+    cached = _vertex_collections_cache.get(graph)
+    if cached and now < cached["expires_at"]:
+        return cached["value"]
+
+    try:
+        db, graph_name = get_db_and_graph(graph)
+        members = frozenset(db.graph(graph_name).vertex_collections())
+    except Exception:
+        logger.warning(
+            "Could not read vertex collections for graph %r", graph, exc_info=True
+        )
+        return None
+
+    if not members:
+        # A graph with zero vertex collections is not a real answer -- treat it
+        # as "could not determine" and fail open, the way schema_guard does.
+        # Caching it would make every collection-filtered traversal return
+        # nothing for a full TTL.
+        logger.warning("Graph %r reported no vertex collections", graph)
+        return None
+
+    _vertex_collections_cache[graph] = {
+        "value": members,
+        "expires_at": now + CACHE_TTL_SECONDS,
+    }
+    return members
+
+
+def _sanitize_allowed_collections(allowed_collections, graph):
+    """Drop collections from allowed_collections that are not members of graph.
+
+    ArangoDB's ERR 1926 (ERROR_GRAPH_VERTEX_COL_DOES_NOT_EXIST) aborts the
+    whole traversal, with no partial data, the instant `vertexCollections`
+    names a collection that is not part of the graph. This intersects the
+    caller's list against the graph's real members so a stale or
+    wrong-graph collection is dropped instead of aborting everything.
+
+    `allowed_collections: []` already means "no restriction" to ArangoDB, so
+    the empty-vs-sanitized-to-empty distinction must be tracked explicitly
+    rather than collapsed to a bare list:
+      - A genuinely empty input list is passed through as-is (unrestricted).
+      - A non-empty input that sanitizes down to nothing must NOT silently
+        become `[]`, because that would turn "show me only CHEBI" into "show
+        me everything" -- a worse failure than the 500 it replaces.
+
+    Args:
+        allowed_collections (list): The caller's requested collections.
+        graph (str): The graph type ("ontologies" or "phenotypes").
+
+    Returns:
+        tuple: (sanitized_collections, is_impossible).
+        `is_impossible` is True only when the input was non-empty and
+        sanitized down to nothing; callers must treat that as an explicit
+        empty traversal rather than issuing a request with `[]`.
+    """
+    if not allowed_collections:
+        return allowed_collections, False
+
+    members = _get_graph_vertex_collections(graph)
+    if members is None:
+        # Fail open: Gharial is unreachable, so pass the caller's list
+        # through unchanged rather than breaking every traversal.
+        return allowed_collections, False
+
+    sanitized = [c for c in allowed_collections if c in members]
+    return sanitized, not sanitized
 
 
 def _build_edge_filter_clause(
@@ -100,9 +197,7 @@ def _build_edge_filter_clause(
     if exclude_filters:
         for key, values in exclude_filters.items():
             if not is_safe_aql_identifier(key):
-                logger.warning(
-                    "Skipping edge filter with unsafe field name: %r", key
-                )
+                logger.warning("Skipping edge filter with unsafe field name: %r", key)
                 continue
             if not values:
                 continue
@@ -144,7 +239,9 @@ def _build_edge_filter_clause(
                 f"(IS_ARRAY({field_ref}.`{key}`) AND LENGTH(INTERSECTION({field_ref}.`{key}`, @{bind_key})) > 0)"
             )
             # Keep edges that either lack the attribute or do not match.
-            positive_conditions.append(f"({field_ref}.`{key}` == null OR NOT ({match}))")
+            positive_conditions.append(
+                f"({field_ref}.`{key}` == null OR NOT ({match}))"
+            )
             # Prune traversal through edges that match the excluded value(s) so
             # their unique descendants are not walked.
             negative_conditions.append(f"({match})")
@@ -211,7 +308,45 @@ def traverse_graph(
     if edge_direction not in ["INBOUND", "OUTBOUND", "ANY"]:
         raise ValueError("edge_direction must be 'INBOUND', 'OUTBOUND', or 'ANY'")
 
+    # The two path-closing filters cannot compose in one pass, so reject the
+    # combination loudly rather than silently dropping one. require_mode keeps
+    # paths that DO close; the default keeps paths that do NOT close.
+    #
+    # These guards depend only on the arguments, and they run BEFORE the
+    # sanitize below on purpose: an impossible collection list returns an empty
+    # traversal, which would otherwise mask a caller bug that deserves to raise.
+    exclude_labels = (exclude_closing_edges or {}).get("Label") or []
+    require_labels = (require_closing_edges or {}).get("Label") or []
+    if exclude_labels and require_labels:
+        raise ValueError(
+            "Cannot set both exclude_closing_edges and require_closing_edges "
+            "on one phase."
+        )
+    # Guard on the extracted labels, not the raw dicts: callers routinely send
+    # {"Label": []} for a phase with no closing-edge filter at all, which is
+    # truthy as a dict and would raise here for no reason.
+    if terminal_collections and (exclude_labels or require_labels):
+        raise ValueError(
+            "terminal_collections cannot be combined with closing-edge filters; "
+            "the closing-edge query needs complete fixed-depth paths and so "
+            "deliberately avoids PRUNE."
+        )
+
     db, graph_name = get_db_and_graph(graph)
+
+    # Sanitize once, upstream of both unconditional `vertexCollections`
+    # injection sites below (the closing-labels branch and the default
+    # branch), so neither can hand ArangoDB a non-member collection and
+    # abort the whole traversal with ERR 1926.
+    allowed_collections, allowed_collections_impossible = _sanitize_allowed_collections(
+        allowed_collections, graph
+    )
+    if allowed_collections_impossible:
+        # Every requested collection was dropped. `[]` reads as "no
+        # restriction" to ArangoDB, so returning it here would turn a narrow
+        # request into an unrestricted one -- return an explicit empty
+        # traversal instead (invariant 2a).
+        return {node_id: {"nodes": [], "links": []} for node_id in node_ids}
 
     bind_vars = {
         "node_ids": node_ids,
@@ -256,25 +391,8 @@ def traverse_graph(
     if prune_conditions:
         prune_string = f"PRUNE {' OR '.join(prune_conditions)}"
 
-    # The two path-closing filters cannot compose in one pass, so reject the
-    # combination loudly rather than silently dropping one. require_mode keeps
-    # paths that DO close; the default keeps paths that do NOT close.
-    exclude_labels = (exclude_closing_edges or {}).get("Label") or []
-    require_labels = (require_closing_edges or {}).get("Label") or []
-    if exclude_labels and require_labels:
-        raise ValueError(
-            "Cannot set both exclude_closing_edges and require_closing_edges "
-            "on one phase."
-        )
-    # Guard on the extracted labels, not the raw dicts: callers routinely send
-    # {"Label": []} for a phase with no closing-edge filter at all, which is
-    # truthy as a dict and would raise here for no reason.
-    if terminal_collections and (exclude_labels or require_labels):
-        raise ValueError(
-            "terminal_collections cannot be combined with closing-edge filters; "
-            "the closing-edge query needs complete fixed-depth paths and so "
-            "deliberately avoids PRUNE."
-        )
+    # exclude_labels / require_labels are extracted and validated above, before
+    # the collection sanitize, so a caller bug raises instead of being masked.
     require_mode = bool(require_labels)
     closing_labels = require_labels if require_mode else exclude_labels
     if closing_labels:
@@ -398,7 +516,8 @@ def traverse_graph(
 
         if all_node_ids:
             inter_edges = find_inter_node_edges(
-                list(all_node_ids), graph,
+                list(all_node_ids),
+                graph,
                 edge_filters=edge_filters,
                 exclude_edge_filters=exclude_edge_filters,
             )
@@ -589,6 +708,19 @@ def find_connecting_paths(
 
     db, graph_name = get_db_and_graph(graph)
 
+    # Same sanitize as traverse_graph: the max_depth branch below feeds
+    # allowed_collections to `vertexCollections`, so a non-member would abort
+    # the whole query with ERR 1926. Reachable from the Connected Paths
+    # workflow.
+    allowed_collections, allowed_collections_impossible = _sanitize_allowed_collections(
+        allowed_collections, graph
+    )
+    if allowed_collections_impossible:
+        # Every requested collection was dropped. An empty list reads as "no
+        # restriction", so returning one here would widen a narrow request
+        # into an unrestricted one (invariant 2a).
+        return {"nodes": [], "links": []}
+
     bind_vars = {"node_ids": node_ids, "graph": graph_name}
 
     # Filters apply per path, not per edge: a path is only meaningful if every
@@ -605,8 +737,12 @@ def find_connecting_paths(
         # With depth limit: use traversal (natively supports depth + vertexCollections)
         options_parts = ['uniqueVertices: "path"']
         if allowed_collections:
-            colls_str = ", ".join(f'"{c}"' for c in allowed_collections)
-            options_parts.append(f"vertexCollections: [{colls_str}]")
+            # Bind rather than interpolate, matching traverse_graph. Collection
+            # names originate in a caller-supplied ListField(CharField), so
+            # splicing them into the query text put unvalidated strings in the
+            # AQL; a bind var removes that surface entirely.
+            options_parts.append("vertexCollections: @allowed_collections")
+            bind_vars["allowed_collections"] = allowed_collections
         options_clause = ", ".join(options_parts)
 
         bind_vars["depth"] = int(max_depth)
@@ -642,9 +778,22 @@ def find_connecting_paths(
     else:
         # Without depth limit: use K_SHORTEST_PATHS with collection filter
         coll_filter = ""
+        # IS_SAME_COLLECTION takes the name as a string literal, so this branch
+        # cannot use a bind var the way the one above does. Quote each name with
+        # json.dumps rather than splicing it raw: AQL string literals share
+        # JSON's double-quote-and-backslash syntax, so this escapes anything the
+        # fail-open path might let through (an unreachable Gharial passes the
+        # caller's list on unsanitized).
+        #
+        # Deliberately quote rather than filter. Dropping names that fail some
+        # identifier pattern would silently discard a legitimate graph member
+        # with an unusual-but-valid name, and if it were the only one allowed the
+        # filter would vanish and widen the query -- the same widening this step
+        # exists to prevent.
         if allowed_collections:
             coll_checks = " AND ".join(
-                f'NOT IS_SAME_COLLECTION("{c}", CURRENT)' for c in allowed_collections
+                f"NOT IS_SAME_COLLECTION({json.dumps(c)}, CURRENT)"
+                for c in allowed_collections
             )
             coll_filter = (
                 f"FILTER LENGTH(path.vertices[* " f"FILTER {coll_checks}]) == 0"
