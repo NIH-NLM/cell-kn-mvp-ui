@@ -535,6 +535,19 @@ a.document-popup-button {
   font-style: italic;
 }
 
+.list-document {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--color-cool-blue-lightest); /* #dce4ef */
+}
+
+.list-document:hover {
+  background-color: var(--color-light-bg);
+}
+
+.document-list-items-container > a:last-child .list-document {
+  border-bottom: none;
+}
+
 .list-document h4 {
   font-size: 1.4rem;
   margin-bottom: 1rem;
