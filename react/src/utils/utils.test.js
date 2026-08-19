@@ -9,7 +9,6 @@ import {
   getNodeLabel,
   getTitle,
   getUrl,
-  hasAnyNodes,
   hasNodesInRawData,
   parseCollections,
 } from "./index";
@@ -89,59 +88,6 @@ jest.mock(
 // --- Tests ---
 
 describe("Utils Module", () => {
-  // --- hasAnyNodes ---
-  describe("hasAnyNodes", () => {
-    const nodeId = "nodes_a/123";
-
-    it("should return false for null or undefined data", () => {
-      expect(hasAnyNodes(null, nodeId)).toBe(false);
-      expect(hasAnyNodes(undefined, nodeId)).toBe(false);
-    });
-
-    it("should return false if data is not an object", () => {
-      expect(hasAnyNodes("string", nodeId)).toBe(false);
-      expect(hasAnyNodes(123, nodeId)).toBe(false);
-    });
-
-    it("should return false if data.nodes is missing or not an object", () => {
-      expect(hasAnyNodes({}, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: null }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: "string" }, nodeId)).toBe(false);
-    });
-
-    it("should return false if the specific nodeId key is missing in data.nodes", () => {
-      expect(hasAnyNodes({ nodes: { "other_nodes/456": [] } }, nodeId)).toBe(false);
-    });
-
-    it("should return false for an empty array", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [] } }, nodeId)).toBe(false);
-    });
-
-    it("should return false if array entries are null or not objects", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [null, undefined] } }, nodeId)).toBe(false);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [1, "a"] } }, nodeId)).toBe(false);
-    });
-
-    it("should return false if array entries lack a 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ id: 1 }, {}] } }, nodeId)).toBe(false);
-    });
-
-    it("should return false if all 'node' properties are null", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: null }] } }, nodeId)).toBe(
-        false,
-      );
-    });
-
-    it("should return true if at least one entry has a non-null 'node' property", () => {
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: {} }] } }, nodeId)).toBe(true);
-      expect(
-        hasAnyNodes({ nodes: { [nodeId]: [{ node: null }, { node: { id: 1 } }] } }, nodeId),
-      ).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: "some_value" }] } }, nodeId)).toBe(true);
-      expect(hasAnyNodes({ nodes: { [nodeId]: [{ node: 0 }] } }, nodeId)).toBe(true); // 0 is not null
-    });
-  });
-
   // --- hasNodesInRawData ---
   describe("hasNodesInRawData", () => {
     it("should return false for null or undefined data", () => {

@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { SkeletonCard, SkeletonLine, SkeletonTable, SkeletonWrapper } from "./Skeleton";
+import { SkeletonTable, SkeletonWrapper } from "./Skeleton";
 
 describe("SkeletonWrapper", () => {
   it("renders as a div with role=status and aria-live=polite", () => {
     const { container } = render(
       <SkeletonWrapper>
-        <SkeletonLine />
+        <SkeletonTable rows={1} columns={1} />
       </SkeletonWrapper>,
     );
     const wrapper = container.firstChild;
@@ -17,7 +17,7 @@ describe("SkeletonWrapper", () => {
   it("renders the default visually-hidden Loading... text", () => {
     render(
       <SkeletonWrapper>
-        <SkeletonLine />
+        <SkeletonTable rows={1} columns={1} />
       </SkeletonWrapper>,
     );
     const hidden = screen.getByText("Loading...");
@@ -27,41 +27,10 @@ describe("SkeletonWrapper", () => {
   it("renders a custom label when provided", () => {
     render(
       <SkeletonWrapper label="Fetching results...">
-        <SkeletonLine />
+        <SkeletonTable rows={1} columns={1} />
       </SkeletonWrapper>,
     );
     expect(screen.getByText("Fetching results...")).toHaveClass("visually-hidden");
-  });
-});
-
-describe("SkeletonLine", () => {
-  it("renders with skeleton class and aria-hidden", () => {
-    const { container } = render(<SkeletonLine />);
-    const el = container.firstChild;
-    expect(el).toHaveClass("skeleton");
-    expect(el).toHaveClass("skeleton-line");
-    expect(el).toHaveAttribute("aria-hidden", "true");
-  });
-
-  it("applies custom width and height via inline style", () => {
-    const { container } = render(<SkeletonLine width="60%" height="1.5em" />);
-    const el = container.firstChild;
-    expect(el).toHaveStyle({ width: "60%", height: "1.5em" });
-  });
-});
-
-describe("SkeletonCard", () => {
-  it("renders with aria-hidden", () => {
-    const { container } = render(<SkeletonCard />);
-    const card = container.firstChild;
-    expect(card).toHaveAttribute("aria-hidden", "true");
-    expect(card).toHaveClass("skeleton-card");
-  });
-
-  it("renders multiple skeleton lines inside the card", () => {
-    const { container } = render(<SkeletonCard />);
-    const lines = container.querySelectorAll(".skeleton");
-    expect(lines.length).toBeGreaterThan(1);
   });
 });
 
