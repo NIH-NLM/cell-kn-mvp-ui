@@ -62,7 +62,7 @@ const FiltersPanel = ({
         <FilterableDropdown
           key="collection-filter"
           label="Collections"
-          options={settings.allCollections}
+          options={settings.availableCollections}
           selectedOptions={settings.allowedCollections}
           onOptionToggle={onCollectionChange}
           onClearAll={onCollectionsClearAll}
