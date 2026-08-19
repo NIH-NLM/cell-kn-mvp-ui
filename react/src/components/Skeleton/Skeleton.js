@@ -16,32 +16,6 @@ export function SkeletonWrapper({ children, label = "Loading..." }) {
 }
 
 /**
- * SkeletonLine — animated placeholder for a single line of text.
- *
- * Props:
- *   width  — CSS width string, default "100%"
- *   height — CSS height string, default "1em"
- */
-export function SkeletonLine({ width = "100%", height = "1em" }) {
-  return <div className="skeleton skeleton-line" aria-hidden="true" style={{ width, height }} />;
-}
-
-/**
- * SkeletonCard — animated placeholder for a document card.
- * Mimics a title line, two body lines, and a short footer line.
- */
-export function SkeletonCard() {
-  return (
-    <div className="skeleton-card" aria-hidden="true">
-      <div className="skeleton skeleton-card-title" />
-      <div className="skeleton skeleton-card-body" />
-      <div className="skeleton skeleton-card-body skeleton-card-body--short" />
-      <div className="skeleton skeleton-card-footer" />
-    </div>
-  );
-}
-
-/**
  * SkeletonTable — animated placeholder for a search results table.
  *
  * Props:

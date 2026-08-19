@@ -38,7 +38,6 @@ export { findFtuUrlById } from "./ftu";
 // Graph and tree utilities
 export {
   findNodeById,
-  hasAnyNodes,
   hasNodesInRawData,
   mergeChildren,
   parseId,

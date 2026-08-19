@@ -36,38 +36,6 @@ export function resolvePresetLabelStates(preset) {
 }
 
 /**
- * Check if data has any nodes for a specific nodeId.
- * @param {object} data - Graph data object.
- * @param {string} nodeId - Node ID to check.
- * @returns {boolean} True if nodes exist for the nodeId.
- */
-export const hasAnyNodes = (data, nodeId) => {
-  if (
-    !data ||
-    typeof data !== "object" ||
-    !data.nodes ||
-    typeof data.nodes !== "object" ||
-    !Object.hasOwn(data.nodes, nodeId)
-  ) {
-    return false;
-  }
-
-  const nodeEntries = data.nodes[nodeId];
-
-  if (!Array.isArray(nodeEntries)) {
-    return false;
-  }
-
-  const result = nodeEntries.some((entry) => {
-    return (
-      entry && typeof entry === "object" && Object.hasOwn(entry, "node") && entry.node !== null
-    );
-  });
-
-  return result;
-};
-
-/**
  * Check if raw API graph response has any nodes.
  * @param {object} data - Raw API response data.
  * @returns {boolean} True if data contains nodes.
