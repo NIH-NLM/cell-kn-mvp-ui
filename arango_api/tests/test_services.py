@@ -1268,10 +1268,12 @@ class SunburstServiceTestCase(ArangoDBTestCase):
 class UberonClCountQueryTestCase(TestCase):
     """Unit tests for _get_uberon_cl_counts query construction (no DB required).
 
-    Regression guard for the rewrite that traverses only PHENOTYPES_TOP_ORGANS
-    instead of scanning the entire UBERON collection. The whole-collection scan
-    pinned the ArangoDB host's CPU and tripped gunicorn's worker timeout, while
-    only the top-organ counts are ever read by callers.
+    Regression guard for two properties: the base organs are derived from the
+    CSD-UBERON edge collection rather than a hardcoded list that goes stale on
+    an ETL release, and the traversal starts from just those organs instead of
+    scanning the entire UBERON collection. The whole-collection scan pinned the
+    ArangoDB host's CPU and tripped gunicorn's worker timeout, while only the
+    base organs' counts are ever read by callers.
     """
 
     def setUp(self):
@@ -1286,29 +1288,77 @@ class UberonClCountQueryTestCase(TestCase):
         db.aql.execute.return_value = iter(rows)
         return db
 
-    def test_query_traverses_only_top_organs(self):
-        rows = [[organ, 3] for organ in sunburst_service.PHENOTYPES_TOP_ORGANS]
+    def test_organs_are_derived_from_csd_edges(self):
+        db = self._mock_db([["UBERON/0001004", 3]])
+
+        sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+
+        query, kwargs = db.aql.execute.call_args[0][0], db.aql.execute.call_args[1]
+        # The organ list comes from the CSD-UBERON edges, not from a literal in
+        # this module — a hardcoded ring is exactly what went stale before.
+        self.assertIn("FOR e IN @@edges", query)
+        self.assertEqual(
+            kwargs["bind_vars"]["@edges"], sunburst_service.CSD_UBERON_EDGES
+        )
+        # Read the edge collection directly: a predicate-label filter would go
+        # silently empty the next time the ETL renames IS_ABOUT.
+        self.assertNotIn("Label", query)
+
+    def test_query_traverses_only_derived_organs(self):
+        organs = ["UBERON/0001004", "UBERON/0001555", "UBERON/0002107"]
+        rows = [[organ, 3] for organ in organs]
         db = self._mock_db(rows)
 
         result = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
 
         query, kwargs = db.aql.execute.call_args[0][0], db.aql.execute.call_args[1]
-        # Must iterate the bound organ list, NOT scan the whole UBERON collection.
-        self.assertIn("FOR organ IN @organs", query)
+        # Must traverse the derived organ list, NOT scan the whole collection.
+        self.assertIn("FOR organ IN organs", query)
         self.assertNotIn("FOR u IN UBERON", query)
-        self.assertEqual(
-            kwargs["bind_vars"]["organs"], sunburst_service.PHENOTYPES_TOP_ORGANS
-        )
         self.assertEqual(kwargs["bind_vars"]["g"], "KN-Phenotypes-v2.0")
         # The returned mapping still keys organ_id -> distinct CL count, exactly
-        # what counts.get(organ_id) consumers depend on.
+        # what the base-ring consumers iterate.
+        self.assertEqual(result, {organ: 3 for organ in organs})
+
+    def test_organ_with_no_cl_descendants_is_kept(self):
+        # A dataset's organ must reach the ring even with an empty CL subtree —
+        # dropping it would hide the dataset with nothing to say so.
+        db = self._mock_db([["UBERON/0001004", 3], ["UBERON/0000966", 0]])
+
+        result = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+
+        query = db.aql.execute.call_args[0][0]
+        self.assertNotIn("FILTER LENGTH(cls) > 0", query)
+        self.assertEqual(result["UBERON/0000966"], 0)
+
+    def test_organ_order_is_preserved(self):
+        # Callers lay the base ring out by iterating this mapping, so the
+        # function must hand back the cursor's order untouched.
+        #
+        # Each row is [organ, CL count] — the dataset count the query sorts by
+        # is never returned. These are the real v1.6.0-rc.4 values in the real
+        # `datasets DESC` order, where the CL counts run 1135, 110, 764: a
+        # deliberately non-monotonic sequence, so a re-sort on the returned
+        # count in either direction would fail the assertion.
+        rows = [
+            ["UBERON/0001004", 1135],  # respiratory system, 22 datasets
+            ["UBERON/0001950", 110],  # neocortex, 5 datasets
+            ["UBERON/0000004", 764],  # nose, 1 dataset
+        ]
+        db = self._mock_db(rows)
+
+        result = sunburst_service._get_uberon_cl_counts(db, "KN-Phenotypes-v2.0")
+        query = db.aql.execute.call_args[0][0]
+
+        # Assert the clause itself: the mock returns rows in order regardless,
+        # so mapping order alone would pass even with the SORT dropped.
+        self.assertIn("SORT datasets DESC, organ ASC", query)
         self.assertEqual(
-            result,
-            {organ: 3 for organ in sunburst_service.PHENOTYPES_TOP_ORGANS},
+            list(result), ["UBERON/0001004", "UBERON/0001950", "UBERON/0000004"]
         )
 
     def test_result_is_memoized_per_graph(self):
-        rows = [[sunburst_service.PHENOTYPES_TOP_ORGANS[0], 1]]
+        rows = [["UBERON/0001004", 1]]
         db = self._mock_db(rows)
         # Re-arm the cursor for each potential execute call.
         db.aql.execute.side_effect = lambda *a, **k: iter(list(rows))

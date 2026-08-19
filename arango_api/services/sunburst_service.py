@@ -15,9 +15,9 @@ from arango_api.db import (
 
 logger = logging.getLogger(__name__)
 
-# Per-process cache of {graph_name: {uberon_id: distinct_cl_count}}.
-# Graph names embed a version (e.g. KN-Phenotypes-v2.0), so a DB re-ingest
-# with a new version key triggers a rebuild automatically.
+# Per-process cache of {graph_name: {uberon_id: distinct_cl_count}}, ordered by
+# descending dataset count. Graph names embed a version (e.g. KN-Phenotypes-v2.0),
+# so a DB re-ingest with a new version key triggers a rebuild automatically.
 _UBERON_CL_COUNT_CACHE: dict = {}
 _UBERON_CL_COUNT_LOCK = threading.Lock()
 
@@ -30,32 +30,31 @@ class SunburstServiceError(Exception):
         self.db_error = db_error
 
 
-# Top-level UBERON terms shown under Homo sapiens. Mirrors the ingested
-# organ/system folders at https://github.com/NIH-NLM/cell-kn/tree/main/data/prod.
-# Replace with a direct read once that repo publishes a summary file.
-PHENOTYPES_TOP_ORGANS = [
-    "UBERON/0001004",  # respiratory_system
-    "UBERON/0001555",  # digestive_tract
-    "UBERON/0002107",  # liver
-    "UBERON/0002097",  # skin_of_body
-    "UBERON/0001264",  # pancreas
-    "UBERON/0000948",  # heart_plus_pericardium
-    "UBERON/0002113",  # kidney
-    "UBERON/0002371",  # bone_marrow
-]
+# Edge collection carrying CSD -> UBERON. Read directly rather than filtering
+# on a predicate label: the labels get renamed between ETL releases, and a stale
+# label filter would empty the base ring with no error.
+CSD_UBERON_EDGES = "CSD-UBERON"
 PHENOTYPES_HUMAN_ID = "NCBITaxon/9606"
 UBERON_SUBTREE_DEPTH = 5
 
 
 def _get_uberon_cl_counts(db, graph_name):
-    """Return {uberon_id: distinct_cl_count} for the top organs that have at
-    least one CL descendant within UBERON_SUBTREE_DEPTH hops. Built on first
-    use and memoized per graph_name for the life of the process.
+    """Return {uberon_id: distinct_cl_count} for the base organs, ordered by
+    descending dataset count. Built on first use and memoized per graph_name
+    for the life of the process.
 
-    Only the PHENOTYPES_TOP_ORGANS counts are ever read (initial load and the
-    organ-children expansion), so we traverse from just those 8 roots rather
-    than scanning the whole UBERON collection — the latter ran a depth-5
-    traversal per UBERON node and was the heaviest read on the Arango host."""
+    Every organ a dataset points at is kept, including one whose CL count is
+    zero: dropping it would hide a dataset's organ from the ring with nothing
+    to say so. Callers floor the count for arc sizing.
+
+    The organs are the UBERON terms a cell set dataset points at directly, read
+    from the CSD-UBERON edge collection so the ring tracks the loaded data
+    instead of a hardcoded list that goes stale on the next ETL release.
+
+    Only these organs' counts are ever read (initial load and the organ-children
+    expansion), so we traverse from just those roots rather than scanning the
+    whole UBERON collection — the latter ran a depth-5 traversal per UBERON node
+    and was the heaviest read on the Arango host."""
     cached = _UBERON_CL_COUNT_CACHE.get(graph_name)
     if cached is not None:
         return cached
@@ -66,14 +65,20 @@ def _get_uberon_cl_counts(db, graph_name):
         logger.info("Building UBERON CL-count cache for %s", graph_name)
         start = time.monotonic()
         query = """
-            FOR organ IN @organs
+            LET organs = (
+                FOR e IN @@edges
+                    FILTER IS_SAME_COLLECTION("UBERON", e._to)
+                    COLLECT organ = e._to WITH COUNT INTO datasets
+                    SORT datasets DESC, organ ASC
+                    RETURN organ
+            )
+            FOR organ IN organs
                 LET cls = (
                     FOR v IN 1..@depth INBOUND organ GRAPH @g
                         OPTIONS { bfs: true, uniqueVertices: "global" }
                         FILTER IS_SAME_COLLECTION("CL", v)
                         RETURN DISTINCT v._id
                 )
-                FILTER LENGTH(cls) > 0
                 RETURN [organ, LENGTH(cls)]
         """
         cursor = db.aql.execute(
@@ -81,9 +86,11 @@ def _get_uberon_cl_counts(db, graph_name):
             bind_vars={
                 "g": graph_name,
                 "depth": UBERON_SUBTREE_DEPTH,
-                "organs": PHENOTYPES_TOP_ORGANS,
+                "@edges": CSD_UBERON_EDGES,
             },
         )
+        # Insertion order is the query's dataset-count order, and every caller
+        # iterates this mapping to lay out the base ring.
         entries = {row[0]: row[1] for row in cursor}
         if not entries:
             logger.warning(
@@ -238,16 +245,17 @@ def _phenotypes_initial_load(db, graph_name):
     The full GS/leaf chain loads on drilldown into a specific organ."""
     counts = _get_uberon_cl_counts(db, graph_name)
     organ_nodes = []
-    for organ_id in PHENOTYPES_TOP_ORGANS:
+    for organ_id, cl_count in counts.items():
         cursor = db.aql.execute("RETURN DOCUMENT(@id)", bind_vars={"id": organ_id})
         doc_list = list(cursor)
         if not doc_list or doc_list[0] is None:
             continue
         doc = doc_list[0]
         cl_children = _get_cl_names_for_organ(db, graph_name, organ_id)
-        cl_count = counts.get(organ_id, 1)
-        doc["value"] = cl_count
-        doc["subtree_size"] = cl_count
+        # Floor at 1 so an organ with no CL descendants still gets a visible
+        # arc rather than a zero-width one.
+        doc["value"] = cl_count or 1
+        doc["subtree_size"] = cl_count or 1
         doc["_hasChildren"] = len(cl_children) > 0
         doc["children"] = cl_children
         organ_nodes.append(doc)
@@ -276,15 +284,14 @@ def _phenotypes_organ_children(db, graph_name):
     """Children of Homo sapiens: lightweight organ list."""
     counts = _get_uberon_cl_counts(db, graph_name)
     results = []
-    for organ_id in PHENOTYPES_TOP_ORGANS:
+    for organ_id, cl_count in counts.items():
         cursor = db.aql.execute("RETURN DOCUMENT(@id)", bind_vars={"id": organ_id})
         doc_list = list(cursor)
         if not doc_list or doc_list[0] is None:
             continue
         doc = doc_list[0]
-        cl_count = counts.get(organ_id, 1)
-        doc["value"] = cl_count
-        doc["subtree_size"] = cl_count
+        doc["value"] = cl_count or 1
+        doc["subtree_size"] = cl_count or 1
         doc["_hasChildren"] = cl_count > 0
         doc["children"] = None
         results.append(doc)

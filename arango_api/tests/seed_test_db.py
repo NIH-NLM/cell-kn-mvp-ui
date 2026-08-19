@@ -286,6 +286,9 @@ def seed_phenotypes_db(client):
     The phenotypes sunburst expects this hierarchy:
     NCBITaxon/9606 -> UBERON (lung/retina/brain) -> CL -> GS -> MONDO or PR -> CHEMBL
 
+    The base UBERON ring is derived from CSD-UBERON edges, so a CSD pointing at
+    lung is seeded too — without it the sunburst has no organs to render.
+
     We seed a minimal path through this structure for testing.
     """
     print("\nSeeding phenotypes database...")
@@ -296,7 +299,7 @@ def seed_phenotypes_db(client):
     db = client.db(TEST_DB_PHENOTYPES, username=ARANGO_USER, password=ARANGO_PASSWORD)
 
     # Create document collections
-    collections = ["NCBITaxon", "UBERON", "CL", "GS", "MONDO", "PR", "CHEMBL"]
+    collections = ["NCBITaxon", "UBERON", "CL", "GS", "MONDO", "PR", "CHEMBL", "CSD"]
     for coll in collections:
         create_collection(db, coll)
 
@@ -335,8 +338,15 @@ def seed_phenotypes_db(client):
     )
     print("    Inserted 1 document into MONDO")
 
+    # CSD - the cell set dataset whose UBERON edge puts lung on the base ring
+    db.collection("CSD").insert(
+        {"_key": "test_csd_1", "label": "Test Cell Set Dataset"}, overwrite=True
+    )
+    print("    Inserted 1 document into CSD")
+
     # Create edge collections with the exact names the sunburst service expects
     edge_collections = [
+        "CSD-UBERON",  # CSD -> UBERON, the source of the base organ ring
         "UBERON-NCBITaxon",  # NCBITaxon -> UBERON (INBOUND from NCBITaxon perspective)
         "UBERON-CL",  # UBERON -> CL
         "CL-UBERON",  # CL -> UBERON (alternate direction)
@@ -347,6 +357,18 @@ def seed_phenotypes_db(client):
     ]
     for edge_coll in edge_collections:
         create_collection(db, edge_coll, edge=True)
+
+    # CSD-UBERON: the dataset -> organ edge the base ring is derived from
+    db.collection("CSD-UBERON").insert(
+        {
+            "_key": "test_csd_1-0002048",
+            "_from": "CSD/test_csd_1",
+            "_to": "UBERON/0002048",
+            "Label": "IS_ABOUT",
+        },
+        overwrite=True,
+    )
+    print("    Inserted 1 edge into CSD-UBERON")
 
     # Insert edges to create the path: NCBITaxon -> UBERON -> CL -> GS -> MONDO
     # UBERON-NCBITaxon: links UBERON to NCBITaxon (traversed INBOUND from NCBITaxon)
