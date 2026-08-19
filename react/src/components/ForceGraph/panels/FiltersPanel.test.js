@@ -12,6 +12,7 @@ const renderPanel = (modeOrOptions = "include") => {
   const dispatchSpy = jest.spyOn(store, "dispatch");
   const settings = {
     allCollections: [],
+    availableCollections: [],
     allowedCollections: [],
     terminalCollections: [],
     edgeFilters: { Label: [] },
@@ -99,6 +100,26 @@ describe("FiltersPanel edge filter mode toggle", () => {
     renderPanel("include");
     expect(screen.getByRole("button", { name: /^include$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /exclude/i })).toBeInTheDocument();
+  });
+});
+
+describe("FiltersPanel collection filter dropdown", () => {
+  it("offers only the current graph's collections, not the full ontologies-wide set", () => {
+    renderPanel({
+      settings: {
+        allCollections: ["CS", "UBERON", "CHEBI"],
+        availableCollections: ["CS", "UBERON"],
+      },
+    });
+
+    const picker = screen.getByText("Collection Filters:").closest(".collection-picker");
+    fireEvent.focus(within(picker).getByPlaceholderText(/Filter by Collections/i));
+    const optionList = picker.querySelector(".dropdown-list");
+    expect(within(optionList).getByText("CS")).toBeInTheDocument();
+    expect(within(optionList).getByText("UBERON")).toBeInTheDocument();
+    // CHEBI is in allCollections (ontologies-wide) but not in this graph's
+    // availableCollections, so it must not be offerable here.
+    expect(within(optionList).queryByText("CHEBI")).not.toBeInTheDocument();
   });
 });
 
