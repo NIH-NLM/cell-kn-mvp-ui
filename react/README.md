@@ -23,7 +23,7 @@ react/
 │   │   ├── ForceGraph/      # Force-directed graph visualization
 │   │   │   ├── hooks/       # Custom hooks for graph functionality
 │   │   │   │   ├── useGraphData.js      # Graph data processing
-│   │   │   │   ├── useGraphExport.js    # Export to PNG/SVG/PDF
+│   │   │   │   ├── useGraphExport.js    # Export to JSON/SVG/PNG
 │   │   │   │   └── useGraphSettings.js  # Settings management
 │   │   │   ├── panels/      # UI panel components
 │   │   │   │   ├── GraphLegend.js       # Collection legend
@@ -188,7 +188,7 @@ The force-directed graph (`ForceGraph` component) allows exploring relationships
 - Zoom and pan
 - Configurable traversal depth and direction
 - Node/edge filtering by collection type
-- Export to PNG/SVG/PDF
+- Export to JSON/SVG/PNG
 
 ### Sunburst Visualization
 Hierarchical visualization of ontology structures (cell types, anatomical structures). Features:
