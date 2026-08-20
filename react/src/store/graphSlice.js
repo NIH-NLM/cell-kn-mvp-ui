@@ -338,8 +338,6 @@ const initialState = {
       acc[field] = "include";
       return acc;
     }, {}),
-    lastAppliedOriginNodeIds: [],
-    lastAppliedPerNodeSettings: null,
   },
   // Stores a snapshot of the settings last used to generate the graph.
   lastAppliedSettings: null,

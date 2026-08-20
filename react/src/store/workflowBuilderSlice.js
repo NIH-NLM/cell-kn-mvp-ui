@@ -386,8 +386,6 @@ export const executePhase = createAsyncThunk(
           phase.settings.excludeClosingEdges ?? { Label: [] },
         requireClosingEdges: nodeOverrides.requireClosingEdges ??
           phase.settings.requireClosingEdges ?? { Label: [] },
-        lastAppliedOriginNodeIds: [],
-        lastAppliedPerNodeSettings: null,
       };
     }
 
