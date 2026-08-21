@@ -307,7 +307,7 @@ class SunburstRequestSerializer(GraphRequestSerializer):
     )
 
 
-class EdgeFilterOptionsSerializer(serializers.Serializer):
+class EdgeFilterOptionsSerializer(GraphRequestSerializer):
     """Serializer for edge filter options requests."""
 
     fields = serializers.ListField(
