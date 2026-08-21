@@ -116,6 +116,40 @@ class DocumentServiceTestCase(ArangoDBTestCase):
         )
 
 
+class GetEdgeFilterOptionsGraphTestCase(SimpleTestCase):
+    """edge_filter_options must query the requested graph, not always ontologies."""
+
+    def _run(self, graph=None):
+        fake_db = mock.MagicMock()
+        fake_db.aql.execute.return_value = iter(
+            [{"Label": {"type": "categorical", "values": ["FOO"]}}]
+        )
+        with mock.patch.object(
+            document_service,
+            "get_db_and_graph",
+            return_value=(fake_db, "some-graph-name"),
+        ) as mock_get_db_and_graph, mock.patch.object(
+            document_service, "get_collections", return_value=["A-B"]
+        ) as mock_get_collections:
+            if graph is None:
+                document_service.get_edge_filter_options(["Label"])
+            else:
+                document_service.get_edge_filter_options(["Label"], graph=graph)
+        return mock_get_db_and_graph, mock_get_collections
+
+    def test_uses_requested_graph_connection(self):
+        mock_get_db_and_graph, _ = self._run(graph="phenotypes")
+        mock_get_db_and_graph.assert_called_once_with("phenotypes")
+
+    def test_defaults_to_ontologies_connection(self):
+        mock_get_db_and_graph, _ = self._run()
+        mock_get_db_and_graph.assert_called_once_with("ontologies")
+
+    def test_edge_collections_looked_up_for_requested_graph(self):
+        _, mock_get_collections = self._run(graph="phenotypes")
+        mock_get_collections.assert_called_once_with("edge", "phenotypes")
+
+
 class GraphServiceTestCase(ArangoDBTestCase):
     """Tests for graph_service functions."""
 
@@ -1386,6 +1420,20 @@ class UberonClCountQueryTestCase(TestCase):
 
 class TerminalCollectionsQueryTestCase(TestCase):
     """Unit tests for terminal-collection pruning (no DB required)."""
+
+    def setUp(self):
+        # traverse_graph sanitizes allowed_collections against a module-level
+        # cache of real graph membership. An integration test earlier in the run
+        # populates that cache, and a populated cache short-circuits the lookup
+        # entirely -- so the DB mock below is bypassed and the real membership
+        # set silently prunes these collections, failing the assertions here for
+        # a reason that has nothing to do with terminal collections.
+        #
+        # That made the suite order-dependent: green when unit and integration
+        # run separately (as CI does), red when run together (as a developer
+        # does). Reset around each test so this class is isolated either way.
+        graph_service.reset_vertex_collections_cache()
+        self.addCleanup(graph_service.reset_vertex_collections_cache)
 
     def _run(self, **kwargs):
         """Invoke traverse_graph with the DB layer mocked out.

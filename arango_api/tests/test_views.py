@@ -23,7 +23,7 @@ from django.test import SimpleTestCase, TestCase, override_settings, tag
 from django.urls import reverse
 
 from arango_api.serializers import GraphTraversalSerializer
-from arango_api.services import version_service
+from arango_api.services import document_service, version_service
 from arango_api.tests.seed_test_db import seed_test_databases
 
 
@@ -420,6 +420,26 @@ class DocumentViewsTestCase(ArangoDBViewTestCase):
         self.assertEqual(
             sorted(data["Label"]["values"]),
             sorted(["SUB_CLASS_OF", "PARTICIPATES_IN", "PART_OF"]),
+        )
+
+
+class EdgeFilterOptionsGraphTestCase(SimpleTestCase):
+    """The view must pass the requested graph through to the service, not
+    silently drop it (the service is not called for the correct graph
+    otherwise)."""
+
+    def test_passes_requested_graph_to_service(self):
+        with mock.patch.object(
+            document_service, "get_edge_filter_options", return_value={}
+        ) as mock_get_edge_filter_options:
+            response = self.client.post(
+                reverse("get_edge_filter_options"),
+                data={"fields": ["Label"], "graph": "phenotypes"},
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        mock_get_edge_filter_options.assert_called_once_with(
+            ["Label"], graph="phenotypes"
         )
 
 

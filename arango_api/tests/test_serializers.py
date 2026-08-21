@@ -411,6 +411,18 @@ class EdgeFilterOptionsSerializerTestCase(SimpleTestCase):
         serializer = EdgeFilterOptionsSerializer(data={"fields": []})
         self.assertFalse(serializer.is_valid())
 
+    def test_graph_accepted_and_exposed(self):
+        serializer = EdgeFilterOptionsSerializer(
+            data={"fields": ["Label"], "graph": "phenotypes"}
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["graph"], "phenotypes")
+
+    def test_graph_defaults_to_ontologies_when_omitted(self):
+        serializer = EdgeFilterOptionsSerializer(data={"fields": ["Label"]})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["graph"], "ontologies")
+
 
 class DocumentsRequestSerializerTestCase(SimpleTestCase):
     """Tests for documents request validation."""

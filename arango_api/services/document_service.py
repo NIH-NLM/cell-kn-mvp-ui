@@ -4,7 +4,6 @@ Service for document retrieval operations.
 
 import logging
 
-from arango_api.db import db_ontologies
 from arango_api.services.base import get_db_and_graph
 from arango_api.services.collection_service import get_collections
 
@@ -60,7 +59,7 @@ def get_documents(document_ids, graph_name):
     return all_results
 
 
-def get_edge_filter_options(fields_to_query):
+def get_edge_filter_options(fields_to_query, graph="ontologies"):
     """
     Query database for unique values for specified edge attributes.
 
@@ -70,6 +69,7 @@ def get_edge_filter_options(fields_to_query):
 
     Args:
         fields_to_query (list): List of field names to get unique values for.
+        graph (str): The graph type ("ontologies" or "phenotypes").
 
     Returns:
         dict: Dictionary mapping field names to typed filter descriptors.
@@ -80,10 +80,10 @@ def get_edge_filter_options(fields_to_query):
     if not fields_to_query:
         return {}
 
-    db = db_ontologies
+    db, _ = get_db_and_graph(graph)
 
     try:
-        edge_collections = get_collections("edge")
+        edge_collections = get_collections("edge", graph)
 
         if not edge_collections:
             return {}

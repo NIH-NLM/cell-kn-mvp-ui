@@ -296,7 +296,8 @@ class EdgeFilterOptionsView(APIView):
 
         try:
             results = document_service.get_edge_filter_options(
-                serializer.validated_data["fields"]
+                serializer.validated_data["fields"],
+                graph=serializer.validated_data["graph"],
             )
             return Response(results)
         except ValueError as e:
