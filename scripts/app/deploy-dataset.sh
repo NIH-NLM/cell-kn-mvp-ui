@@ -210,8 +210,81 @@ LAST_RESTORED=$(cat "$DATA_DIR/.dataset-version" 2>/dev/null || echo "none")
 echo "Target version : $VERSION"
 echo "Last restored  : $LAST_RESTORED"
 
+# ── Read-only backend user ───────────────────────────────────────────────────
+# The backend authenticates as a read-only user that exists only in the EC2
+# UserData bootstrap. A restore builds green from a fresh container, whose
+# _system holds only root, and no golden dump carries _users -- so promoting
+# green deletes that user: every request 401s and the app returns 500, while
+# every step here still reports success because they all run as root (dev +
+# stage outage, 2026-08-21).
+#
+# Called against green before a swap, and against the live container when the
+# dataset is already current, so a plain re-run repairs an environment whose
+# user was lost to an earlier restore.
+#
+# get-parameters (plural) so a genuinely absent parameter comes back in
+# InvalidParameters rather than as a CLI error. An environment with no
+# read-only user is a valid configuration; a denied or throttled lookup is not,
+# and must not be mistaken for one.
+ensure_ro_user() {
+  local container="$1"
+  local ro_lookup ro_user ro_missing ro_password
+
+  ro_lookup=$(aws ssm get-parameters \
+    --names "/$PROJECT_NAME/$ENVIRONMENT/arango/db-user" \
+    --query '[Parameters[0].Value, InvalidParameters[0]]' \
+    --output text --region "$REGION")
+  ro_user=$(printf '%s' "$ro_lookup" | cut -f1)
+  ro_missing=$(printf '%s' "$ro_lookup" | cut -f2)
+
+  if [ "$ro_user" = "None" ] && [ "$ro_missing" != "None" ]; then
+    echo "==> No read-only user configured for $ENVIRONMENT — backend connects as root"
+    return 0
+  fi
+
+  echo "==> Ensuring read-only backend user '$ro_user' in $container"
+  ro_password=$(aws secretsmanager get-secret-value \
+    --secret-id "/$PROJECT_NAME/$ENVIRONMENT/secrets/arangodb-password" \
+    --query 'SecretString' --output text --region "$REGION")
+
+  # Values reach arangosh through the environment, never through the JS source:
+  # a quote in a rotated password would otherwise break the script, and a
+  # crafted username would execute as root.
+  #
+  # BOTH grants are required. grantDatabase alone leaves collection access to
+  # the '*' wildcard, which defaults to 'none' — so db.collections() and every
+  # AQL read come back 401.
+  docker exec \
+    -e CKN_RO_USER="$ro_user" \
+    -e CKN_RO_PASSWORD="$ro_password" \
+    -e CKN_RO_DBS="$EXPECTED_DBS" \
+    "$container" arangosh \
+    --server.endpoint tcp://127.0.0.1:8529 \
+    --server.username root \
+    --server.password "$ARANGO_PASSWORD" \
+    --javascript.execute-string "
+      var env = require('internal').env;
+      var users = require('@arangodb/users');
+      var u = env.CKN_RO_USER;
+      if (users.exists(u)) { users.update(u, env.CKN_RO_PASSWORD, true); }
+      else { users.save(u, env.CKN_RO_PASSWORD, true); }
+      env.CKN_RO_DBS.split(' ').filter(function (d) { return d.length; })
+        .forEach(function (d) {
+          users.grantDatabase(u, d, 'ro');
+          users.grantCollection(u, d, '*', 'ro');
+          print('granted ro on ' + d + ' (database + collections)');
+        });
+    "
+}
+
 if [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" != "true" ]; then
-  echo "Already on version $VERSION — nothing to do"
+  echo "Already on version $VERSION — nothing to restore"
+  # Still repair the read-only user: an earlier restore may have deleted it,
+  # and no swap is pending, so acting on the live container changes nothing else.
+  if ! ensure_ro_user arangodb; then
+    echo "ERROR: could not ensure the read-only backend user"
+    exit 1
+  fi
   exit 0
 elif [ "$VERSION" = "$LAST_RESTORED" ] && [ "$FORCE" = "true" ]; then
   echo "Already on version $VERSION — forcing re-restore (--force)"
@@ -480,6 +553,15 @@ for STAMP_DB in $EXPECTED_DBS; do
     echo "  WARNING: $STAMP_DB stamp returned HTTP ${STAMP_STATUS:-000} (non-fatal; UI will show 'unknown')"
   fi
 done
+
+# Provision the user in green before the swap: it lives in green's _system and
+# is promoted with the data, so a failure here leaves blue serving.
+if ! ensure_ro_user arango-green; then
+  echo "ERROR: could not provision the read-only backend user — blue unchanged"
+  docker rm -f arango-green || true
+  rm -rf "$GREEN_DATA" "$GREEN_APPS"
+  exit 1
+fi
 
 # ── Swap: blue → green (downtime window starts here) ─────────────────────────
 # /var/lib/arangodb3 is the EBS mount point and cannot be mv'd directly.
