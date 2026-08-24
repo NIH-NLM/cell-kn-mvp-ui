@@ -1,4 +1,4 @@
-import { findLeafNodes } from "./graphDataProcessing";
+import { assignParallelLinkLanes, findLeafNodes } from "./graphDataProcessing";
 
 // Characterization tests pinning the current behavior of findLeafNodes so the
 // workflow-init collapse path has a regression net to lean on.
@@ -78,5 +78,47 @@ describe("findLeafNodes", () => {
       { source: "A", target: "B" },
     ];
     expect(findLeafNodes(nodes, links, ["A"], [], "standard")).toEqual(["B"]);
+  });
+});
+
+// Lane assignment for links that share a node pair. Real edge keys look like
+// "<fromKey>-<PREDICATE:CURIE>-<toKey>" and from-keys contain hyphens of their
+// own, so grouping has to key on the endpoint ids rather than on the key text.
+describe("assignParallelLinkLanes", () => {
+  const link = (id, sourceId, targetId) => ({
+    _id: id,
+    source: { id: sourceId },
+    target: { id: targetId },
+  });
+  const offsets = (links) => assignParallelLinkLanes(links).map((l) => l.curveOffset);
+
+  it("bows a bidirectional pair to opposite sides in absolute space", () => {
+    // Matching offsets, opposite perpendiculars — see assignParallelLinkLanes.
+    expect(offsets([link("e1", "A", "B"), link("e2", "B", "A")])).toEqual([-0.5, -0.5]);
+  });
+
+  it("spreads three links into evenly spaced lanes", () => {
+    expect(offsets([link("e1", "A", "B"), link("e2", "A", "B"), link("e3", "A", "B")])).toEqual([
+      -1, 0, 1,
+    ]);
+  });
+
+  it("keys on the node pair, not on the hyphenated edge key", () => {
+    // Production keys: "<fromKey>-<predicate>-<toKey>", from-key full of hyphens.
+    const forward = link("x-IAO:0000136-y", "CSD/ff2e-0848-4346__kidney", "UBERON/0002113");
+    const reverse = link("y-IAO:0000136-x", "UBERON/0002113", "CSD/ff2e-0848-4346__kidney");
+    expect(offsets([forward, reverse])).toEqual([-0.5, -0.5]);
+  });
+
+  it("leaves self-links straight so they keep their own loop path", () => {
+    expect(offsets([link("e1", "A", "A"), link("e2", "A", "A")])).toEqual([0, 0]);
+  });
+
+  it("re-straightens a link once its partner is removed", () => {
+    // The incremental flag this replaces could never be cleared: dropping one
+    // side left the survivor permanently curved.
+    const links = [link("e1", "A", "B"), link("e2", "B", "A")];
+    assignParallelLinkLanes(links);
+    expect(offsets(links.filter((l) => l._id === "e1"))).toEqual([0]);
   });
 });
