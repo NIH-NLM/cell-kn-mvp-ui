@@ -48,6 +48,11 @@ jobs:
               - 'manage.py'
               - 'Dockerfile'
               - '.dockerignore'
+              # The version endpoint reports pinned_etl_version from the
+              # ETL_VERSION file baked into the image, so an ETL bump has to
+              # rebuild the backend or dev keeps advertising the previous
+              # dataset while serving the new one.
+              - 'ETL_VERSION'
             e2e:
               - 'react/src/**'
               - 'react/public/**'
