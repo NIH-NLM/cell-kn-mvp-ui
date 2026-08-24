@@ -90,30 +90,60 @@ export function processGraphLinks(
       source: sourceNode,
       target: targetNode,
       label: labelFn(newLink),
-      isParallelPair: false,
+      curveOffset: 0,
     };
 
-    // Check for a reverse link to identify a parallel pair.
-    const keyParts = processedNewLink._key.split("-");
-    if (keyParts.length === 2) {
-      const reverseKey = `${keyParts[1]}-${keyParts[0]}`;
-      const reversePartner = updatedExistingLinks.find(
-        (existingLink) =>
-          existingLink._key === reverseKey &&
-          existingLink.source.id === targetNodeId &&
-          existingLink.target.id === sourceNodeId,
-      );
-
-      // If reverse partner found, flag both links.
-      if (reversePartner) {
-        processedNewLink.isParallelPair = true;
-        reversePartner.isParallelPair = true;
-      }
-    }
     updatedExistingLinks.push(processedNewLink);
   }
 
-  return updatedExistingLinks;
+  return assignParallelLinkLanes(updatedExistingLinks);
+}
+
+/**
+ * Spreads links that share a node pair into evenly spaced lanes so they stop
+ * drawing on top of each other. Each gets a signed `curveOffset` in lane units:
+ * a lone link 0 (straight), a pair -0.5/+0.5, a triple -1/0/+1. The sign is
+ * taken against the pair's canonical (id-sorted) direction, which is what puts
+ * a bidirectional pair on opposite sides of the chord — the renderer builds
+ * each link's perpendicular from its own source->target vector, so a reverse
+ * link's perpendicular already points the other way. Recomputed over the whole
+ * list on every update, so dropping one side re-straightens the survivor.
+ * @param {Array} links - Links with resolved source/target node objects
+ * @returns {Array} The same array, with curveOffset set on every link
+ */
+export function assignParallelLinkLanes(links) {
+  const groups = new Map();
+
+  for (const link of links) {
+    link.curveOffset = 0;
+    const sourceId = link.source?.id ?? link.source;
+    const targetId = link.target?.id ?? link.target;
+    // Self-links render as a loop, so they need no lane.
+    if (sourceId === targetId) continue;
+    const pairKey =
+      sourceId < targetId ? `${sourceId}\u0000${targetId}` : `${targetId}\u0000${sourceId}`;
+    const group = groups.get(pairKey);
+    if (group) {
+      group.push(link);
+    } else {
+      groups.set(pairKey, [link]);
+    }
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    // Order by _id so adding an unrelated link elsewhere cannot reshuffle the
+    // lanes of a group that has not itself changed.
+    group.sort((a, b) => String(a._id).localeCompare(String(b._id)));
+    for (const [index, link] of group.entries()) {
+      const lane = index - (group.length - 1) / 2;
+      const sourceId = link.source?.id ?? link.source;
+      const targetId = link.target?.id ?? link.target;
+      link.curveOffset = sourceId < targetId ? lane : -lane;
+    }
+  }
+
+  return links;
 }
 
 /**
