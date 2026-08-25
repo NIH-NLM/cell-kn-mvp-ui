@@ -658,16 +658,16 @@ WORKFLOW_PRESETS = [
         ],
     },
     {
-        "id": "parkinsons-disease-uc8",
-        "name": "Parkinson's disease exploration (UC8)",
+        "id": "alzheimers-disease-uc8",
+        "name": "Alzheimer's disease exploration (UC8)",
         "description": (
-            "Parkinson's disease: its causal genes and therapeutic "
+            "Alzheimer's disease: its causal genes and therapeutic "
             "compounds, then the cell types that selectively express those "
             "genes and where they sit anatomically."
         ),
         "category": "Use Cases",
-        # NOT the big-dipper layout: this preset fans out to ~2,500 nodes
-        # (1,390 compounds, 737 diseases), and a single star holding 1,390
+        # NOT the big-dipper layout: this preset fans out to ~3,100 nodes
+        # (1,647 compounds, 1,052 diseases), and a single star holding 1,647
         # nodes needs more room than the whole asterism. The dipper layout
         # suits single-dipper results in the tens of nodes; this is a bulk
         # scan, so it keeps the clustered layout it was built with.
@@ -679,7 +679,7 @@ WORKFLOW_PRESETS = [
                 "id": "preset-uc8-phase-1",
                 "name": "Disease-associated genes",
                 "originSource": "manual",
-                "originNodeIds": ["MONDO/0005180"],
+                "originNodeIds": ["MONDO/0004975"],
                 "previousPhaseId": None,
                 "originFilter": "all",
                 "settings": {
