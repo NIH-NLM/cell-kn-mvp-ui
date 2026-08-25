@@ -1,4 +1,5 @@
 {
+  "alzheimers-disease-uc8": 3100,
   "broken-dipper-candidates": 230,
   "cell-type-hierarchy": 73,
   "cell-types-in-respiratory-system": 75,
@@ -16,7 +17,6 @@
   "hlca-lung-cell-types": 118,
   "leber-congenital-amaurosis-uc7": 28,
   "pah-kcnk3-uc9": 30,
-  "parkinsons-disease-uc8": 3130,
   "ph-drug-target-cell-types": 13,
   "ph-drug-targets": 66,
   "ph-drugs": 30,
