@@ -72,6 +72,49 @@ export const parseCollections = (collections, collectionMaps = null) => {
 };
 
 /**
+ * Number of trailing UUID characters kept as a dataset differentiator. Six is
+ * the convention agreed for the collection view (nlm-ckn#303); it is unique
+ * across every dataset UUID in the graph.
+ */
+const UUID_SUFFIX_LENGTH = 6;
+
+/**
+ * Decorate a cell set dataset label so multi-organ datasets can be told apart.
+ *
+ * A dataset covering several organs yields one CSD document per organ, all
+ * carrying the same Name — the collection list then shows a run of identical
+ * rows. Appending the anatomical structure and the tail of the dataset UUID
+ * disambiguates both cases: the same dataset split by organ, and different
+ * datasets from the same author and organ.
+ *
+ * Each part is appended only when the document carries it, so a document
+ * missing either field degrades to the plain label rather than to a gap.
+ *
+ * @param {object} item - The CSD document.
+ * @param {string} label - The label chosen from the collection config.
+ * @returns {string} The decorated label.
+ */
+const decorateCellSetDatasetLabel = (item, label) => {
+  // The key is "<uuid>__<anatomical structure>", so it already carries both
+  // parts; decorating it would just repeat them.
+  if (label === item._key) {
+    return label;
+  }
+
+  const uuid = item.version ?? String(item._key ?? "").split("__")[0];
+  const organ = item.anatomical_structure;
+
+  let decorated = label;
+  if (organ) {
+    decorated += ` — ${String(organ).replaceAll("_", " ")}`;
+  }
+  if (uuid.length >= UUID_SUFFIX_LENGTH) {
+    decorated += ` (${uuid.slice(-UUID_SUFFIX_LENGTH)})`;
+  }
+  return decorated;
+};
+
+/**
  * Generates display label for data item based on dynamic configuration.
  * Finds first valid field from options, applies transformations, and returns result.
  * @param {object} item - Data object needing label. Must contain `_id` property.
@@ -96,6 +139,10 @@ export const getLabel = (item) => {
           break;
         }
       }
+    }
+
+    if (label && itemCollection === "CSD") {
+      return decorateCellSetDatasetLabel(item, label);
     }
 
     return label || "NAME UNKNOWN";
