@@ -335,11 +335,8 @@ g.node.pinned .node-pin-marker path {
 }
 
 /* Figma Button spec (639:3059 / 685:5797): transparent resting state, gray-lighter
-   hover fill, radius-md, 40px height. The two title-bar toggles share this base;
-   only their active-state color differs (options = primary-darkest; lasso = focus).
-   The lasso toggle sits alongside the options toggle in the title bar. */
-.toggle-options-button,
-.lasso-toggle-button {
+   hover fill, radius-md, 40px height. Used by the options toggle in the title bar. */
+.toggle-options-button {
   height: 40px;
   padding: 4px 12px;
   margin: 0;
@@ -359,8 +356,7 @@ g.node.pinned .node-pin-marker path {
   flex-shrink: 0;
 }
 
-.toggle-options-button:hover,
-.lasso-toggle-button:hover {
+.toggle-options-button:hover {
   background-color: var(--color-gray-lighter);
 }
 
@@ -370,15 +366,6 @@ g.node.pinned .node-pin-marker path {
 .toggle-options-button[aria-expanded="true"]:hover {
   background-color: var(--color-primary-darkest);
   border-color: var(--color-primary-darkest);
-  color: var(--color-white);
-}
-
-/* Lasso mode armed — distinct focus accent so the mode reads clearly. Pair
-   :hover so the active color wins by specificity, not cascade order. */
-.lasso-toggle-button.active,
-.lasso-toggle-button.active:hover {
-  background-color: var(--color-focus);
-  border-color: var(--color-focus);
   color: var(--color-white);
 }
 
@@ -424,19 +411,23 @@ g.node.pinned .node-pin-marker path {
   align-items: center;
   gap: 8px;
 }
+
 /* Full screen isn't enabled yet — dim it, but keep it clickable for the notice. */
 .graph-canvas-fullscreen[aria-disabled="true"] {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
 /* Lasso armed — distinct focus accent (matches the old lasso-active treatment). */
 .graph-canvas-lasso.active {
   background-color: var(--color-focus);
 }
+
 /* Origins panel open — same armed treatment as the lasso. */
 .graph-canvas-origins.active {
   background-color: var(--color-focus);
 }
+
 /* Origin count badge, pinned to the button's top-right corner. */
 .graph-canvas-origins-count {
   position: absolute;
@@ -456,6 +447,7 @@ g.node.pinned .node-pin-marker path {
   line-height: 1;
   box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.25));
 }
+
 /* Hover/focus notes for the icon-only canvas actions. These buttons carry no
    visible text, so the tooltip is the primary explanation of what each does.
    Driven by a data-tooltip attribute; the accessible name still comes from
@@ -651,15 +643,6 @@ g.node.pinned .node-pin-marker path {
 
 /* Node Groups */
 
-.node-group .nodesSlice-button-fo {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.node-group:hover .nodesSlice-button-fo {
-  opacity: 1;
-}
-
 .node-group foreignObject {
   opacity: 0;
   transition: opacity 0.4s ease-in-out;
@@ -668,46 +651,6 @@ g.node.pinned .node-pin-marker path {
 .node-group:hover foreignObject,
 .node-group foreignObject:has(.add-to-graph-button.added) {
   opacity: 1;
-}
-
-/* Node List */
-
-.node-list-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto 2rem auto;
-}
-
-.node-list-table {
-  width: 100%;
-  border-collapse: collapse;
-  box-shadow: var(--shadow-md);
-}
-
-.node-list-table th,
-.node-list-table td {
-  border: 1px solid var(--color-white);
-  padding: 12px;
-  text-align: left;
-}
-
-.node-list-table th {
-  background-color: var(--color-light);
-  font-weight: bold;
-}
-
-.node-list-table .remove-button {
-  background-color: var(--color-secondary-red);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.node-list-table .remove-button:hover {
-  background-color: var(--color-secondary-red);
 }
 
 /* Saved Graphs */
@@ -740,10 +683,6 @@ g.node.pinned .node-pin-marker path {
   text-align: center;
   margin-bottom: 2rem;
   max-width: 800px;
-}
-
-.graph-actions-container {
-  margin-bottom: 2rem;
 }
 
 .graph-management-actions {
@@ -789,8 +728,6 @@ g.node.pinned .node-pin-marker path {
   font-weight: 500;
   box-shadow: var(--shadow-sm);
 }
-
-/* Inspector Overview Card */
 
 /* Section heading, same spec as .inspector-section-title (683:5603 "Overview"):
    12px Roboto Medium in gray-dark, not the 16px/600 this used to carry. */
@@ -849,6 +786,7 @@ g.node.pinned .node-pin-marker path {
   gap: 12px;
   padding: 8px 12px;
 }
+
 /* 14px in Figma 683:5602 — a step up from the 12px body rows below it. */
 .inspector-card-title {
   color: var(--color-base); /* #212121 */
@@ -881,6 +819,7 @@ g.node.pinned .node-pin-marker path {
   letter-spacing: 0.4px;
   margin: 0;
 }
+
 /* Field rows within a section: label #5B616B, value #212121, both 12px; hairline divider. */
 .inspector-section .document-attributes-table {
   width: 100%;
@@ -897,6 +836,7 @@ g.node.pinned .node-pin-marker path {
   line-height: 16px;
   letter-spacing: 0.4px;
 }
+
 /* Flat rows to match Figma 683:5603: no zebra striping (overrides the global
    tr:nth-of-type(even) rule), thin #dce4ef hairline dividers, tight vertical
    padding. Horizontal label/value spacing is left to the base table rules. */
@@ -924,8 +864,6 @@ g.node.pinned .node-pin-marker path {
 .inspector-ftu .max-height-limited {
   height: 220px;
 }
-
-/* Learn & Explore footer */
 
 /* Figma 683:5656 fills the block and drops the border it had in the earlier
    frame; the only rule left is the hairline under the header. */
@@ -971,6 +909,7 @@ g.node.pinned .node-pin-marker path {
   letter-spacing: 0.4px;
   text-decoration: none; /* Figma shows no underline */
 }
+
 /* Figma tints the arrow gray (#5b616b) against the blue label. */
 .learn-explore-arrow {
   width: 15.575px;
