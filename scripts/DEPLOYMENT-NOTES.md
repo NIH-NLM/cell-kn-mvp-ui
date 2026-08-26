@@ -47,6 +47,7 @@ stored AWS keys.
 | `deploy-dataset.yml` | push to `main` changing `ETL_VERSION`, or manual dispatch | `deploy-dataset.sh dev`. 110-min timeout; `cancel-in-progress: false` so a restore is never interrupted mid-swap. |
 | `deploy-stage.yml` | `v*.*.*` tag | All three app scripts against `stage` (backend with `IMAGE_TAG=<tag>`, frontend, dataset). |
 | `promote-to-upstream.yml` | push to `main` (fork only) | Fast-forwards / admin-merges `Springbok-LLC` → `NIH-NLM` upstream. Not AWS-related. |
+| `sync-collection-maps.yml` | change to `nlm-ckn-collection-maps.json` | Opens a PR against `nlm-ckn-etl` to keep the shared collection maps in step. Not AWS-related. |
 
 ## Deploying a golden dump
 

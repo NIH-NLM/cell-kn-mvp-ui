@@ -65,10 +65,12 @@ Builds the React app and deploys to S3/CloudFront.
 
 ### `app/deploy-dataset.sh` - ArangoDB Dataset
 ```bash
-./scripts/app/deploy-dataset.sh <environment> <s3-key>
+./scripts/app/deploy-dataset.sh [--force] <environment>
 ```
 
-Deploys an ArangoDB dataset version. Example: `./scripts/app/deploy-dataset.sh dev datasets/2024-02-17-v1.2.3.tar.gz`
+Deploys the dataset version pinned in `ETL_VERSION`, which the script resolves to
+`runs/<version>/06-golden-dump.tar.gz` in the dataset bucket. Example:
+`./scripts/app/deploy-dataset.sh dev`
 
 ### `app/deploy-all.sh` - Full Application Deployment
 ```bash
@@ -159,7 +161,7 @@ connectivity end to end. Exits non-zero on any failure, so it can gate a deploy.
 # Deploy only what changed
 ./scripts/app/deploy-backend.sh dev   # Backend only
 ./scripts/app/deploy-frontend.sh dev  # Frontend only
-./scripts/app/deploy-dataset.sh dev datasets/new.tar.gz  # Dataset only
+./scripts/app/deploy-dataset.sh dev            # Dataset only (version from ETL_VERSION)
 ```
 
 ## Documentation
