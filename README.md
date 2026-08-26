@@ -170,6 +170,15 @@ PRs that change backend code from forks are gated by a maintainer permission che
 
 AWS credentials are obtained via GitHub OIDC — no long-lived secrets are stored. Both deploys can also be triggered manually via `workflow_dispatch`. Dataset updates are deployed separately (not part of `ci.yml`) via `scripts/app/deploy-dataset.sh`, which ships the version pinned in `ETL_VERSION`.
 
+**Other workflows** (`.github/workflows/`):
+
+- **`deploy-dataset.yml`** — runs `deploy-dataset.sh dev` when a push to `main` changes `ETL_VERSION`, or on manual dispatch.
+- **`deploy-stage.yml`** — triggered by any `v*.*.*` tag. Deploys backend, frontend **and dataset** to `stage`, so tagging a release restores the dataset there.
+- **`promote-to-upstream.yml`** — pushes `Springbok-LLC/main` to the `NIH-NLM` upstream.
+- **`sync-collection-maps.yml`** — opens a PR against `nlm-ckn-etl` when the shared collection maps change.
+
+See [`scripts/DEPLOYMENT-NOTES.md`](scripts/DEPLOYMENT-NOTES.md) for triggers and timeouts.
+
 ## AWS Architecture
 
 ![NLM-CKN application architecture: a researcher's browser reaches CloudFront, which serves React static assets from S3 and routes /api/ and /arango_api/ requests through an Application Load Balancer to the Django backend on ECS Fargate. The backend pulls its image from ECR, reads secrets from Secrets Manager, and queries ArangoDB on EC2 (EBS-backed) via a second ALB. ArangoDB datasets are produced by the ETL release pipeline (GitHub Actions + AWS Batch) and stored in an S3 bucket. A separate UI CI/CD pipeline (GitHub Actions) builds and deploys the frontend and backend.](docs/images/NLM-CKN-UI.png)

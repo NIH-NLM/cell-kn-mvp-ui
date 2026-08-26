@@ -7,10 +7,11 @@
 # and triggers a blue-green arangorestore on the EC2 instance via SSM Run Command.
 #
 # USAGE:
-#   ./scripts/app/deploy-dataset.sh <environment>
+#   ./scripts/app/deploy-dataset.sh [--force] <environment>
 #
 # ARGUMENTS:
 #   environment   Environment name: dev, sandbox, or prod
+#   --force       Re-restore even when the version is unchanged
 #
 # WHAT IT DOES:
 #   1. Reads ETL_VERSION from the repository root

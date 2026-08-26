@@ -11,7 +11,7 @@ Install these before you start:
 - **Node.js 20.x** (22.x also works) and a matching npm
 - **Docker & Docker Compose**
 - **Python 3.13.3** — to run the Django backend. This version is pinned: it's what
-  `requirements.txt`, the committed `venv`, and the `Dockerfile`
+  `requirements.txt`, the `.python-version` file, and the `Dockerfile`
   (`python:3.13.3-slim`) all use, and the project is untested on other versions.
   Confirm with `python3 --version` before creating the venv. If you don't have it:
   - **pyenv** (matches the exact version cleanly): `pyenv install 3.13.3` — the
@@ -123,8 +123,24 @@ The site is now available at **http://127.0.0.1:8000/**.
 
 ## Frontend Development
 
-For frontend work with hot-reloading, skip the `npm run build` step and run the
-React dev server alongside the backend:
+There are two ways to work on the frontend. They are different tools, not
+alternatives to the same thing:
+
+**`npm start` — hot reload (recommended while editing).** Runs the Create React
+App dev server on :3000 with fast refresh. API calls are proxied to Django on
+:8000 by the `proxy` field in `react/package.json`, so run the backend too and
+browse to :3000.
+
+```bash
+cd react
+npm start
+```
+
+**`npm run watch` — rebuild on change.** Runs `npm-watch`, which re-runs
+`npm run build` (React build plus Django `collectstatic`) whenever a file under
+`src/` or `public/` changes. There is no hot reload and no :3000 server: Django
+serves the rebuilt bundle on :8000, and each change costs a full build. Use this
+when you need to exercise the app exactly as Django serves it.
 
 ```bash
 cd react
@@ -142,6 +158,8 @@ npm run watch
   `http://127.0.0.1:8529` (not `http://arango_db:8529`) when using the loader, and
   that the `arango-current` container is running (`docker ps`).
 - **UI changes don't appear** — the built bundle is stale. Re-run `npm run build`
-  and hard-refresh, or use `npm run watch` for hot-reloading during development.
+  and hard-refresh, or use `npm start` for hot reload while editing. Note that
+  `npm run watch` rebuilds rather than hot-reloading, so a change still takes a
+  full build before it shows.
 - **Environment variable reference** — see the table in
   [`README.md`](README.md#environment-configuration).
