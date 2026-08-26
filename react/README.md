@@ -22,15 +22,15 @@ react/
 │   ├── components/          # Reusable UI components
 │   │   ├── ForceGraph/      # Force-directed graph visualization
 │   │   │   ├── hooks/       # Custom hooks for graph functionality
-│   │   │   │   ├── useGraphData.js      # Graph data processing
-│   │   │   │   ├── useGraphExport.js    # Export to JSON/SVG/PNG
-│   │   │   │   └── useGraphSettings.js  # Settings management
+│   │   │   │   ├── useGraphExport.js     # Export to JSON/SVG/PNG
+│   │   │   │   ├── useNodeNames.js       # Node label resolution
+│   │   │   │   └── usePerNodeSettings.js # Per-origin setting overrides
 │   │   │   ├── panels/      # UI panel components
-│   │   │   │   ├── GraphLegend.js       # Collection legend
-│   │   │   │   ├── GraphOriginList.js   # Origin node list
-│   │   │   │   ├── GraphSettingsPanel.js # Settings drawer
-│   │   │   │   ├── GraphToolbar.js      # Action buttons
-│   │   │   │   └── SetOperationInfo.js  # Set operation display
+│   │   │   │   ├── ExportPanel.js         # Export controls
+│   │   │   │   ├── FiltersPanel.js        # Edge/collection filters
+│   │   │   │   ├── GeneralSettingsPanel.js # Depth, direction, labels
+│   │   │   │   ├── HistoryPanel.js        # Origin history
+│   │   │   │   └── MultiNodePanel.js      # Multi-selection actions
 │   │   │   └── ForceGraph.js  # Main graph container
 │   │   ├── ForceGraphConstructor/  # D3 graph rendering logic
 │   │   │   ├── graphDataProcessing.js   # Node/link processing
@@ -74,8 +74,9 @@ react/
 │   │   ├── nodesSlice.js    # Node selection state
 │   │   └── savedGraphsSlice.js
 │   ├── styles/              # CSS stylesheets
-│   │   ├── global.css       # Global styles
-│   │   └── ...              # Component-specific styles
+│   │   ├── base.css         # Element defaults and resets
+│   │   ├── variables.css    # Design tokens
+│   │   └── ...              # Layout, components, pages, graph, etc.
 │   ├── utils/               # Utility functions
 │   │   ├── collections.js   # Collection helpers (getLabel, parseId)
 │   │   ├── colors.js        # D3 color scales for collections
@@ -97,7 +98,7 @@ react/
 
 ### Prerequisites
 
-- Node.js (v18+ recommended)
+- Node.js 20 (matches CI)
 - npm
 - Running Django backend (see main project README)
 - ArangoDB database running via Docker
@@ -254,11 +255,16 @@ D3 visualizations are implemented using a layered architecture:
 
 ## 🔑 Environment Variables
 
-Create a `.env` file in the `react/` directory if needed:
+API calls go through the Django proxy, so no `.env` file is needed for local
+development. Two variables are read when present:
 
 ```env
-# Example (most config handled by Django proxy)
-REACT_APP_API_URL=/api
+# Shown in the footer. Set by scripts/app/deploy-frontend.sh at build time.
+REACT_APP_VERSION=v1.2.3
+
+# Exposes the Redux store on window for Playwright. Set by playwright.config.ts;
+# do not set it for a production build.
+REACT_APP_EXPOSE_STORE=true
 ```
 
 ## 📝 Contributing

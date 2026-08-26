@@ -29,6 +29,17 @@ tests/
     ├── header-navigation.spec.ts               → Navbar navigation & active states
     ├── not-found.spec.ts                       → 404 page handling
     ├── search.spec.ts                          → Search functionality
+    ├── search-landing.spec.ts                  → Search landing page
+    ├── header.spec.ts                          → Header layout
+    ├── responsive.spec.ts                      → Responsive breakpoints
+    ├── color-consistency.spec.ts               → Collection colour parity
+    ├── compositional-origins.spec.ts           → Composing origins into one graph
+    ├── graph-expand-node.spec.ts               → Expanding a node in place
+    ├── graph-history.spec.ts                   → Origin history panel
+    ├── graph-inter-node-edges.spec.ts          → Edges between result nodes
+    ├── graph-numeric-edge-filters.spec.ts      → Numeric edge filter ranges
+    ├── graph-undo-delete.spec.ts               → Undo after deleting a node
+    ├── graph-undo-link-source.spec.ts          → Undo link-source changes
     └── utils/
         ├── errorInstrumentation.ts             → Runtime error capture
         └── testSeeds.ts                        → Reusable mock data generators
@@ -332,10 +343,13 @@ webServer: {
   run: npm run test:e2e
   env:
     CI: true
+    # Under CI, playwright.config.ts builds and serves the static bundle
+    # instead of starting the CRA dev server, whose overlay iframe
+    # intercepts clicks.
 
 - name: Upload Test Report
   if: failure()
-  uses: actions/upload-artifact@v3
+  uses: actions/upload-artifact@v4
   with:
     name: playwright-report
     path: react/playwright-report/
@@ -425,6 +439,6 @@ test("Feature description", async ({ page }) => {
 
 ---
 
-**Last Updated**: Dec 2025  
+**Last Updated**: Aug 2026  
 **Maintained by**: NLM-CKN Team  
 **Framework**: Playwright 1.56+
