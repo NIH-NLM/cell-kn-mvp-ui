@@ -1,4 +1,4 @@
-import { getDisplayFields, getSectionedFields, getUrl } from "./collections";
+import { getDisplayFields, getLabel, getSectionedFields, getUrl } from "./collections";
 
 describe("getSectionedFields", () => {
   const csd = (overrides = {}) => ({
@@ -225,5 +225,58 @@ describe("outbound links from the shipped collection maps", () => {
 
     const doi = getDisplayFields(pub).find((field) => field.key === "publication_doi");
     expect(doi.url).toBe("https://doi.org/10.7554/elife.62522");
+  });
+});
+
+describe("getLabel for multi-organ cell set datasets", () => {
+  // A multi-organ dataset yields one CSD document per organ, all sharing the
+  // same Name. The label appends the organ and the last six characters of the
+  // dataset UUID so the rows can be told apart (nlm-ckn#303).
+  const multiOrgan = (organ) => ({
+    _id: `CSD/78819b62-0699-4672-8dc8-d9317b04d255__${organ}`,
+    _key: `78819b62-0699-4672-8dc8-d9317b04d255__${organ}`,
+    Name: "Domínguez Conde (2022) Science - Global",
+    Citation: "Domínguez Conde (2022) Science",
+    anatomical_structure: organ,
+    version: "78819b62-0699-4672-8dc8-d9317b04d255",
+  });
+
+  const without = (item, ...fields) => {
+    const copy = { ...item };
+    for (const field of fields) delete copy[field];
+    return copy;
+  };
+
+  it("distinguishes documents that share a Name", () => {
+    expect(getLabel(multiOrgan("liver"))).toBe(
+      "Domínguez Conde (2022) Science - Global — liver (04d255)",
+    );
+    expect(getLabel(multiOrgan("bone_marrow"))).toBe(
+      "Domínguez Conde (2022) Science - Global — bone marrow (04d255)",
+    );
+  });
+
+  it("falls back to the key prefix when the version field is absent", () => {
+    expect(getLabel(without(multiOrgan("kidney"), "version"))).toBe(
+      "Domínguez Conde (2022) Science - Global — kidney (04d255)",
+    );
+  });
+
+  it("appends only the parts the document actually carries", () => {
+    expect(getLabel(without(multiOrgan("liver"), "anatomical_structure"))).toBe(
+      "Domínguez Conde (2022) Science - Global (04d255)",
+    );
+  });
+
+  it("leaves the key fallback label undecorated", () => {
+    expect(getLabel(without(multiOrgan("liver"), "Name", "Citation"))).toBe(
+      "78819b62-0699-4672-8dc8-d9317b04d255__liver",
+    );
+  });
+
+  it("leaves other collections alone", () => {
+    expect(getLabel({ _id: "CL/0000000", label: "cell", anatomical_structure: "liver" })).toBe(
+      "cell",
+    );
   });
 });
