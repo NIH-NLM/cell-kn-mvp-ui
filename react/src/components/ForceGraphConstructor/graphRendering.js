@@ -6,6 +6,27 @@
 import { truncateString } from "../../utils";
 
 /**
+ * Midpoint of the lane a parallel link is drawn in: the chord midpoint pushed
+ * along the chord's perpendicular by an offset that scales with the chord's own
+ * length, so the bow reads the same at any zoom or node spacing. Drives both the
+ * curve's control point and its label position, keeping the two together.
+ * @param {number} curveOffset - Signed lane index from assignParallelLinkLanes
+ * @param {number} curvature - Lane spacing as a fraction of the chord length
+ * @returns {{x: number, y: number}} The lane's apex point
+ */
+export function laneApex(sx, sy, tx, ty, curveOffset, curvature) {
+  const dx = tx - sx;
+  const dy = ty - sy;
+  const dist = Math.hypot(dx, dy);
+  if (!dist) return { x: sx, y: sy };
+  const offset = dist * curvature * curveOffset;
+  return {
+    x: (sx + tx) / 2 + (dy / dist) * offset,
+    y: (sy + ty) / 2 + (-dx / dist) * offset,
+  };
+}
+
+/**
  * Toggles donut appearance on origin nodes without recreating the graph.
  * Adds or removes the inner white circle on origin nodes.
  * @param {Object} d3 - D3 library reference
