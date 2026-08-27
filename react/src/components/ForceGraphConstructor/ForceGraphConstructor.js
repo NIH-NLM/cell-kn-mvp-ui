@@ -1,12 +1,13 @@
 import * as d3 from "d3";
 import { getColorForCollection } from "../../utils";
 import {
+  assignParallelLinkLanes,
   filterRemovedLink,
   findLeafNodes,
   processGraphData,
   processGraphLinks,
 } from "./graphDataProcessing";
-import { renderGraph, toggleFocusNodeRendering } from "./graphRendering";
+import { laneApex, renderGraph, toggleFocusNodeRendering } from "./graphRendering";
 import { attachLasso } from "./lassoSelection";
 import {
   applyLayoutMode,
@@ -568,14 +569,17 @@ function ForceGraphConstructor(
       const tx = d.target.x;
       const ty = d.target.y;
 
-      // Use curved arc for parallel links.
-      if (d.isParallelPair) {
-        const dx = tx - sx;
-        const dy = ty - sy;
-        const dr = Math.sqrt(dx * dx + dy * dy) * (1 / mergedOptions.parallelLinkCurvature);
-        return `M${sx},${sy}A${dr},${dr} 0 0,1 ${tx},${ty}`;
+      // Links sharing a node pair bow into their own lane so they do not
+      // overlap; everything else stays a straight chord.
+      if (d.curveOffset) {
+        const apex = laneApex(sx, sy, tx, ty, d.curveOffset, mergedOptions.parallelLinkCurvature);
+        // A quadratic's own midpoint is (S + 2C + T)/4, so placing the control
+        // point at 2*apex - chordMidpoint lands that midpoint on the apex —
+        // the same point the label is positioned at below.
+        const cx = 2 * apex.x - (sx + tx) / 2;
+        const cy = 2 * apex.y - (sy + ty) / 2;
+        return `M${sx},${sy}Q${cx},${cy} ${tx},${ty}`;
       }
-      // Use straight line for non-parallel links.
       return `M${sx},${sy}L${tx},${ty}`;
     });
 
@@ -605,24 +609,18 @@ function ForceGraphConstructor(
         let midY;
         let angle;
 
-        if (d.isParallelPair) {
-          // Calculate midpoint of curved arc.
-          const mx = (sx + tx) / 2;
-          const my = (sy + ty) / 2;
-          const dx = tx - sx;
-          const dy = ty - sy;
-          angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const curvatureOffset = dist * mergedOptions.parallelLinkCurvature * 0.3;
-          const normX = dy / dist;
-          const normY = -dx / dist;
-          midX = mx + curvatureOffset * normX;
-          midY = my + curvatureOffset * normY;
+        // The curve is symmetric, so its tangent at the apex runs parallel to
+        // the chord — one angle serves both the straight and the curved case.
+        angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
+        if (d.curveOffset) {
+          // Sit the label on the arc's apex, which carries it into the same
+          // lane as its own line rather than onto the shared chord midpoint.
+          const apex = laneApex(sx, sy, tx, ty, d.curveOffset, mergedOptions.parallelLinkCurvature);
+          midX = apex.x;
+          midY = apex.y;
         } else {
-          // Calculate midpoint of straight line.
           midX = (sx + tx) / 2;
           midY = (sy + ty) / 2;
-          angle = Math.atan2(ty - sy, tx - sx) * (180 / Math.PI);
         }
 
         // Keep text upright.
@@ -879,6 +877,10 @@ function ForceGraphConstructor(
 
     // Remove a single link by _id without touching its endpoint nodes.
     processedLinks = filterRemovedLink(processedLinks, removeLink);
+
+    // Re-lane after every add and removal above, so a link left alone between
+    // its endpoints goes back to being drawn straight.
+    assignParallelLinkLanes(processedLinks);
 
     // Update simulation with current data.
     simulation.nodes(processedNodes);
