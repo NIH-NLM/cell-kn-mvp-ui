@@ -84,6 +84,9 @@ Use when debugging flaky tests or investigating failures.
 # Run all tests (headless)
 npm run test:e2e
 
+# Run locally without touching a dev server already on :3000 (see below)
+npm run test:e2e:local
+
 # Run tests with browser visible
 npm run test:e2e:headed
 
@@ -93,6 +96,27 @@ npm run test:e2e:artifacts
 # View HTML report after run
 npm run e2e:report
 ```
+
+### Running locally alongside a dev server
+
+`npm run test:e2e` starts the CRA dev server on port 3000 and, when one is already
+running there, attaches to it instead. That server does not set
+`REACT_APP_EXPOSE_STORE`, so specs driving Redux through `window.__STORE__` fail
+for that reason alone rather than for anything in the code under test.
+
+`npm run test:e2e:local` builds the app, serves the static bundle on port 3100,
+and never reuses an existing server:
+
+```bash
+npm run test:e2e:local                                # whole suite
+npm run test:e2e:local -- tests/e2e/search.spec.ts    # a single spec
+npm run test:e2e:local -- --workers=2                 # fewer parallel workers
+```
+
+The two knobs behind it can be set independently: `E2E_PORT` (default `3000`) and
+`E2E_SERVE_BUILD=1`, which `CI` implies.
+
+No backend is needed — the specs intercept API calls with `page.route`.
 
 ### Direct Playwright Commands
 

@@ -40,6 +40,7 @@
     "build": "npm run build-react && npm run collectstatic-django",
     "test": "react-scripts test",
     "test:e2e": "playwright test",
+    "test:e2e:local": "E2E_SERVE_BUILD=1 E2E_PORT=3100 playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:artifacts": "playwright test --config=playwright.artifacts.config.ts",
     "e2e:report": "playwright show-report",
