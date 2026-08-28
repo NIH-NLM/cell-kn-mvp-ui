@@ -49,4 +49,4 @@ export { isMac } from "./platform";
 // Set operations for graphs
 export { performSetOperation } from "./setOperations";
 // String utilities
-export { capitalCase, formatFieldValue, truncateString } from "./strings";
+export { capitalCase, formatFieldValue, humanizeSlug, truncateString } from "./strings";

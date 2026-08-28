@@ -10,6 +10,7 @@ import {
   getTitle,
   getUrl,
   hasNodesInRawData,
+  humanizeSlug,
   parseCollections,
 } from "./index";
 
@@ -439,5 +440,25 @@ describe("getNodeExternalUrl", () => {
 
   it("returns null when the source field has no value", () => {
     expect(getNodeExternalUrl({}, "nodes_a")).toBeNull();
+  });
+});
+
+describe("humanizeSlug", () => {
+  it("turns an underscore slug into a sentence-cased phrase", () => {
+    expect(humanizeSlug("respiratory_system")).toBe("Respiratory system");
+  });
+
+  it("collapses the _plus_ connector used by compound structures", () => {
+    // "heart_plus_pericardium" is one anatomical structure collection, not two.
+    expect(humanizeSlug("heart_plus_pericardium")).toBe("Heart and pericardium");
+  });
+
+  it("leaves an already-humanized value alone", () => {
+    expect(humanizeSlug("kidney")).toBe("Kidney");
+  });
+
+  it("returns non-string input unchanged", () => {
+    expect(humanizeSlug(undefined)).toBeUndefined();
+    expect(humanizeSlug(42)).toBe(42);
   });
 });
