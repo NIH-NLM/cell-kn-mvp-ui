@@ -1,3 +1,5 @@
+import { humanizeSlug } from "utils/strings";
+
 /**
  * UI-local sidebar section structure, keyed by collection abbreviation.
  *
@@ -71,31 +73,33 @@ export const fieldSections = {
       ],
     },
   ],
+  // Section order and slot names follow the specification sheet attached to
+  // nlm-ckn#311. Slots the sheet asks for that no CSD document carries — PMID,
+  // age, sex, CKN inclusion criteria, F-beta standard deviation — are omitted
+  // rather than configured, so they cannot render as blank rows; they are
+  // tracked as data gaps on that issue. Labels are taken verbatim from the
+  // Figma panel (865:3768) so the rendered rows read as the design does.
   CSD: [
     {
-      section: "Overview",
-      fields: [
-        { key: "dataset_name", label: "Description", variant: "description" },
-        { key: "Citation", label: "Citation" },
-        { key: "dataset_identifier", label: "Dataset ID" },
-      ],
+      section: "Citation",
+      // Citation reads "Muto (2021) Nat Commun"; the collection map hangs the
+      // DOI URL off the separate `publication` key.
+      fields: [{ key: "Citation", label: "Publication" }],
     },
     {
-      section: "Metadata",
+      section: "Dataset Metadata",
       fields: [
         { key: "species", label: "Species" },
-        { key: "assay_summary", label: "Experiment type" },
-        { key: "disease_status", label: "Disease Status" },
-        { key: "anatomical_structure", label: "Anatomical Structures" },
-        // "Cell set count" (Figma shows 61): exact key UNCONFIRMED — cell_count is
-        // the TOTAL cell count (584,944), not this. Verify the real key live (QA).
-        { key: "cell_set_count", label: "Cell set count" },
-        { key: "cell_count", label: "Total Cell Count" },
-        // Data has mean_silhouette (0.72) but no median silhouette; Figma labels it
-        // "Median". Using mean_silhouette with the Figma label — confirm at QA.
-        { key: "mean_silhouette", label: "Median silhouette score" },
-        { key: "median_of_f_beta_scores", label: "Median F-score" },
-        { key: "collection_id", label: "Collection ID" },
+        // Still a bare EFO CURIE: no EFO collection exists in either graph, so
+        // the UI has nothing to resolve the term name against (nlm-ckn#311).
+        { key: "assay_summary", label: "Assay" },
+        {
+          key: "anatomical_structure",
+          label: "Anatomical Structure Collection",
+          transform: humanizeSlug,
+        },
+        { key: "tissue_annotation", label: "Tissue" },
+        { key: "disease_status", label: "Disease" },
       ],
     },
     {
@@ -104,7 +108,41 @@ export const fieldSections = {
         { key: "cellxgene_collection", label: "CELLxGENE collection" },
         // Not a page: this URL serves the raw .h5ad, hundreds of MB for a
         // typical dataset, so the label has to warn before the click does.
-        { key: "cellxgene_dataset", label: "CELLxGENE data file (.h5ad download)" },
+        { key: "cellxgene_dataset", label: "CELLxGENE data download (.h5ad)" },
+      ],
+    },
+    {
+      section: "Analysis Metadata",
+      fields: [
+        { key: "cluster_annotation", label: "Cluster Annotation" },
+        { key: "embedding", label: "Embedding" },
+      ],
+    },
+    {
+      // Every figure here is post-filtering except the explicit total, which is
+      // the cell count of the dataset as published.
+      section: "Analytical Summary Statistics",
+      fields: [
+        { key: "donor_id_count", label: "Donor Count" },
+        { key: "filtered_cell_count", label: "Cell Count" },
+        { key: "cell_count", label: "Total Cell Count" },
+        { key: "cluster_summary", label: "Cluster Count" },
+        { key: "median_of_median_silhouette", label: "Median of Median Silhouette score" },
+        { key: "median_of_f_beta_scores", label: "Median F-beta score" },
+      ],
+    },
+    {
+      // The sheet's "Additional" is the four secondary quality statistics. Any
+      // other populated attribute is merged in here by getSectionedFields, so
+      // naming these does not hide the rest.
+      section: "Additional",
+      fields: [
+        { key: "mean_silhouette", label: "Mean of median silhouette score" },
+        {
+          key: "standard_deviation_of_silhouette",
+          label: "Standard deviation of median silhouette score",
+        },
+        { key: "mean_f_beta_score", label: "Mean F-beta score" },
       ],
     },
   ],

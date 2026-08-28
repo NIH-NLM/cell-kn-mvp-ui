@@ -5,8 +5,9 @@ import { formatFieldValue, getDisplayFields, getSectionedFields, getTitle, getUr
 
 /**
  * Renders a structured inspector card for a single document.
- * For collections with a UI section config, renders titled Overview/Metadata/
- * Provenance sections; otherwise renders a single flat Overview table.
+ * For collections with a UI section config, renders one titled section per the
+ * config's sections plus an "Additional" catch-all for anything it does not
+ * name; otherwise renders a single flat Overview table.
  * @param {object} props
  * @param {object} props.document - The document data object to display.
  */

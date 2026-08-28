@@ -125,14 +125,12 @@ describe("DocumentCard", () => {
     };
     renderCard(document);
     // Section headings from the config
-    expect(screen.getByText("Overview")).toBeInTheDocument();
-    expect(screen.getByText("Metadata")).toBeInTheDocument();
+    expect(screen.getByText("Citation")).toBeInTheDocument();
+    expect(screen.getByText("Dataset Metadata")).toBeInTheDocument();
     // Configured field resolved through getDisplayFields (formatFieldValue adds
     // thousands separators to large integers)
     expect(screen.getByText("Total Cell Count")).toBeInTheDocument();
     expect(screen.getByText("584,944")).toBeInTheDocument();
-    // Overview description renders as text (not a label/value row)
-    expect(screen.getByText("An integrated cell atlas of the human lung.")).toBeInTheDocument();
   });
 
   it("links every marker gene to its own gene page", () => {

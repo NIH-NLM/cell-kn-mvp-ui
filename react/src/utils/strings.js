@@ -83,3 +83,16 @@ export function truncateString(text, maxLength) {
   }
   return `${text.slice(0, maxLength)}...`;
 }
+
+/**
+ * Render an underscore slug as a readable phrase.
+ * Anatomical structure collections arrive as slugs ("respiratory_system"), and
+ * the compound ones join their parts with "_plus_" rather than a conjunction.
+ * @param {*} value - Raw slug; non-strings pass through untouched.
+ * @returns {*} Sentence-cased phrase, or the input unchanged.
+ */
+export const humanizeSlug = (value) => {
+  if (typeof value !== "string" || value === "") return value;
+  const words = value.replace(/_plus_/g, "_and_").replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
