@@ -61,7 +61,8 @@ Builds and pushes the backend Docker image to ECR, then updates the ECS service.
 ./scripts/app/deploy-frontend.sh <environment>
 ```
 
-Builds the React app and deploys to S3/CloudFront.
+Builds the React app and deploys to S3/CloudFront. The S3 sync excludes
+`plots/*` so it cannot delete the static plot assets that share the bucket.
 
 ### `app/deploy-dataset.sh` - ArangoDB Dataset
 ```bash
@@ -72,12 +73,27 @@ Deploys the dataset version pinned in `ETL_VERSION`, which the script resolves t
 `runs/<version>/06-golden-dump.tar.gz` in the dataset bucket. Example:
 `./scripts/app/deploy-dataset.sh dev`
 
-### `app/deploy-all.sh` - Full Application Deployment
+### `app/deploy-assets.sh` - Static Plot Assets
 ```bash
-./scripts/app/deploy-all.sh
+./scripts/app/deploy-assets.sh [--tag <nlm-ckn tag>] [--force] [--prune [N]] <environment>
 ```
 
-Deploys both backend and frontend in sequence.
+Copies one `nlm-ckn` release's plot assets (~2,850 objects) from the shared
+static-assets bucket into the environment's frontend bucket, verifies the copy
+preserved `Content-Encoding: gzip`, invalidates `/plots/<tag>/*`, and prints
+sample URLs to check. The tag is resolved from `ETL_VERSION` via
+`runs/<ETL_VERSION>/release.json`; `--tag` overrides it. No-ops when the
+destination is already current. Refuses `sandbox` — see
+[`DEPLOYMENT-NOTES.md`](./DEPLOYMENT-NOTES.md#deploying-plot-assets).
+
+### `app/deploy-all.sh` - Full Application Deployment
+```bash
+./scripts/app/deploy-all.sh <environment>
+```
+
+Deploys backend → frontend → plot assets → dataset in sequence. Assets go before
+the dataset so the plot URLs it links to are already backed by objects when the
+database swaps.
 
 ### `app/push-backend-image.sh` - Push Backend Image Only
 ```bash
@@ -161,7 +177,8 @@ connectivity end to end. Exits non-zero on any failure, so it can gate a deploy.
 # Deploy only what changed
 ./scripts/app/deploy-backend.sh dev   # Backend only
 ./scripts/app/deploy-frontend.sh dev  # Frontend only
-./scripts/app/deploy-dataset.sh dev            # Dataset only (version from ETL_VERSION)
+./scripts/app/deploy-assets.sh dev    # Plot assets only (tag resolved from ETL_VERSION)
+./scripts/app/deploy-dataset.sh dev   # Dataset only (version from ETL_VERSION)
 ```
 
 ## Documentation

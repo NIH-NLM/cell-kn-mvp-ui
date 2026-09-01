@@ -115,8 +115,17 @@ deploy_frontend() {
   # The frontend bundle is environment-agnostic (same-origin/relative API calls,
   # no baked-in API URL), so the stage build runs unchanged in sandbox. Promote
   # it by syncing the stage bucket into the sandbox bucket cross-account.
-  echo -e "${GREEN}Promoting s3://${CKN_PROMOTE_FRONTEND_BUCKET}/ -> s3://${CKN_FRONTEND_BUCKET}/${NC}"
-  aws s3 sync "s3://${CKN_PROMOTE_FRONTEND_BUCKET}/" "s3://${CKN_FRONTEND_BUCKET}/" --delete
+  #
+  # `plots/*` is excluded from both sides. The stage bucket also holds the
+  # static plot assets (~500 MB per release tag) copied in by
+  # app/deploy-assets.sh; promoting them here would drag that cross-account on
+  # every frontend promotion, and promoting in the other direction would delete
+  # them. Sandbox must not receive them at all until its ALB->S3 Lambda target
+  # can serve pre-gzipped objects (nlm-ckn-iac
+  # environment/sandbox/cloudformation/alb-s3-lambda-target-group.yaml) — see
+  # docs/static-asset-copy-plan.md.
+  echo -e "${GREEN}Promoting s3://${CKN_PROMOTE_FRONTEND_BUCKET}/ -> s3://${CKN_FRONTEND_BUCKET}/ (excluding plots/*)${NC}"
+  aws s3 sync "s3://${CKN_PROMOTE_FRONTEND_BUCKET}/" "s3://${CKN_FRONTEND_BUCKET}/" --delete --exclude 'plots/*'
   # No CloudFront in sandbox (ALB->S3), so no invalidation step.
   echo -e "${GREEN}✓ Frontend promoted${NC} (URL: ${CKN_BACKEND_URL:-n/a})\n"
 }
