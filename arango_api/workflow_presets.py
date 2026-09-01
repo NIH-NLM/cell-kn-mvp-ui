@@ -195,19 +195,20 @@ WORKFLOW_PRESETS = [
     },
     {
         "id": "datasets-epithelial-respiratory-uc2",
-        "name": "Datasets for epithelial cells in the respiratory system (UC2)",
+        "name": "Epithelial cell sets in the respiratory system (UC2)",
         "description": (
-            "Datasets covering epithelial cell types in the respiratory "
-            "system. Narrows the cell ontology to epithelial cells found in "
-            "respiratory anatomy, then attaches the datasets that sample "
-            "those cell types and their anatomy."
+            "The experimental cell sets that characterise epithelial cells in "
+            "the respiratory system, and the datasets they come from. Cell "
+            "sets are scoped by the anatomy they derive from and the cell "
+            "type they are composed of; the datasets follow from the cell "
+            "sets rather than the other way round."
         ),
         "category": "Use Cases",
         "layoutMode": "force",
         "phases": [
             {
                 "id": "preset-uc2-phase-1",
-                "name": "Epithelial cell types in respiratory anatomy",
+                "name": "Epithelial cell sets in respiratory anatomy",
                 "originSource": "manual",
                 "originNodeIds": ["CL/0000066", "UBERON/0001004"],
                 "previousPhaseId": None,
@@ -215,75 +216,68 @@ WORKFLOW_PRESETS = [
                 "settings": {
                     "depth": 9,
                     "edgeDirection": "INBOUND",
-                    "allowedCollections": ["CL", "UBERON"],
+                    "allowedCollections": ["CL", "CS", "UBERON"],
                     "edgeFilters": {
-                        "Label": ["PART_OF", "SUB_CLASS_OF"],
+                        "Label": [
+                            "SUB_CLASS_OF",
+                            "COMPOSED_PRIMARILY_OF",
+                            "PART_OF",
+                            "DERIVES_FROM",
+                        ],
                         "Source": [],
                     },
                     "setOperation": "Intersection",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
                 },
-                # Per-origin filters: cell types descend by SUB_CLASS_OF;
-                # anatomy descends by PART_OF (anatomical parts, not
-                # subclasses). The intersection keeps cell types that are
-                # both epithelial subclasses and part of respiratory anatomy.
+                # Each origin descends to cell sets by its own route, and the
+                # intersection keeps the cell sets both routes reach. Scoping
+                # the anatomy on the cell set (CS -DERIVES_FROM-> UBERON)
+                # rather than on the cell type matters: CL carries almost no
+                # PART_OF edges into respiratory anatomy, so requiring the
+                # cell type itself to be respiratory drops club cells, type II
+                # pneumocytes and lung goblet cells — the very cells the
+                # question is about.
                 "perNodeSettings": {
                     "CL/0000066": {
                         "depth": 9,
                         "edgeDirection": "INBOUND",
-                        "allowedCollections": ["CL"],
+                        "allowedCollections": ["CL", "CS"],
                         "edgeFilters": {
-                            "Label": ["SUB_CLASS_OF"],
+                            "Label": ["SUB_CLASS_OF", "COMPOSED_PRIMARILY_OF"],
                             "Source": [],
                         },
                     },
                     "UBERON/0001004": {
                         "depth": 9,
                         "edgeDirection": "INBOUND",
-                        "allowedCollections": ["CL", "UBERON"],
-                        "edgeFilters": {"Label": ["PART_OF"], "Source": []},
+                        "allowedCollections": ["UBERON", "CS"],
+                        "edgeFilters": {
+                            "Label": ["PART_OF", "DERIVES_FROM"],
+                            "Source": [],
+                        },
                     },
                 },
             },
             {
                 "id": "preset-uc2-phase-2",
-                "name": "Datasets for the epithelial respiratory cell types",
+                "name": "Datasets those cell sets come from",
                 "originSource": "previousPhase",
                 "originNodeIds": [],
-                # Source from the Phase-1 answer cells (not the full
-                # hierarchy) so datasets stay scoped to the answer.
                 "previousPhaseId": "preset-uc2-phase-1",
                 "originFilter": "all",
                 "settings": {
-                    # Exemplar datasets (HAS_EXEMPLAR_DATA) plus datasets
-                    # about the answer's anatomy (PART_OF to anatomy, then
-                    # IS_ABOUT from datasets) — ANY direction, depth 2.
-                    "depth": 2,
-                    "edgeDirection": "ANY",
-                    "allowedCollections": ["UBERON", "CSD"],
-                    "edgeFilters": {
-                        "Label": ["PART_OF", "HAS_EXEMPLAR_DATA", "IS_ABOUT"],
-                        "Source": [],
-                    },
+                    # CSD -IS_ABOUT-> CS, so the datasets sit inbound of the
+                    # cell sets. Depth 1 keeps the answer to the datasets that
+                    # contain these cell sets; the cell sets stay in the result
+                    # as the origins, so the table lists both.
+                    "depth": 1,
+                    "edgeDirection": "INBOUND",
+                    "allowedCollections": ["CSD"],
+                    "edgeFilters": {"Label": ["IS_ABOUT"], "Source": []},
                     "setOperation": "Union",
                     "graphType": "phenotypes",
                     "includeInterNodeEdges": True,
-                },
-                "perNodeSettings": {},
-            },
-            {
-                "id": "preset-uc2-phase-3",
-                "name": "Datasets only",
-                "originSource": "filter",
-                "originNodeIds": [],
-                # Filter the prior phase down to just the datasets — the
-                # answer to "which datasets cover epithelial cells in the
-                # respiratory system".
-                "previousPhaseId": "preset-uc2-phase-2",
-                "originFilter": "all",
-                "settings": {
-                    "returnCollections": ["CSD"],
                 },
                 "perNodeSettings": {},
             },
