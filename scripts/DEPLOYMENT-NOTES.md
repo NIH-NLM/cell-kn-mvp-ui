@@ -29,9 +29,10 @@ scripts in this repo:
 |---|---|---|
 | `app/push-backend-image.sh` | app | Build + push backend image only (bootstrap before first env deploy; also tags `latest`). |
 | `app/deploy-backend.sh <env>` | app | Build → push (immutable git-SHA tag) → register ECS task def → update service → wait stable. |
-| `app/deploy-frontend.sh <env>` | app | `npm ci` + build → `s3 sync --delete` → CloudFront invalidation. |
+| `app/deploy-frontend.sh <env>` | app | `npm ci` + build → `s3 sync --delete --exclude 'plots/*'` → CloudFront invalidation. The exclusion is load-bearing: without it `--delete` wipes the plot assets. |
 | `app/deploy-dataset.sh [--force] <env>` | app | Deploy the dataset named in `ETL_VERSION` via a blue-green `arangorestore` on the EC2 instance (see below). |
-| `app/deploy-all.sh` | app | Runs backend then frontend in sequence. |
+| `app/deploy-assets.sh [--tag T] [--force] [--prune [N]] <env>` | app | Copy one nlm-ckn release's plot assets from the shared static-assets bucket into the environment's frontend bucket (see below). |
+| `app/deploy-all.sh <env>` | app | Runs backend → frontend → assets → dataset in sequence. |
 | `arango-tunnel.sh [env]` | ops | SSM port-forward `localhost:8530 → instance:8529` (no SSH / public IP). |
 | `backup-arangodb.sh <env>` | ops | ECS-Exec tar of the data dirs to `s3://.../backups/`. **Note: appears stale** — rejects `stage`, assumes the old ECS-container ArangoDB layout. |
 
@@ -43,9 +44,9 @@ stored AWS keys.
 
 | Workflow | Trigger | What it runs |
 |---|---|---|
-| `ci.yml` | PR + push to `main` | Change-gated test matrix (frontend lint/unit/E2E, backend unit/integration/Docker). On **push to `main`**, deploys changed components to `dev` via `deploy-frontend.sh` / `deploy-backend.sh`. |
-| `deploy-dataset.yml` | push to `main` changing `ETL_VERSION`, or manual dispatch | `deploy-dataset.sh dev`. 110-min timeout; `cancel-in-progress: false` so a restore is never interrupted mid-swap. |
-| `deploy-stage.yml` | `v*.*.*` tag | All three app scripts against `stage` (backend with `IMAGE_TAG=<tag>`, frontend, dataset). |
+| `ci.yml` | PR + push to `main` | Change-gated test matrix (frontend lint/unit/E2E, backend unit/integration/Docker). On **push to `main`**, deploys changed components to `dev` via `deploy-frontend.sh` / `deploy-backend.sh`. Untouched by the asset work — it only needed the `--exclude`. |
+| `deploy-dataset.yml` | push to `main` changing `ETL_VERSION`, or manual dispatch | Two jobs: `deploy-assets` (`deploy-assets.sh dev`), then `deploy-dataset` (`deploy-dataset.sh dev`) which `needs:` it. 110-min timeout on the restore; `cancel-in-progress: false` so a restore is never interrupted mid-swap. |
+| `deploy-stage.yml` | `v*.*.*` tag | All four app scripts against `stage` (backend with `IMAGE_TAG=<tag>`, frontend, assets, dataset). |
 | `promote-to-upstream.yml` | push to `main` (fork only) | Fast-forwards / admin-merges `Springbok-LLC` → `NIH-NLM` upstream. Not AWS-related. |
 | `sync-collection-maps.yml` | change to `nlm-ckn-collection-maps.json` | Opens a PR against `nlm-ckn-etl` to keep the shared collection maps in step. Not AWS-related. |
 
@@ -97,6 +98,95 @@ must satisfy:
   by `arangorestore`; they're imported from `<DB>/ckn-graphs.ndjson` and
   `<DB>/ckn-analyzers.ndjson` if present. Absent → silent no-op (graphs/analyzers
   won't come across).
+
+## Deploying plot assets
+
+Each dataset release has a matching set of static plots — ~2,850 objects
+(`.svg`, `.html`, one vendored `plotly-<ver>.min.js`), ~500 MB stored. They are
+published **once per `nlm-ckn` release tag** by that repo's
+`publish-plot-assets.yml` into a shared bucket, then copied into each
+environment's frontend bucket by `app/deploy-assets.sh`.
+
+### Where the version comes from
+
+There is no new pin. `ETL_VERSION` already resolves to exactly one `nlm-ckn`
+tag, via the `release.json` the ETL publishes for every run:
+
+```
+ETL_VERSION                                        # e.g. v1.6.0-rc.5
+  -> s3://<arangodb bucket>/runs/<ETL_VERSION>/release.json
+       -> .nlm_ckn_tag                             # e.g. v1.0.0-rc.10
+            -> s3://<static assets bucket>/plots/<nlm_ckn_tag>/
+```
+
+The script prints the resolved `ETL_VERSION -> nlm_ckn_tag` mapping before it
+copies anything. Every hop is fatal on failure — a wrong tag means a green
+deploy with a bucket full of the wrong release's plots. `--tag` overrides the
+lookup for ad-hoc runs; it has no default.
+
+### Deploying
+
+- **Via CI** — automatic. `deploy-dataset.yml` runs `deploy-assets` and then
+  `deploy-dataset`, which `needs:` it; `deploy-stage.yml` runs the assets step
+  between frontend and dataset. No separate trigger: `ETL_VERSION` is the pin
+  for both.
+- **Locally** — `./scripts/app/deploy-assets.sh dev`. Idempotent: it no-ops when
+  the destination already holds the same object count for the tag (`--force`
+  overrides). Runtime is 1–3 minutes.
+
+### Two invariants that are easy to break
+
+1. **Never add `--content-type`, `--cache-control` or `--metadata` to the
+   copy.** Any of them flips the CLI to `MetadataDirective=REPLACE`, which
+   silently drops the `Content-Encoding: gzip` the publisher set — every object
+   then serves gzip bytes labelled as SVG/HTML and renders as nothing. Cache
+   headers must be set at publish time in `nlm-ckn`. The script asserts the
+   encoding survived, so a regression fails the deploy rather than shipping.
+2. **Never drop `--exclude 'plots/*'`** from `deploy-frontend.sh` or
+   `deploy-sandbox.sh`. Both sync with `--delete`; without the exclusion the
+   next frontend-only deploy treats all ~2,850 objects as surplus and deletes
+   them. `ci.yml` deploys the frontend on every frontend change to `main`, so
+   the assets would survive until the next unrelated merge and then vanish.
+
+### Ordering, retention, and rollback
+
+Assets are copied **before** the dataset. Nothing references the new prefix
+until the database swaps (the live database still returns the old URLs), so the
+new URLs are backed by objects the moment they go live. The copy is
+append-only per tag — no `--delete`, never overwriting a previous release — so
+several tags coexist and a dataset rollback to any of them still has its plots.
+Prune with `./scripts/app/deploy-assets.sh --prune 3 <env>`, not a bucket
+lifecycle rule (which would silently expire the prefix a rollback depends on).
+
+### Verifying
+
+The script ends by fetching a sample SVG, a plotly page, and the page's own
+relative plotly `src` over the public URL, then printing those URLs. Spot-check
+by hand with:
+
+```bash
+curl -sI --compressed 'https://dev.nlm-ckn.org/plots/<tag>/<sample>.svg'
+```
+
+Expect `200`, `content-type: image/svg+xml`, `content-encoding: gzip`.
+**`--compressed` is not optional** — CloudFront's CachingOptimized policy folds
+`Accept-Encoding` into the cache key, so a bare `curl -I` uses a different cache
+key than any browser and always reports `x-cache: Miss`, which reads like a
+caching bug that isn't there.
+
+Directory-style URLs (`/plots/<tag>/<dir>/`) return the SPA, because
+`SpaRoutingFunction` rewrites any final path segment without a `.` to
+`/index.html`. That is expected; just don't link to directories.
+
+### Sandbox is deliberately blocked
+
+`deploy-assets.sh` refuses `sandbox` outright, and `deploy-all.sh` skips the
+step there. Sandbox serves its bucket through an ALB → Lambda target that drops
+`Content-Encoding`, UTF-8-decodes `image/svg+xml` (corrupting the gzip bytes),
+and 413s on objects over 700,000 bytes — which the ~1 MB plotly bundle exceeds.
+Copying assets there yields blank plots and corrupted SVGs, not a partial
+success. Lift the guard only after that handler is fixed in `nlm-ckn-iac`; see
+[`docs/static-asset-copy-plan.md`](../docs/static-asset-copy-plan.md).
 
 ## Re-running a failed dataset deploy
 

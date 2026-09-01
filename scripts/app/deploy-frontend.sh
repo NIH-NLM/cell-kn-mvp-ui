@@ -9,7 +9,7 @@
 #
 # WHAT IT DOES:
 #   1. Gets ALB DNS name from CloudFormation Stack
-#   2. Syncs build files to S3
+#   2. Syncs build files to S3 (leaving the plots/* asset prefix untouched)
 #   3. Creates CloudFront invalidation
 #   4. Shows application URLs
 #
@@ -163,8 +163,15 @@ if [ ! -d "build" ]; then
 fi
 
 # Upload to S3
-echo -e "\n${GREEN}Uploading to S3: s3://$S3_BUCKET/${NC}"
-aws s3 sync build/ s3://$S3_BUCKET/ --delete
+#
+# `plots/*` is deliberately excluded from BOTH sides of the sync. The bucket is
+# shared with the static plot assets copied in by app/deploy-assets.sh
+# (~2,850 objects under plots/<nlm-ckn tag>/), which are not part of the React
+# build. Without the exclusion, `--delete` treats every one of them as surplus
+# and wipes them on the next frontend-only deploy. The two deploys must not be
+# able to see each other's keys — see docs/static-asset-copy-plan.md.
+echo -e "\n${GREEN}Uploading to S3: s3://$S3_BUCKET/ (excluding plots/*)${NC}"
+aws s3 sync build/ s3://$S3_BUCKET/ --delete --exclude 'plots/*'
 
 # Invalidate CloudFront cache (only when the CDN stack is deployed)
 if [ -n "$CF_DIST_ID" ]; then

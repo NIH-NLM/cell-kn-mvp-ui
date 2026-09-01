@@ -44,5 +44,11 @@ jobs:
           VERSION: ${{ github.ref_name }}
         run: ./scripts/app/deploy-frontend.sh stage
 
+      # Assets before the dataset: the dataset's nodes carry plots/<tag>/... URLs,
+      # so copying first means the new URLs are already backed by objects the
+      # moment the database swaps. See docs/static-asset-copy-plan.md.
+      - name: Deploy plot assets (copy to S3, invalidate the tag prefix)
+        run: ./scripts/app/deploy-assets.sh stage
+
       - name: Deploy dataset
         run: ./scripts/app/deploy-dataset.sh stage
