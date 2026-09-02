@@ -68,6 +68,7 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
               const alreadyAdded = existingSet.has(nodeId);
               const color = getCollectionColor(nodeId);
               const collectionName = getCollectionDisplayName(nodeId?.split("/")[0] || "");
+              const label = getLabel(item);
               return (
                 <button
                   type="button"
@@ -88,8 +89,12 @@ const NodeSearchInput = ({ onSelectNode, existingNodeIds = [] }) => {
                   >
                     {collectionName}
                   </span>
-                  <span className="node-search-label">{getLabel(item)}</span>
-                  <span className="node-search-id">{nodeId}</span>
+                  <span className="node-search-label" title={label}>
+                    {label}
+                  </span>
+                  <span className="node-search-id" title={nodeId}>
+                    {nodeId}
+                  </span>
                 </button>
               );
             })}
