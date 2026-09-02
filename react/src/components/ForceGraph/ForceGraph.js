@@ -105,6 +105,8 @@ const ForceGraph = ({
 
   // Refs for DOM elements and D3 graph instance.
   const wrapperRef = useRef();
+  // The element shown full screen: the canvas plus its options panel.
+  const graphWrapperRef = useRef(null);
   const svgRef = useRef();
   const graphInstanceRef = useRef(null);
   const hasInitializedGraph = useRef(false);
@@ -1393,6 +1395,7 @@ const ForceGraph = ({
 
   return (
     <div
+      ref={graphWrapperRef}
       className={`graph-component-wrapper ${optionsVisible ? "options-open" : "options-closed"}`}
     >
       <div className="graph-main-area">
@@ -1462,6 +1465,7 @@ const ForceGraph = ({
           lassoMode={lassoMode}
           onToggleLasso={() => setLassoMode((m) => !m)}
           onDownload={() => exportGraph("png")}
+          fullscreenTargetRef={graphWrapperRef}
         />
 
         {/* biome-ignore lint/correctness/useUniqueElementIds: legacy id */}
