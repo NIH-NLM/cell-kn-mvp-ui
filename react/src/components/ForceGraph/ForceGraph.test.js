@@ -179,6 +179,8 @@ describe("ForceGraph", () => {
     fetchNeighborCollections.mockResolvedValue([]);
     // Re-arm the thumbnail mock (resetMocks clears implementations between tests)
     captureGraphThumbnail.mockImplementation(() => Promise.resolve("mock-thumbnail"));
+    // jsdom ships no Fullscreen API, and the canvas bar hides the button without one.
+    Object.defineProperty(document, "fullscreenEnabled", { value: true, configurable: true });
   });
 
   // The canvas actions are icon-only, so the hover/focus note is the only thing

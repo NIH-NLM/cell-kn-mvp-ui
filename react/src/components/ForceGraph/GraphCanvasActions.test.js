@@ -1,13 +1,31 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import GraphCanvasActions from "./GraphCanvasActions";
 
+const target = { current: document.createElement("div") };
+
 const baseProps = {
   originsOpen: false,
   originCount: 0,
   lassoMode: false,
   onToggleLasso: () => {},
   onDownload: () => {},
+  fullscreenTargetRef: target,
 };
+
+// jsdom implements neither the Fullscreen API nor its document properties.
+const stubFullscreen = ({ element = null } = {}) => {
+  const requestFullscreen = jest.fn();
+  const exitFullscreen = jest.fn();
+  Object.defineProperties(document, {
+    fullscreenEnabled: { value: true, configurable: true },
+    fullscreenElement: { value: element, configurable: true },
+    exitFullscreen: { value: exitFullscreen, configurable: true },
+  });
+  target.current.requestFullscreen = requestFullscreen;
+  return { requestFullscreen, exitFullscreen };
+};
+
+beforeEach(() => stubFullscreen());
 
 describe("GraphCanvasActions", () => {
   // The e2e suite and useGraphExport select on these class names, so they are
@@ -64,22 +82,23 @@ describe("GraphCanvasActions", () => {
     expect(onDownload).toHaveBeenCalledTimes(1);
   });
 
-  it("flashes the disabled message for the full-screen button, then clears it", () => {
-    jest.useFakeTimers();
-    try {
-      const { container } = render(<GraphCanvasActions {...baseProps} />);
-      expect(screen.queryByText(/currently disabled/i)).toBeNull();
+  it("asks the target element for full screen, and the document to leave it", () => {
+    const { requestFullscreen } = stubFullscreen();
+    const { container } = render(<GraphCanvasActions {...baseProps} />);
+    fireEvent.click(container.querySelector(".graph-canvas-fullscreen"));
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
 
-      fireEvent.click(container.querySelector(".graph-canvas-fullscreen"));
-      expect(screen.getByText("This feature is currently disabled.")).toBeInTheDocument();
+    const { exitFullscreen } = stubFullscreen({ element: target.current });
+    act(() => document.dispatchEvent(new Event("fullscreenchange")));
+    expect(screen.getByLabelText("Exit full screen")).toHaveClass("active");
 
-      // The timeout sets state, so it has to run inside act().
-      act(() => {
-        jest.advanceTimersByTime(2500);
-      });
-      expect(screen.queryByText(/currently disabled/i)).toBeNull();
-    } finally {
-      jest.useRealTimers();
-    }
+    fireEvent.click(container.querySelector(".graph-canvas-fullscreen"));
+    expect(exitFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it("omits the full-screen button where the browser has no Fullscreen API", () => {
+    Object.defineProperty(document, "fullscreenEnabled", { value: false, configurable: true });
+    const { container } = render(<GraphCanvasActions {...baseProps} />);
+    expect(container.querySelector(".graph-canvas-fullscreen")).toBeNull();
   });
 });

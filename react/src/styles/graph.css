@@ -499,14 +499,6 @@ g.node.pinned .node-pin-marker path {
   visibility: visible;
 }
 
-/* The click-triggered "feature disabled" notice occupies the same space as the
-   full-screen tooltip — suppress the tooltip while it's showing. */
-.graph-canvas-actions:has(.graph-canvas-disabled-popup) [data-tooltip]::after,
-.graph-canvas-actions:has(.graph-canvas-disabled-popup) [data-tooltip]::before {
-  opacity: 0;
-  visibility: hidden;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .graph-canvas-actions [data-tooltip]::after,
   .graph-canvas-actions [data-tooltip]::before {
@@ -514,18 +506,11 @@ g.node.pinned .node-pin-marker path {
   }
 }
 
-.graph-canvas-disabled-popup {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  padding: 6px 10px;
-  background-color: var(--color-primary-darkest);
-  color: var(--color-white);
-  font-size: 12px;
-  line-height: 16px;
-  border-radius: var(--radius-sm, 4px);
-  white-space: nowrap;
-  box-shadow: var(--shadow-md);
+/* A full-screen element is painted on black unless it declares a background,
+   and it no longer inherits the page's height. */
+.graph-component-wrapper:fullscreen {
+  height: 100%;
+  background-color: var(--color-white);
 }
 
 /* Options collapse handle on the panel's left edge (Figma "Close arrow" 682:3573):
