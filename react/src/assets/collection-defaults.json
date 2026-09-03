@@ -37,6 +37,14 @@
     "allowedCollections": ["CL"],
     "preferredPredicates": ["SUB_CLASS_OF"]
   },
+  "BGS": {
+    "graphType": "phenotypes",
+    "depth": 1,
+    "edgeDirection": "ANY",
+    "collapseOnStart": "off",
+    "allowedCollections": ["BGS", "CS", "GS"],
+    "preferredPredicates": []
+  },
   "BMC": {
     "graphType": "phenotypes",
     "depth": 1,

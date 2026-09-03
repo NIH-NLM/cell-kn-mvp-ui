@@ -1472,6 +1472,42 @@ describe("ForceGraph", () => {
     });
   });
 
+  describe("BGS collection defaults keep the binary gene set graph to one hop", () => {
+    it("sends depth 1 and only BGS, CS and GS in allowedCollections", async () => {
+      // Without an entry of its own, a binary gene set page fell through to
+      // _defaults -- depth 2 over every collection -- which pulls in the sibling
+      // gene sets, cell type markers, diseases and proteins reachable through the
+      // cell set, ~300 nodes for a set of 10 genes. One hop over BGS/CS/GS leaves
+      // the gene set, the cell set that expresses it, and its member genes.
+      const bgsDefaults = collectionDefaults.BGS;
+      fetchGraphData.mockResolvedValue({ nodes: [], links: [] });
+      const store = createTestStore();
+      // The prop-defaults effect intersects allowedCollections against the
+      // available list, so seed it with every collection the defaults name.
+      store.dispatch(setAvailableCollections(bgsDefaults.allowedCollections));
+
+      await act(async () => {
+        render(
+          <Provider store={store}>
+            <MemoryRouter>
+              <ToastProvider>
+                <ForceGraph settings={bgsDefaults} />
+              </ToastProvider>
+            </MemoryRouter>
+          </Provider>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetchGraphData).toHaveBeenCalled();
+      });
+
+      const params = fetchGraphData.mock.calls[0][0];
+      expect(params.depth).toBe(1);
+      expect(params.allowedCollections).toEqual(["BGS", "CS", "GS"]);
+    });
+  });
+
   describe("collection-defaults.json fixture", () => {
     it("contains no entry using the retired SELECTIVELY_EXPRESS predicate", () => {
       // Assert the fixture is non-empty first: a forEach over {} would make every
