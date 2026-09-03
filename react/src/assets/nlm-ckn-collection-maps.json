@@ -161,7 +161,7 @@
           },
           {
             "field_to_display": "f_beta_score",
-            "display_field_as": "F_beta_score",
+            "display_field_as": "F-beta score",
             "field_url": "",
             "field_to_use": ""
           }

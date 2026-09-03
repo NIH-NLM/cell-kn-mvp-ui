@@ -34,7 +34,7 @@ jest.mock("../../assets/nlm-ckn-collection-maps.json", () => ({
         individual_labels: [{ field_to_use: "markers" }],
         individual_fields: [
           { field_to_display: "markers", display_field_as: "Marker(s)" },
-          { field_to_display: "f_beta_score", display_field_as: "F_beta_score" },
+          { field_to_display: "f_beta_score", display_field_as: "F-beta score" },
         ],
       },
     ],
